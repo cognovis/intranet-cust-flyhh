@@ -30,6 +30,8 @@ if {!$user_is_admin_p} {
     return
 }
 
+set cost_center_select [im_cost_center_select -include_empty 1 -department_only_p 0 cost_center_id]
+
 set page_body "
 <form enctype=multipart/form-data method=POST action=upload-contacts-2.tcl>
 [export_form_vars return_url]
@@ -44,8 +46,7 @@ set page_body "
                       <tr> 
                         <td align=right>Event: </td>
                         <td> 
-                          <input type=text name=event_name>
-                        </td>
+$cost_center_select                        </td>
                       </tr>
                       <tr> 
                         <td></td>

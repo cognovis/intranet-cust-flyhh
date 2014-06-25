@@ -37,7 +37,7 @@ ad_page_contract {
     upload_file
     { transformation_key "" }
     { create_dummy_email "" }
-    event_name
+    cost_center_id
 } 
 
 
@@ -152,6 +152,7 @@ foreach csv_line_fields $values_list_of_lists {
     set country_list [list]
     set discounts ""
     set partner_discount ""
+    set bus_price ""
     
     for {set j 0} {$j < $csv_header_len} {incr j} {
 
@@ -187,6 +188,7 @@ foreach csv_line_fields $values_list_of_lists {
             "UK" - "U.K." {set country_code "uk"}
             "Western Australia" {set country_code "au"}
             "Sverige" {set country_code "se"}
+            "Italia" {set country_code "it"}
             default {ds_comment "country missing $country for $first_name $last_name"}
         }
     }
@@ -253,10 +255,13 @@ foreach csv_line_fields $values_list_of_lists {
         db_dml update_names "update persons set first_names = :first_name, last_name = :last_name where person_id = :user_id"
         set company_name "$first_name $last_name"
         regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_" company_path
-        append company_path "_${user_id}"
         set company_id [db_string company "select company_id from im_companies where company_path = :company_path" -default ""]
+        if {$company_id eq ""} {
+            set company_id [db_string company "select company_id from im_companies where company_name = :company_name" -default ""]
+            db_dml update "update im_companies set company_path = :company_path where company_id = :company_id"
+        }
     }
-    
+
     # Create or replace company information from the user
     if {"" == $company_id} {
         set company_id [im_new_object_id]
@@ -266,7 +271,6 @@ foreach csv_line_fields $values_list_of_lists {
         set company_type_id $default_company_type_id
         set company_status_id [im_company_status_active]
         regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_" company_path
-        append company_path "_${user_id}"
         set office_path "${company_path}_home"
         
 	    set main_office_id [im_office::new \
@@ -314,11 +318,13 @@ foreach csv_line_fields $values_list_of_lists {
         continue
     }
     
+    set event_name [db_string cost_center "select cost_center_code from im_cost_centers where cost_center_id = :cost_center_id"]
+    
     set created_invoice_p 0
     if {$status == "accepted"} {
     
         # Check if we have the invoice already
-        set cost_center_id [db_string cost_center "select cost_center_id from im_cost_centers where cost_center_code = :event_name"]
+        # Store the reference_id in the note
         set note "$event_name $bookingid"
         set invoice_id [db_string invoice "select cost_id from im_costs where note = :note" -default ""]
         
@@ -350,25 +356,27 @@ foreach csv_line_fields $values_list_of_lists {
             0,			-- tax
             :note			-- note
          )"]
-         set created_invoice_p 1
-        } 
-        db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
-        
-        
-        # Now enter the invoice_items
+             set created_invoice_p 1
+             db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
+             ds_comment "Invoice $invoice_nr created for company $company_name with ID $invoice_id"
+             
+         }
+    }
+     
+    # Only if we created the invoice we will add the line items, otherwise we highlight differences
+    
+    # Classes
+    # Materials Type: 9004 - Classes 
 
-        # Classes
-        # Materials Type: 9004 - Classes 
-        set classes_item_id [db_string classes "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id in (select material_id from im_materials where material_type_id = 9004) and price_per_unit >0" -default ""]
-        set classes [string trimleft $classes "1x "]
+    set classes_item_id [db_string classes "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id in (select material_id from im_materials where material_type_id = 9004) and price_per_unit >0" -default ""]
+    set classes [string trimleft $classes "1x "]
+    db_1row class_material "select im.material_id as classes_material_id, material_name as classes_material_name, material_uom_id as classes_uom_id, price as classes_price 
+     from im_materials im, im_timesheet_prices itp where material_nr = :classes and im.material_id = itp.material_id and company_id = 8720 limit 1"
+    if {"" == $classes_item_id && $created_invoice_p == 0} {
         if {"" != $classes} {
-            db_1row class_material "select im.material_id as classes_material_id, material_name as classes_material_name, material_uom_id as classes_uom_id, price as classes_price 
-             from im_materials im, im_timesheet_prices itp where material_nr = :classes and im.material_id = itp.material_id and company_id = 8720 limit 1"
-
-             if {"" == $classes_item_id} {
-                 set classes_item_id [db_nextval "im_invoice_items_seq"]
-                 set insert_invoice_items_sql "
+                        
+             set classes_item_id [db_nextval "im_invoice_items_seq"]
+             set insert_invoice_items_sql "
             INSERT INTO im_invoice_items (
                     item_id, item_name,
                     project_id, invoice_id,
@@ -387,23 +395,22 @@ foreach csv_line_fields $values_list_of_lists {
                     :classes_material_id,
                     null, '',null,null
     	    )" 
-
-                db_dml insert_invoice_items $insert_invoice_items_sql            
-            }
-            
-            if {$classes__price eq "0.00"} {
-                # Update the class item                
-                db_dml update_classe_item "update im_invoice_items set item_name = :classes_material_name, sort_order = 1, price_per_unit = :classes_price, item_units = 0, item_material_id = :classes_material_id where item_id = :classes_item_id"
-            } else {
-                db_dml update_classe_item "update im_invoice_items set item_name = :classes_material_name, sort_order = 1, price_per_unit = :classes_price, item_material_id = :classes_material_id where item_id = :classes_item_id"
-            }
+            db_dml insert_invoice_items $insert_invoice_items_sql
         }
+    } 
+    
+    # Compare the values
+    if {"" != $classes_item_id} {
+        db_1row compare "select item_material_id, item_units from im_invoice_items where item_id = :classes_item_id"
+        if {$classes_material_id ne $item_material_id || $item_units ne 1.00} {
+            ds_comment "CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
+        }
+    }
         
-        # Accomodation
-        # Materials Type: 9002 - acommodation 
-        set accom_item_id [db_string accom "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id in (select material_id from im_materials where material_type_id = 9002) and price_per_unit >0" -default ""]
-
+    # Accomodation
+    # Materials Type: 9002 - acommodation 
+    set accom_item_id [db_string accom "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id in (select material_id from im_materials where material_type_id = 9002) and price_per_unit >0" -default ""]
+    if {"" == $accom_item_id && $created_invoice_p == 0} {
         set accom [string trimleft $acc_room "1x "]
             
         if {$accom == "external"} {
@@ -411,10 +418,9 @@ foreach csv_line_fields $values_list_of_lists {
         } else {
             db_1row class_material "select im.material_id as accom_material_id, material_name as accom_material_name, material_uom_id as accom_uom_id, price as accom_price 
                      from im_materials im, im_timesheet_prices itp where material_nr = :accom and im.material_id = itp.material_id and company_id = 8720 limit 1"
-            if {"" == $accom_item_id} {
-        	    set accom_item_id [db_nextval "im_invoice_items_seq"]
+        	set accom_item_id [db_nextval "im_invoice_items_seq"]
             
-                set insert_invoice_items_sql "
+            set insert_invoice_items_sql "
                  INSERT INTO im_invoice_items (
                     item_id, item_name,
                     project_id, invoice_id,
@@ -434,31 +440,37 @@ foreach csv_line_fields $values_list_of_lists {
                     null, '',null,null
                     )" 
 
-                db_dml insert_invoice_items $insert_invoice_items_sql
-            } 
-            
-            if {$acc_room__price eq "0.00"} {
-                db_dml accom_item "update im_invoice_items set item_name = :accom_material_name, sort_order = 2, item_units = 0, price_per_unit = :accom_price, item_material_id = :accom_material_id where item_id = :accom_item_id"            
-            } else {
-                # Update accom item
-                set acc_room__price [format "%.2f" [expr $acc_room__price / "1.07"]]
-                db_dml accom_item "update im_invoice_items set item_name = :accom_material_name, sort_order = 2, item_units = 1, price_per_unit = :acc_room__price, item_material_id = :accom_material_id where item_id = :accom_item_id"
-            }
+            db_dml insert_invoice_items $insert_invoice_items_sql
         }
+    } 
+    
+    if {"" != $accom_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :accom_item_id"
+        set acc_room__price [format "%.2f" [expr $acc_room__price / "1.07"]]
+        set price_per_unit [format "%.2f" $price_per_unit]
+        if {$acc_room__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "ACCOM :: $invoice_id :: $price_per_unit - $acc_room__price :: $item_units"}    
+    }
         
-        # Meals - Parties
-        # Materials Type: 900 - Meals 
-        set meals_item_id [db_string meals "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id in (33313,33314)" -default ""]
+    # Meals - Parties
+    # Materials Type: 900 - Meals 
+    set meals_item_id [db_string meals "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id in (33313,33314)" -default ""]
+    if {"" == $meals_item_id && $created_invoice_p == 0} {
 
         set meals [string trimleft $meals_parties "1x "]    
         db_1row class_material "select im.material_id as meals_material_id, material_name as meals_material_name, material_uom_id as meals_uom_id, price as meals_price 
                  from im_materials im, im_timesheet_prices itp where material_nr = :meals and im.material_id = itp.material_id and company_id = 8720 limit 1"
         
-        if {"" == $meals_item_id} {
-        	set meals_item_id [db_nextval "im_invoice_items_seq"]
-            
-            set insert_invoice_items_sql "
+        set meals_parties__price [format "%.2f" [expr $meals_parties__price / "1.19"]]
+        set meals_price [format "%.2f" $meals_price]
+        
+        if {$meals_parties__price ne $meals_price} {
+            ds_comment "Great, different pricing $company_name for meals $meals_parties__price instead of $meals_price"
+            set meals_price $meals_parties__price
+        }
+        
+    	set meals_item_id [db_nextval "im_invoice_items_seq"]
+        set insert_invoice_items_sql "
             INSERT INTO im_invoice_items (
                     item_id, item_name,
                     project_id, invoice_id,
@@ -478,27 +490,29 @@ foreach csv_line_fields $values_list_of_lists {
                     null, '',null,null
     	    )" 
 
-            db_dml insert_invoice_items $insert_invoice_items_sql
-        } 
-        if {$meals_parties__price eq "0.00"} {
-            db_dml meals_item "update im_invoice_items set item_name = :meals_material_name, sort_order = 3, item_units = 0, price_per_unit = :meals_price, item_material_id = :meals_material_id where item_id = :meals_item_id"
-        } else {
-            set meals_parties__price [format "%.2f" [expr $meals_parties__price / "1.19"]]
-            db_dml meals_item "update im_invoice_items set item_name = :meals_material_name, sort_order = 3, item_units = 1, price_per_unit = :meals_parties__price, item_material_id = :meals_material_id where item_id = :meals_item_id"
-        }            
-
-        # Handle SCC Partner discount
+        db_dml insert_invoice_items $insert_invoice_items_sql
+    } 
+    
+    if {"" != $meals_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :meals_item_id"
+        set meals_parties__price [format "%.2f" [expr $meals_parties__price / "1.19"]]
+        set price_per_unit [format "%.2f" $price_per_unit]
+        if {$meals_parties__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "MEALS :: $invoice_id :: $price_per_unit - $meals_parties__price :: $item_units"}    
+    }
+    
+    set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = 34830" -default ""]
+    
+    # Handle SCC Partner discount
+    if {"" == $partner_item_id && $created_invoice_p == 0} {
         
-        set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id = 34830" -default ""]
         db_1row class_material "select im.material_id as partner_material_id, material_name as partner_material_name, material_uom_id as partner_uom_id, price as partner_price 
                  from im_materials im, im_timesheet_prices itp where im.material_id = 34830 and im.material_id = itp.material_id and company_id = 8720 limit 1"
 
-        if {"" == $partner_item_id} {
-            # Check if we have a partner rebate
-            if {$partner_discount == "Yes"} {
-            	set partner_item_id [db_nextval "im_invoice_items_seq"]
-                set insert_invoice_items_sql "
+        # Check if we have a partner rebate
+        if {$partner_discount == "Yes"} {
+            set partner_item_id [db_nextval "im_invoice_items_seq"]
+            set insert_invoice_items_sql "
                      INSERT INTO im_invoice_items (
                              item_id, item_name,
                              project_id, invoice_id,
@@ -518,30 +532,29 @@ foreach csv_line_fields $values_list_of_lists {
                              null, '',null,null
              	    )" 
 
-                db_dml insert_invoice_items $insert_invoice_items_sql
-            } 
-            
-        } else {
-            if {$partner_discount != "Yes" && $discounts == ""} {
-                db_dml delete_scc_partner "delete from im_invoice_items where item_id = :partner_item_id"
-            } else {
-                db_dml partner_item "update im_invoice_items set item_name = :partner_material_name, sort_order = 4, price_per_unit = :partner_price, item_material_id = :partner_material_id where item_id = :partner_item_id"
-            }
+            db_dml insert_invoice_items $insert_invoice_items_sql            
         }
+    } 
+    
+    if {"" != $partner_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
+        set price_per_unit [format "%.2f" $price_per_unit]
+        set partner_price [format "%.2f" $partner_price]
+        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+    }
                 
-        # Handle Partner discount
+    # Handle Partner discount
         
-        set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id = 34830" -default ""]
+    set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = 34830" -default ""]
+    if {"" == $partner_item_id && $created_invoice_p == 0} {            
         db_1row class_material "select im.material_id as partner_material_id, material_name as partner_material_name, material_uom_id as partner_uom_id, price as partner_price 
                  from im_materials im, im_timesheet_prices itp where im.material_id = 34830 and im.material_id = itp.material_id and company_id = 8720 limit 1"
 
-
-        if {"" == $partner_item_id} {            
-            # Check if we have a partner rebate
-            if {[string match -nocase "*partner*" $discounts]} {
-            	set partner_item_id [db_nextval "im_invoice_items_seq"]
-                set insert_invoice_items_sql "
+        # Check if we have a partner rebate
+        if {[string match -nocase "*partner*" $discounts]} {
+        	set partner_item_id [db_nextval "im_invoice_items_seq"]
+            set insert_invoice_items_sql "
                      INSERT INTO im_invoice_items (
                              item_id, item_name,
                              project_id, invoice_id,
@@ -561,29 +574,28 @@ foreach csv_line_fields $values_list_of_lists {
                              null, '',null,null
              	    )" 
 
-                db_dml insert_invoice_items $insert_invoice_items_sql
-            } 
-            
-        } else {
-            
-            if {[string match -nocase "*partner*" $discounts] == 0 && $partner_discount != "Yes"} {
-                db_dml delete_partner "delete from im_invoice_items where item_id = :partner_item_id"
-            } else {
-                db_dml partner_item "update im_invoice_items set item_name = :partner_material_name, sort_order = 4, price_per_unit = :partner_price, item_material_id = :partner_material_id where item_id = :partner_item_id"
-            }
+            db_dml insert_invoice_items $insert_invoice_items_sql
         }
+    } 
+    
+    if {"" != $partner_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
+        set price_per_unit [format "%.2f" $price_per_unit]
+        set partner_price [format "%.2f" $partner_price]
+        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+    }
         
-        # Handle SCC discount
+    # Handle SCC discount
         
-        set scc_item_id [db_string scc "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id = 34829" -default ""]
+    set scc_item_id [db_string scc "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = 34829" -default ""]
+    if {"" == $scc_item_id && $created_invoice_p == 0} {
         db_1row class_material "select im.material_id as scc_material_id, material_name as scc_material_name, material_uom_id as scc_uom_id, price as scc_price 
                  from im_materials im, im_timesheet_prices itp where im.material_id = 34829 and im.material_id = itp.material_id and company_id = 8720 limit 1"
-        if {"" == $scc_item_id} {
-            # Check if we have a scc rebate
-            if {[string match -nocase "*scc*" $discounts]} {
-            	set scc_item_id [db_nextval "im_invoice_items_seq"]
-                set insert_invoice_items_sql "
+        # Check if we have a scc rebate
+        if {[string match -nocase "*scc*" $discounts]} {
+        	set scc_item_id [db_nextval "im_invoice_items_seq"]
+            set insert_invoice_items_sql "
                      INSERT INTO im_invoice_items (
                              item_id, item_name,
                              project_id, invoice_id,
@@ -603,32 +615,34 @@ foreach csv_line_fields $values_list_of_lists {
                              null, '',null,null
              	    )" 
 
-                db_dml insert_invoice_items $insert_invoice_items_sql
-            } 
-            
-        } else {
-            if {[string match -nocase "*scc*" $discounts] == 0} {
-                db_dml delete "delete form im_invoice_items where item_id = :scc_item_id"
-            } else {
-                db_dml scc_item "update im_invoice_items set item_name = :scc_material_name, sort_order = 5, price_per_unit = :scc_price, item_material_id = :scc_material_id where item_id = :scc_item_id"
-            }
+            db_dml insert_invoice_items $insert_invoice_items_sql            
         }
+    } 
+    
+    if {"" != $scc_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :scc_item_id"
+        set price_per_unit [format "%.2f" $price_per_unit]
+        set scc_price [format "%.2f" $scc_price]
+        if {$scc_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
+    }
+     
+    
+    set bus_material_id ""
+    if {[string match -nocase "*round trip*" $bus_shuttle]} { set bus_material_id 34833}
+    if {[string match -nocase "*one way*" $bus_shuttle]} { set bus_material_id 34832}
         
+    # Handle Bus tickets
+    set bus_item_id [db_string bus "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = :bus_material_id" -default ""]
+    if {"" == $bus_item_id && $created_invoice_p == 0} {
+
         
-        # Handle Bus tickets
-        set bus_material_id ""
-        if {[string match -nocase "*round trip*" $bus_shuttle]} { set bus_material_id 34833}
-        if {[string match -nocase "*one way*" $bus_shuttle]} { set bus_material_id 34832}
-        
-        set bus_item_id [db_string bus "select item_id from im_invoice_items where invoice_id = :invoice_id and 
-            item_material_id = :bus_material_id" -default ""]
-        if {"" == $bus_item_id} {
-            # Check if we have a bus rebate
-            if {"" != $bus_material_id} {
-            	set bus_item_id [db_nextval "im_invoice_items_seq"]
-                db_1row class_material "select material_name as bus_material_name, material_uom_id as bus_uom_id, price as bus_price 
+        # Check if we have a bus rebate
+        if {"" != $bus_material_id} {
+        	set bus_item_id [db_nextval "im_invoice_items_seq"]
+            db_1row class_material "select material_name as bus_material_name, material_uom_id as bus_uom_id, price as bus_price 
                          from im_materials im, im_timesheet_prices itp where im.material_id = :bus_material_id and im.material_id = itp.material_id and company_id = 8720 limit 1"
-                set insert_invoice_items_sql "
+            set insert_invoice_items_sql "
                      INSERT INTO im_invoice_items (
                              item_id, item_name,
                              project_id, invoice_id,
@@ -648,38 +662,36 @@ foreach csv_line_fields $values_list_of_lists {
                              null, '',null,null
              	    )" 
 
-                db_dml insert_invoice_items $insert_invoice_items_sql
-            } 
-            
-        } else {
-            if {"" == $bus_material_id} {
-                db_dml delete "delete form im_invoice_items where item_id = :bus_item_id"
-            } else {
-                db_1row class_material "select material_name as bus_material_name, material_uom_id as bus_uom_id, price as bus_price 
-                         from im_materials im, im_timesheet_prices itp where im.material_id = :bus_material_id and im.material_id = itp.material_id and company_id = 8720 limit 1"
-                db_dml bus_item "update im_invoice_items set item_name = :bus_material_name, sort_order = 6, price_per_unit = :bus_price, item_material_id = :bus_material_id where item_id = :bus_item_id"
-            }
-        }
+            db_dml insert_invoice_items $insert_invoice_items_sql
+        } 
+    } 
+    
+    if {"" != $bus_item_id} {
+        # Compare the values
+        db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :bus_item_id"
+        set price_per_unit [format "%.2f" $price_per_unit]
+        set bus_shuttle__price [format "%.2f" [expr $bus_shuttle__price / "1.19"]]
+        if {$bus_shuttle__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "BUS :: $invoice_id :: $price_per_unit - $bus_shuttle__price :: $item_units"}    
+    } 
         
-        # Update the total amount
-        set total_amount [db_string total "select sum(round(item_units*price_per_unit,2)+round(item_units*price_per_unit*cb.aux_int1/100,2))
+    # Update the total amount
+    set total_amount [db_string total "select sum(round(item_units*price_per_unit,2)+round(item_units*price_per_unit*cb.aux_int1/100,2))
                                                  from im_invoice_items ii, im_categories ca, im_categories cb, im_materials im 
                                                 where invoice_id = :invoice_id
                                                   and ca.category_id = material_type_id
                                                   and ii.item_material_id = im.material_id
                                                   and ca.aux_int2 = cb.category_id"]
-        set total_net_amount [db_string total "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"]
+    
+    set total_net_amount [db_string total "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"]
         
 #        set total_amount [expr $total_net_amount + $total_vat_amount]
 #        append total_amount 0
-        if {$total_amount eq $total_cost} {
-            db_dml update_invoice {update im_costs set amount = :total_net_amount where cost_id = :invoice_id}
-            intranet_collmex::update_customer_invoice -invoice_id $invoice_id        
-        } else {
-            ds_comment "$first_name $last_name :: $total_cost :: $total_amount"
-        } 
-    }
-    
+    if {$total_amount eq $total_cost} {
+        db_dml update_invoice {update im_costs set amount = :total_net_amount where cost_id = :invoice_id}
+#        intranet_collmex::update_customer_invoice -invoice_id $invoice_id        
+    } else {
+        ds_comment "ERROR with total amount $first_name $last_name :: $total_cost :: $total_amount"
+    }     
 }
 
 # Remove all permission related entries in the system cache
