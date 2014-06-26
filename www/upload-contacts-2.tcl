@@ -370,11 +370,11 @@ foreach csv_line_fields $values_list_of_lists {
 
     set classes_item_id [db_string classes "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id in (select material_id from im_materials where material_type_id = 9004) and price_per_unit >0" -default ""]
     set classes [string trimleft $classes "1x "]
-    db_1row class_material "select im.material_id as classes_material_id, material_name as classes_material_name, material_uom_id as classes_uom_id, price as classes_price 
-     from im_materials im, im_timesheet_prices itp where material_nr = :classes and im.material_id = itp.material_id and company_id = 8720 limit 1"
-    if {"" == $classes_item_id && $created_invoice_p == 0} {
-        if {"" != $classes} {
-                        
+    if {"" != $classes} {
+        db_1row class_material "select im.material_id as classes_material_id, material_name as classes_material_name, material_uom_id as classes_uom_id, price as classes_price 
+         from im_materials im, im_timesheet_prices itp where material_nr = :classes and im.material_id = itp.material_id and company_id = 8720 limit 1"
+    
+         if {"" == $classes_item_id && $created_invoice_p == 0} {
              set classes_item_id [db_nextval "im_invoice_items_seq"]
              set insert_invoice_items_sql "
             INSERT INTO im_invoice_items (
@@ -402,7 +402,7 @@ foreach csv_line_fields $values_list_of_lists {
     } 
     
     # Compare the values
-    if {"" != $classes_item_id} {
+    if {"" != $classes_item_id && $classes != ""} {
         db_1row compare "select item_material_id, item_units from im_invoice_items where item_id = :classes_item_id"
         if {$classes_material_id ne $item_material_id && $item_units ne 1.00} {
             ns_write "<li>$company_name CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
@@ -538,12 +538,11 @@ foreach csv_line_fields $values_list_of_lists {
         }
     } 
     
-    if {"" != $partner_item_id} {
+    if {"" != $partner_item_id && [string match -nocase "SCC*" $event_name]} {
         # Compare the values
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
-        set price_per_unit [format "%.2f" $price_per_unit]
-        set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {$partner_discount == "YES" && $item_units ne 1.00} {ns_write "<li>$company_name SCC PARTNER requested but missing :: $invoice_id :: $item_units"}
+        if {$partner_discount != "YES" && $item_units eq 1.00} {ns_write "<li>$company_name SCC PARTNER rebate no longer valid :: $invoice_id :: $item_units"}    
     }
                 
     # Handle Partner discount
@@ -580,12 +579,11 @@ foreach csv_line_fields $values_list_of_lists {
         }
     } 
     
-    if {"" != $partner_item_id} {
+    if {"" != $partner_item_id && [string match -nocase "BCC*" $event_name]} {
         # Compare the values
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
-        set price_per_unit [format "%.2f" $price_per_unit]
-        set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {[string match -nocase "*partner*" $discounts] && $item_units ne 1.00} {ns_write "<li>$company_name BCC Partner requested but missing :: $invoice_id"}    
+        if {![string match -nocase "*partner*" $discounts] && $item_units eq 1.00} {ns_write "<li>$company_name BCC Partner rebate no longer valid :: $invoice_id"}    
     }
         
     # Handle SCC discount
@@ -624,9 +622,8 @@ foreach csv_line_fields $values_list_of_lists {
     if {"" != $scc_item_id} {
         # Compare the values
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :scc_item_id"
-        set price_per_unit [format "%.2f" $price_per_unit]
-        set scc_price [format "%.2f" $scc_price]
-        if {$scc_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
+        if {[string match -nocase "*scc*" $discounts] && $item_units ne 1.00} {ns_write "<li>$company_name SCC Discount requested but missing :: $invoice_id"}    
+        if {![string match -nocase "*scc*" $discounts] && $item_units eq 1.00} {ns_write "<li>$company_name SCC Discount rebate no longer valid :: $invoice_id"}    
     }
      
     
