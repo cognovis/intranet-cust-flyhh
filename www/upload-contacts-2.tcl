@@ -396,6 +396,8 @@ foreach csv_line_fields $values_list_of_lists {
                     null, '',null,null
     	    )" 
             db_dml insert_invoice_items $insert_invoice_items_sql
+            ds_comment "$classes for $classes_price created for company $company_name with ID $invoice_id"
+            
         }
     } 
     
@@ -403,7 +405,7 @@ foreach csv_line_fields $values_list_of_lists {
     if {"" != $classes_item_id} {
         db_1row compare "select item_material_id, item_units from im_invoice_items where item_id = :classes_item_id"
         if {$classes_material_id ne $item_material_id || $item_units ne 1.00} {
-            ds_comment "CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
+            ds_comment "$company_name CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
         }
     }
         
@@ -449,7 +451,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :accom_item_id"
         set acc_room__price [format "%.2f" [expr $acc_room__price / "1.07"]]
         set price_per_unit [format "%.2f" $price_per_unit]
-        if {$acc_room__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "ACCOM :: $invoice_id :: $price_per_unit - $acc_room__price :: $item_units"}    
+        if {$acc_room__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name ACCOM :: $invoice_id :: $price_per_unit - $acc_room__price :: $item_units"}    
     }
         
     # Meals - Parties
@@ -498,7 +500,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :meals_item_id"
         set meals_parties__price [format "%.2f" [expr $meals_parties__price / "1.19"]]
         set price_per_unit [format "%.2f" $price_per_unit]
-        if {$meals_parties__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "MEALS :: $invoice_id :: $price_per_unit - $meals_parties__price :: $item_units"}    
+        if {$meals_parties__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name MEALS :: $invoice_id :: $price_per_unit - $meals_parties__price :: $item_units"}    
     }
     
     set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = 34830" -default ""]
@@ -541,7 +543,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
     }
                 
     # Handle Partner discount
@@ -583,7 +585,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
     }
         
     # Handle SCC discount
@@ -624,7 +626,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :scc_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set scc_price [format "%.2f" $scc_price]
-        if {$scc_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
+        if {$scc_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
     }
      
     
@@ -671,7 +673,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :bus_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set bus_shuttle__price [format "%.2f" [expr $bus_shuttle__price / "1.19"]]
-        if {$bus_shuttle__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "BUS :: $invoice_id :: $price_per_unit - $bus_shuttle__price :: $item_units"}    
+        if {$bus_shuttle__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name BUS :: $invoice_id :: $price_per_unit - $bus_shuttle__price :: $item_units"}    
     } 
         
     # Update the total amount
@@ -688,7 +690,7 @@ foreach csv_line_fields $values_list_of_lists {
 #        append total_amount 0
     if {$total_amount eq $total_cost} {
         db_dml update_invoice {update im_costs set amount = :total_net_amount where cost_id = :invoice_id}
-#        intranet_collmex::update_customer_invoice -invoice_id $invoice_id        
+        intranet_collmex::update_customer_invoice -invoice_id $invoice_id        
     } else {
         ds_comment "ERROR with total amount $first_name $last_name :: $total_cost :: $total_amount"
     }     
