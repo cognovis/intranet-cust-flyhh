@@ -50,8 +50,8 @@ set page_title "Upload Contacts CSV"
 set page_body ""
 set context_bar [im_context_bar $page_title]
 
-set user_is_admin_p [im_is_user_site_wide_or_intranet_admin $current_user_id]
-if {!$user_is_admin_p} {
+set user_is_employee_p [im_user_is_employee_p $current_user_id]
+if {!$user_is_employee_p} {
     ad_return_complaint 1 "You have insufficient privileges to use this page"
     return
 }
@@ -189,7 +189,7 @@ foreach csv_line_fields $values_list_of_lists {
             "Western Australia" {set country_code "au"}
             "Sverige" {set country_code "se"}
             "Italia" {set country_code "it"}
-            default {ds_comment "country missing $country for $first_name $last_name"}
+            default {ns_write "<li>country missing $country for $first_name $last_name</li>"}
         }
     }
     if {"" == $first_name} {
@@ -213,7 +213,7 @@ foreach csv_line_fields $values_list_of_lists {
 			and lower(last_name) = lower(:last_name)" -default ""]
         if {"" != $user_id} {
             # We found the user by first_name, last_name combination
-            ds_comment "Potential Customer Duplicate:: $first_name $last_name with E-Mail :: $email --- Please ammend in the sourcefile or manually create customer"
+            ns_write "<li>Potential Customer Duplicate:: $first_name $last_name with E-Mail :: $email --- Please ammend in the sourcefile or manually create customer"
             continue
         }
     }
@@ -314,7 +314,7 @@ foreach csv_line_fields $values_list_of_lists {
     db_dml update_office "update im_offices set address_line1=:street_address, address_city = :city, address_postal_code = :postal_code, address_country_code = :country_code,  phone = :telephone where office_id = :main_office_id "
 
     if {$total_cost eq "0.00"} {
-        ds_comment "skipping $first_name $last_name"
+        ns_write "<li>skipping $first_name $last_name"
         continue
     }
     
@@ -358,7 +358,7 @@ foreach csv_line_fields $values_list_of_lists {
          )"]
              set created_invoice_p 1
              db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
-             ds_comment "Invoice $invoice_nr created for company $company_name with ID $invoice_id"
+             ns_write "<li>Invoice $invoice_nr created for company $company_name with ID $invoice_id"
              
          }
     }
@@ -396,7 +396,7 @@ foreach csv_line_fields $values_list_of_lists {
                     null, '',null,null
     	    )" 
             db_dml insert_invoice_items $insert_invoice_items_sql
-            ds_comment "$classes for $classes_price created for company $company_name with ID $invoice_id"
+            ns_write "<li>$classes for $classes_price created for company $company_name with ID $invoice_id"
             
         }
     } 
@@ -404,8 +404,8 @@ foreach csv_line_fields $values_list_of_lists {
     # Compare the values
     if {"" != $classes_item_id} {
         db_1row compare "select item_material_id, item_units from im_invoice_items where item_id = :classes_item_id"
-        if {$classes_material_id ne $item_material_id || $item_units ne 1.00} {
-            ds_comment "$company_name CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
+        if {$classes_material_id ne $item_material_id && $item_units ne 1.00} {
+            ns_write "<li>$company_name CLASSES:: $invoice_id :: $classes_material_id - $item_material_id :: $item_units"
         }
     }
         
@@ -451,7 +451,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :accom_item_id"
         set acc_room__price [format "%.2f" [expr $acc_room__price / "1.07"]]
         set price_per_unit [format "%.2f" $price_per_unit]
-        if {$acc_room__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name ACCOM :: $invoice_id :: $price_per_unit - $acc_room__price :: $item_units"}    
+        if {$acc_room__price ne $price_per_unit && $item_units eq 1.00} {ns_write "<li>$company_name ACCOM :: $invoice_id :: $price_per_unit - $acc_room__price :: $item_units"}    
     }
         
     # Meals - Parties
@@ -467,7 +467,7 @@ foreach csv_line_fields $values_list_of_lists {
         set meals_price [format "%.2f" $meals_price]
         
         if {$meals_parties__price ne $meals_price} {
-            ds_comment "Great, different pricing $company_name for meals $meals_parties__price instead of $meals_price"
+            ns_write "<li>Great, different pricing $company_name for meals $meals_parties__price instead of $meals_price"
             set meals_price $meals_parties__price
         }
         
@@ -500,7 +500,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :meals_item_id"
         set meals_parties__price [format "%.2f" [expr $meals_parties__price / "1.19"]]
         set price_per_unit [format "%.2f" $price_per_unit]
-        if {$meals_parties__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name MEALS :: $invoice_id :: $price_per_unit - $meals_parties__price :: $item_units"}    
+        if {$meals_parties__price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name MEALS :: $invoice_id :: $price_per_unit - $meals_parties__price :: $item_units"}    
     }
     
     set partner_item_id [db_string partner "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id = 34830" -default ""]
@@ -543,7 +543,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {$partner_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name SCC PARTNER :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
     }
                 
     # Handle Partner discount
@@ -585,7 +585,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set partner_price [format "%.2f" $partner_price]
-        if {$partner_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
+        if {$partner_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name BCC Partner :: $invoice_id :: $price_per_unit - $partner_price :: $item_units"}    
     }
         
     # Handle SCC discount
@@ -626,7 +626,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :scc_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set scc_price [format "%.2f" $scc_price]
-        if {$scc_price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
+        if {$scc_price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name SCC Discount :: $invoice_id :: $price_per_unit - $scc_price :: $item_units"}    
     }
      
     
@@ -673,7 +673,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :bus_item_id"
         set price_per_unit [format "%.2f" $price_per_unit]
         set bus_shuttle__price [format "%.2f" [expr $bus_shuttle__price / "1.19"]]
-        if {$bus_shuttle__price ne $price_per_unit || $item_units ne 1.00} {ds_comment "$company_name BUS :: $invoice_id :: $price_per_unit - $bus_shuttle__price :: $item_units"}    
+        if {$bus_shuttle__price ne $price_per_unit && $item_units ne 1.00} {ns_write "<li>$company_name BUS :: $invoice_id :: $price_per_unit - $bus_shuttle__price :: $item_units"}    
     } 
         
     # Update the total amount
@@ -692,7 +692,7 @@ foreach csv_line_fields $values_list_of_lists {
         db_dml update_invoice {update im_costs set amount = :total_net_amount where cost_id = :invoice_id}
         intranet_collmex::update_customer_invoice -invoice_id $invoice_id        
     } else {
-        ds_comment "ERROR with total amount $first_name $last_name :: $total_cost :: $total_amount"
+        ns_write "<li>ERROR with total amount $first_name $last_name :: $total_cost :: $total_amount"
     }     
 }
 
