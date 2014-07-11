@@ -373,6 +373,9 @@ foreach csv_line_fields $values_list_of_lists {
 
     set classes_item_id [db_string classes "select item_id from im_invoice_items where invoice_id = :invoice_id and item_material_id in (select material_id from im_materials where material_type_id = 9004) and price_per_unit >0 and item_units > 0 limit 1" -default ""]
     set classes [string trimleft $classes "1x "]
+
+    # Ignore no classes
+    if {$classes == "No Classes"} {set classes ""}
     if {"" != $classes} {
         db_1row class_material "select im.material_id as classes_material_id, material_name as classes_material_name, material_uom_id as classes_uom_id, price as classes_price 
          from im_materials im, im_timesheet_prices itp where material_nr = :classes and im.material_id = itp.material_id and company_id = 8720 limit 1"
@@ -547,8 +550,8 @@ foreach csv_line_fields $values_list_of_lists {
     if {"" != $partner_item_id && [string match -nocase "SCC*" $event_name]} {
         # Compare the values
         db_1row compare "select price_per_unit, item_units from im_invoice_items where item_id = :partner_item_id"
-        if {$partner_discount == "YES" && $item_units ne 1.00} {ns_write "<li>$company_name SCC PARTNER requested but missing :: $invoice_id :: $item_units"}
-        if {$partner_discount != "YES" && $item_units eq 1.00} {ns_write "<li>$company_name SCC PARTNER rebate no longer valid :: $invoice_id :: $item_units"}    
+        if {$partner_discount == "Yes" && $item_units ne 1.00} {ns_write "<li>$company_name SCC PARTNER requested but missing :: $invoice_id :: $item_units"}
+        if {$partner_discount != "Yes" && $item_units eq 1.00} {ns_write "<li>$company_name SCC PARTNER rebate no longer valid :: $invoice_id :: $item_units :: $partner_discount"}    
     }
                 
     # Handle Partner discount
