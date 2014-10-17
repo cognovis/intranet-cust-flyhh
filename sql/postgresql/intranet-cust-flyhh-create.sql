@@ -114,7 +114,7 @@ DECLARE
         p_person_id alias for $1;
         v_name  varchar;
 BEGIN
-        select  first_names || last_name
+        select  first_names || ' ' || last_name
         into    v_name
         from    persons
         where   person_id = p_person_id;
