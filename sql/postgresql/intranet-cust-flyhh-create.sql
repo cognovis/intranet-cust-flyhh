@@ -135,5 +135,13 @@ SELECT im_category_new (104, 'BCC', 'Intranet Project Type');
 SELECT im_category_hierarchy_new (103, 102);
 SELECT im_category_hierarchy_new (104, 102);
 
-
+INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
+SELECT a.attribute_id,v.column1,'edit' 
+FROM (VALUES(102),(103),(104)) v,
+     im_dynfield_attributes a,
+     acs_attributes aa               
+WHERE                                   
+    a.acs_attribute_id = aa.attribute_id
+    and aa.object_type = 'im_project'
+    and also_hard_coded_p = 'f';
 
