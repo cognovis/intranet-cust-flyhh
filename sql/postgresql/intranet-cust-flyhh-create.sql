@@ -1,3 +1,7 @@
+--- @author Neophytos Demetriou
+--- @creation-date 2014-10-15
+--- @last-modified 2014-10-20
+
 select acs_object_type__create_type (
         'im_event_participant',         -- object_type
         'Event Participant',            -- pretty_name
@@ -144,4 +148,7 @@ WHERE
     a.acs_attribute_id = aa.attribute_id
     and aa.object_type = 'im_project'
     and also_hard_coded_p = 'f';
+
+
+SELECT im_dynfield_attribute_new ('im_material', 'project_type_id', 'Project Type', 'category_project_type', 'integer', 'f');
 
