@@ -32,15 +32,15 @@ where object_type = 'im_event_participant';
 
 
 create table im_event_participants (
-        user_id				integer
-                                	constraint im_event_participants_pk
-                                	primary key
-                                	constraint im_event_participants_fk
-                                	references users(user_id),
+    person_id			integer
+                        constraint im_event_participants_pk
+                        primary key
+                        constraint im_event_participants_fk
+                        references users(user_id),
 
 	project_id			integer
-					constraint im_event_participants__project_fk
-					references im_projects(project_id),
+                        constraint im_event_participants__project_fk
+                        references im_projects(project_id),
 
 	--- tracks the status of the participant for that event
         event_participant_status_id     integer not null 
@@ -139,16 +139,47 @@ SELECT im_category_new (104, 'BCC', 'Intranet Project Type');
 SELECT im_category_hierarchy_new (103, 102);
 SELECT im_category_hierarchy_new (104, 102);
 
+--- Configure when to show dynfields when using the added categories
 INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
-SELECT a.attribute_id,v.column1,'edit' 
-FROM (VALUES(102),(103),(104)) v,
-     im_dynfield_attributes a,
-     acs_attributes aa               
+SELECT
+        a.attribute_id,v.column1,'edit' 
+FROM
+        (VALUES(102),(103),(104)) v,
+        im_dynfield_attributes a,
+        acs_attributes aa               
 WHERE                                   
-    a.acs_attribute_id = aa.attribute_id
-    and aa.object_type = 'im_project'
-    and also_hard_coded_p = 'f';
+        a.acs_attribute_id = aa.attribute_id
+        and aa.object_type = 'im_project'
+        and also_hard_coded_p = 'f';
 
+--- viewing a dynfield fails if we do not set the type_category_type
+UPDATE acs_object_types 
+SET type_category_type='Intranet User Type' 
+WHERE object_type='im_event_participant';
 
-SELECT im_dynfield_attribute_new ('im_material', 'project_type_id', 'Project Type', 'category_project_type', 'integer', 'f');
+--- TODO: Create widget per material type (or figure out another way to pass the material_type to the widget)
+--- TODO: material_type to name reference
+SELECT im_dynfield_attribute_new ('im_event_participant', translate(lower(material_type),' ','_'), material_type, 'materials', 'integer', 'f')
+FROM im_material_types;
+
+--- mispelled "accommodation" is due to the way it is written in material_type of the im_material_types table
+ALTER TABLE im_event_participants ADD accomodation integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD discounts integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD other integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD course_income integer REFERENCES im_materials(material_id);
+
+--- ensures that dynfiels are editable and viewable by all user types
+INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
+SELECT 
+        a.attribute_id,c.category_id,'edit' 
+FROM
+        im_categories c, 
+        im_dynfield_attributes a,
+        acs_attributes aa               
+WHERE                                   
+        a.acs_attribute_id = aa.attribute_id
+        and aa.object_type = 'im_event_participant'
+        and also_hard_coded_p = 'f'
+        and category_type='Intranet User Type';
+
 

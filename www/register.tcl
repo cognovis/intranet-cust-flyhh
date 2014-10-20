@@ -19,7 +19,7 @@ set context [ad_context_bar "Registration Form"]
 
 set form_id "registration_form"
 set action_url ""
-set object_type "event_participant" ;# used for appending dynfields to form
+set object_type "im_event_participant" ;# used for appending dynfields to form
 
 ad_form \
     -name $form_id \
@@ -36,37 +36,19 @@ ad_form \
 	}
 }
 
-set company_id "8720"
-
-set sql "
-SELECT
-        material_id,
-        im_material_nr_from_id(material_id) as material
-FROM
-        im_materials
-WHERE
-        project_type_id=:project_type_id
-"
-
-db_foreach material $sql {
-    ad_form -extend -name $form_id \
-	-form [list \
-		   [list "${material_id}:text" \
-			[list label $material]]]
-						       
-}
 
 
-if {0} {
+if {1} {
+
+    # TODO: figure out how to filter materials in the select box for the given material_type dynfield
 
     im_dynfield::append_attributes_to_form \
         -object_type $object_type \
-        -object_subtype_id $project_type_id \
         -form_id $form_id \
         -object_id 0 \
         -advanced_filter_p 0
 
     # Set the form values from the HTTP form variable frame
-    im_dynfield::set_form_values_from_http -form_id $form_id
-    im_dynfield::set_local_form_vars_from_http -form_id $form_id
+    #im_dynfield::set_form_values_from_http -form_id $form_id
+    #im_dynfield::set_local_form_vars_from_http -form_id $form_id
 }
