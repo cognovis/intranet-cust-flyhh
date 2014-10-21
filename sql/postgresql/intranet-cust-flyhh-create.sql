@@ -157,16 +157,6 @@ UPDATE acs_object_types
 SET type_category_type='Intranet User Type' 
 WHERE object_type='im_event_participant';
 
---- TODO: Create widget per material type (or figure out another way to pass the material_type to the widget)
---- TODO: material_type to name reference
-SELECT im_dynfield_attribute_new ('im_event_participant', translate(lower(material_type),' ','_'), material_type, 'materials', 'integer', 'f')
-FROM im_material_types;
-
---- mispelled "accommodation" is due to the way it is written in material_type of the im_material_types table
-ALTER TABLE im_event_participants ADD accomodation integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD discounts integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD other integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD course_income integer REFERENCES im_materials(material_id);
 
 --- ensures that dynfiels are editable and viewable by all user types
 INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
@@ -182,4 +172,81 @@ WHERE
         and also_hard_coded_p = 'f'
         and category_type='Intranet User Type';
 
+
+SELECT im_category_new (9007, 'Food Choice', 'Intranet Material Type');
+SELECT im_category_new (9008, 'Bus Options', 'Intranet Material Type');
+SELECT im_category_new (9009, 'Levels', 'Intranet Material Type');
+
+--- TODO: check whether it is best to modify the material_type_id or create new materials
+UPDATE im_materials SET material_type_id=9007 WHERE material_id IN (33313,33314);
+UPDATE im_materials SET material_type_id=9008 WHERE material_id IN (34832,34833);
+
+SELECT im_dynfield_widget__new (
+        null,                                   -- widget_id
+        'im_dynfield_widget',                   -- object_type
+        now(),                                  -- creation_date
+        null,                                   -- creation_user
+        null,                                   -- creation_ip
+        null,                                   -- context_id
+
+        'event_participant_accommodation',      -- widget_name
+        '#intranet-cust-flyhh.Accommodation#',  -- pretty_name
+        '#intranet-cust-flyhh.Accommodation#',  -- pretty_plural
+        10007,                                  -- storage_type_id
+        'integer',                              -- acs_datatype
+        'generic_sql',                          -- widget
+        'integer',                              -- sql_datatype
+
+        --- category 9002 was mispelled as "Accomodation" when it was created in the im_material_types table
+        '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Accomodation'')}}}'
+);
+
+
+SELECT im_dynfield_widget__new (
+        null,                                   -- widget_id
+        'im_dynfield_widget',                   -- object_type
+        now(),                                  -- creation_date
+        null,                                   -- creation_user
+        null,                                   -- creation_ip
+        null,                                   -- context_id
+
+        'event_participant_food_choice',        -- widget_name
+        '#intranet-cust-flyhh.Food_Choice#',    -- pretty_name
+        '#intranet-cust-flyhh.Food_Choices#',   -- pretty_plural
+        10007,                                  -- storage_type_id
+        'integer',                              -- acs_datatype
+        'generic_sql',                          -- widget
+        'integer',                              -- sql_datatype
+        '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Food Choice'')}}}'
+);
+
+
+SELECT im_dynfield_widget__new (
+        null,                                   -- widget_id
+        'im_dynfield_widget',                   -- object_type
+        now(),                                  -- creation_date
+        null,                                   -- creation_user
+        null,                                   -- creation_ip
+        null,                                   -- context_id
+
+        'event_participant_bus_options',        -- widget_name
+        '#intranet-cust-flyhh.Bus_Options#',    -- pretty_name
+        '#intranet-cust-flyhh.Bus_Options#',    -- pretty_plural
+        10007,                                  -- storage_type_id
+        'integer',                              -- acs_datatype
+        'generic_sql',                          -- widget
+        'integer',                              -- sql_datatype
+        '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Bus Options'')}}}'
+);
+
+SELECT im_dynfield_attribute_new ('im_event_participant', 'accommodation', 'Accommodation', 'event_participant_accommodation', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'food_choice', 'Food Choice', 'event_participant_food_choice', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_options', 'Bus Options', 'event_participant_bus_options', 'integer', 'f');
+
+ALTER TABLE im_event_participants ADD accommodation integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD food_choice integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD bus_options integer REFERENCES im_materials(material_id);
+--- ALTER TABLE im_event_participants ADD discounts integer REFERENCES im_materials(material_id);
+--- ALTER TABLE im_event_participants ADD other integer REFERENCES im_materials(material_id);
+--- ALTER TABLE im_event_participants ADD course_income integer REFERENCES im_materials(material_id);
 
