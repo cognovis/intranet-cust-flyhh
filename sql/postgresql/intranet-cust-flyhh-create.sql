@@ -239,14 +239,26 @@ SELECT im_dynfield_widget__new (
         '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Bus Options'')}}}'
 );
 
-SELECT im_dynfield_attribute_new ('im_event_participant', 'accommodation', 'Accommodation', 'event_participant_accommodation', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'food_choice', 'Food Choice', 'event_participant_food_choice', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_options', 'Bus Options', 'event_participant_bus_options', 'integer', 'f');
-
 ALTER TABLE im_event_participants ADD accommodation integer REFERENCES im_materials(material_id);
 ALTER TABLE im_event_participants ADD food_choice integer REFERENCES im_materials(material_id);
 ALTER TABLE im_event_participants ADD bus_options integer REFERENCES im_materials(material_id);
 --- ALTER TABLE im_event_participants ADD discounts integer REFERENCES im_materials(material_id);
 --- ALTER TABLE im_event_participants ADD other integer REFERENCES im_materials(material_id);
 --- ALTER TABLE im_event_participants ADD course_income integer REFERENCES im_materials(material_id);
+ALTER TABLE im_event_participants ADD payment_type integer REFERENCES im_categories(category_id);
+ALTER TABLE im_event_participants ADD payment_term integer REFERENCES im_categories(category_id);
+
+SELECT im_dynfield_attribute_new ('im_event_participant', 'accommodation', 'Accommodation', 'event_participant_accommodation', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'food_choice', 'Food Choice', 'event_participant_food_choice', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_options', 'Bus Options', 'event_participant_bus_options', 'integer', 'f');
+
+--- fixed fields
+--- lead_p
+--- partner_email
+--- roommates
+--- accept_terms_p
+
+--- dynfields with existing widgets
+SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_type', 'Payment Method', 'category_payment_method', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_term', 'Payment Terms', 'payment_term', 'integer', 'f');
 
