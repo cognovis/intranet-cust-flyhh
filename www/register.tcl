@@ -38,17 +38,33 @@ ad_form \
 
 
 
-if {1} {
 
-    # TODO: figure out how to filter materials in the select box for the given material_type dynfield
+# TODO: figure out how to filter materials in the select box for the given material_type dynfield
 
-    im_dynfield::append_attributes_to_form \
-        -object_type $object_type \
-        -form_id $form_id \
-        -object_id 0 \
-        -advanced_filter_p 0
+im_dynfield::append_attributes_to_form \
+    -object_type $object_type \
+    -form_id $form_id \
+    -object_id 0 \
+    -advanced_filter_p 0
 
-    # Set the form values from the HTTP form variable frame
-    #im_dynfield::set_form_values_from_http -form_id $form_id
-    #im_dynfield::set_local_form_vars_from_http -form_id $form_id
+# Set the form values from the HTTP form variable frame
+im_dynfield::set_form_values_from_http -form_id $form_id
+im_dynfield::set_local_form_vars_from_http -form_id $form_id
+
+ad_form -extend -name $form_id -form {
+    {lead_p:text(select)
+        {label "Lead/Follow"}
+        {options {{Lead t} {Follow f}}}}
+
+    {partner_email:text
+        {label "Registration Partner Email"}}
+
+    {roommates:text(textarea)
+        {label "Roommates"}}
+
+    {accept_terms_p:boolean(checkbox)
+        {label "Terms & Conditions"}
+        {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
+
 }
+
