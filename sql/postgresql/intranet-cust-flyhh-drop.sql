@@ -14,7 +14,7 @@ where widget_name in ('event_participation_accommodation','event_participant_foo
 
 drop function im_event_participant__name(integer);
 drop function im_event_participant__new(
-    integer, varchar, timestamptz, integer, varchar, integer,
+    integer, varchar, varchar, varchar, varchar,
 	integer, integer, integer,
     boolean, varchar, boolean,
     integer, integer, integer, integer,

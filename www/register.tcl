@@ -7,6 +7,7 @@ ad_page_contract {
     @last-modified 2014-10-20
     @cvs-id $Id$
 } {
+    participant_id:integer,optional,notnull
 } -properties {
 } -validate {
 } -errors {
@@ -24,19 +25,21 @@ ad_form \
     -name $form_id \
     -action $action_url \
     -form {
-	user_id:key(acs_object_id_seq)
 
-    {email:text
-        {label "Email"}}
+        participant_id:key(acs_object_id_seq)
 
-	{first_name:text
-	    {label "First Name"}
-	}
-	
-	{last_name:text
-	    {label "Last Name"}
-	}
-}
+        {email:text
+            {label "Email"}}
+
+        {first_names:text
+            {label "First Name"}
+        }
+        
+        {last_name:text
+            {label "Last Name"}
+        }
+
+    }
 
 
 
@@ -54,6 +57,7 @@ im_dynfield::set_form_values_from_http -form_id $form_id
 im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
 ad_form -extend -name $form_id -form {
+
     {lead_p:text(select)
         {label "Lead/Follow"}
         {options {{Lead t} {Follow f}}}}
@@ -68,5 +72,65 @@ ad_form -extend -name $form_id -form {
         {label "Terms & Conditions"}
         {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
 
+} -new_request {
+
+
+} -edit_request {
+
+    set sql "select * from im_event_participants ep inner join cc_users cc on (cc.user_id=ep.person_id) where participant_id=:participant_id"
+    db_1row event_participant $sql
+
+    set form_elements [template::form::get_elements $form_id]
+    foreach element $form_elements {
+        if { [info exists $element] } {
+            set value [set $element]
+            template::element::set_value $form_id $element $value
+        }
+    }
+
+} -on_submit {
+    
+    if { [ad_form_new_p -key participant_id] } {
+     
+        set creation_ip [ns_conn peeraddr]
+        set project_id ""
+        set status_id ""
+        set type_id ""
+        set level ""
+
+        db_exec_plsql insert_participant "select im_event_participant__new(
+
+            :participant_id,
+
+            :email,
+            :first_names,
+            :last_name,
+            :creation_ip,
+
+            :project_id,
+            :status_id,
+            :type_id,
+
+            :lead_p,
+            :partner_email,
+            :accepted_terms_p,
+
+            :accommodation,
+            :food_choice,
+            :bus_option,
+            :level,
+            
+            :payment_type,
+            :payment_term
+
+        )"
+    } else {
+        error "pl/pgsql function im_event_participant__update not implemented yet"
+    }
+
+} -after_submit {
+    ns_return 200 text/html "after_submit"
 }
+
+
 
