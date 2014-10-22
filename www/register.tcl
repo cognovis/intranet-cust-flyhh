@@ -7,7 +7,6 @@ ad_page_contract {
     @last-modified 2014-10-20
     @cvs-id $Id$
 } {
-    project_type_id:integer
 } -properties {
 } -validate {
 } -errors {
@@ -26,6 +25,9 @@ ad_form \
     -action $action_url \
     -form {
 	user_id:key(acs_object_id_seq)
+
+    {email:text
+        {label "Email"}}
 
 	{first_name:text
 	    {label "First Name"}
@@ -57,12 +59,12 @@ ad_form -extend -name $form_id -form {
         {options {{Lead t} {Follow f}}}}
 
     {partner_email:text
-        {label "Registration Partner Email"}}
+        {label "Partner Email"}}
 
     {roommates:text(textarea)
         {label "Roommates"}}
 
-    {accept_terms_p:boolean(checkbox)
+    {accepted_terms_p:boolean(checkbox)
         {label "Terms & Conditions"}
         {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
 

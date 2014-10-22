@@ -8,8 +8,8 @@ select acs_object_type__create_type (
         'Event Participants',           -- pretty_plural
         'im_biz_object',                -- supertype
         'im_event_participants',        -- table_name
-        'person_id',      		-- id_column
-        'intranet-cust-flyhh', 		-- package_name
+        'person_id',      		        -- id_column
+        'intranet-cust-flyhh', 		    -- package_name
         'f',                            -- abstract_p
         null,                           -- type_extension_table
         'im_event_participant__name'    -- name_method
@@ -43,18 +43,48 @@ create table im_event_participants (
                         references im_projects(project_id),
 
 	--- tracks the status of the participant for that event
-        event_participant_status_id     integer not null 
-                                        constraint im_event_participants__status_fk 
-                                        references im_categories,
+    event_participant_status_id     integer not null 
+                                    constraint im_event_participants__status_fk 
+                                    references im_categories,
 
 	--- define the dynfields which are supposed to show up
 	--- we use the aux_int1 field of the event_participant_type_id (aka: category_id) 
 	--- to link the event_participant type to the project_type_id 
 	--- (otherwise we would not know which dynfields to show for a project).
-        event_participant_type_id     integer not null 
-                                      constraint im_event_participants__type_fk 
-                                      references im_categories
+    event_participant_type_id     integer not null 
+                                  constraint im_event_participants__type_fk 
+                                  references im_categories,
 
+    accommodation       integer
+                        constraint im_event_participants__accommodation_fk
+                        references im_materials(material_id),
+
+    food_choice         integer
+                        constraint im_event_participants__food_choice_fk
+                        references im_materials(material_id),
+    
+    bus_option          integer
+                        constraint im_event_participants__bus_option_fk
+                        references im_materials(material_id),
+    
+
+    payment_type        integer
+                        constraint im_event_participants__payment_type_fk
+                        references im_categories(category_id),
+    
+    payment_term        integer
+                        constraint im_event_participants__payment_term_fk
+                        references im_categories(category_id),
+    
+    lead_p              boolean not null default 'f',
+
+    partner_email       varchar(250),
+
+    partner_person_id   integer
+                        constraint im_event_participants__partner_person_id_fk
+                        references persons(person_id),
+
+    accepted_terms_p    boolean not null default 'f'
 
 );
 
@@ -66,25 +96,49 @@ create table im_event_participants (
 -- Event Participant Package
 -- ------------------------------------------------------------
 
-create or replace function im_event_participants__new (
-        integer, varchar, timestamptz, integer, varchar, integer,
-	integer, integer, integer
+create or replace function im_event_participant__new (
+    integer, varchar, timestamptz, integer, varchar, integer,
+	integer, integer, integer,
+    boolean, varchar, boolean,
+    integer, integer, integer, integer,
+    integer, integer
 ) returns integer as '
 DECLARE
-        p_person_id     alias for $1;
-        p_object_type   alias for $2;
-        p_creation_date alias for $3;
-        p_creation_user alias for $4;
-        p_creation_ip   alias for $5;
-        p_context_id    alias for $6;
+        p_email                 alias for $1;
+        p_object_type           alias for $2;
+        p_creation_date         alias for $3;
+        p_creation_user         alias for $4;
+        p_creation_ip           alias for $5;
+        p_context_id            alias for $6;
 
-        p_project_id   alias for $7;
-        p_status_id    alias for $8;
-        p_type_id      alias for $9;
+        p_project_id            alias for $7;
+        p_status_id             alias for $8;
+        p_type_id               alias for $9;
 
-        v_person_id    integer;
+        p_lead_p                alias for $10;
+        p_partner_email         alias for $11;
+        p_accepted_terms_p      alias for $12;
+
+        p_accommodation         alias for $13;
+        p_food_choice           alias for $14;
+        p_bus_options           alias for $15;
+        p_level                 alias for $16;
+
+        p_payment_type          alias for $17;
+        p_payment_term          alias for $18;
+
+        v_partner_person_id     integer;
+        v_person_id             integer;
 BEGIN
-        v_person_id := acs_object__new (
+
+        select person_id into v_person_id
+        from users where email=p_email;
+
+        if v_person_id is null then
+            select acs_object_id_seq.nextval into v_person_id; 
+        end if;
+
+        v_person_id := im_biz_object__new (
                 p_person_id,
                 p_object_type,
                 p_creation_date,
@@ -93,22 +147,55 @@ BEGIN
                 p_context_id
         );
 
-        insert into im_biz_objects (object_id) values (v_person_id);
+        select user_id into v_partner_person_id 
+        from users where email=p_partner_email;
+
 
         insert into im_event_participants (
-                person_id, 
-		project_id,
-		event_participant_status_id,
-		event_participant_type_id
-        ) values (
-                v_person_id, 
-		p_project_id,
-		p_event_participant_status_id,
-		p_event_participant_type_id
-        );
-        return v_person_id;
-end;' language 'plpgsql';
 
+            person_id, 
+            project_id,
+            event_participant_status_id,
+            event_participant_type_id,
+
+            lead_p,
+            partner_email,
+            partner_person_id,
+            accepted_terms_p,
+
+            accommodation,
+            food_choice,
+            bus_option,
+            level,
+
+            payment_type,
+            payment_term
+
+        ) values (
+
+            v_person_id, 
+            p_project_id,
+            p_event_participant_status_id,
+            p_event_participant_type_id,
+
+            p_lead_p,
+            p_partner_email,
+            p_partner_person_id,
+            p_accepted_terms_p,
+
+            p_accommodation,
+            p_food_choice,
+            p_bus_option,
+            p_level,
+
+            p_payment_type,
+            p_payment_term
+
+        );
+
+        return v_person_id;
+
+end;' language 'plpgsql';
 
 
 
@@ -118,7 +205,7 @@ DECLARE
         p_person_id alias for $1;
         v_name  varchar;
 BEGIN
-        select  first_names || ' ' || last_name
+        select  first_names || '' '' || last_name
         into    v_name
         from    persons
         where   person_id = p_person_id;
@@ -126,51 +213,36 @@ BEGIN
         return v_name;
 end;' language 'plpgsql';
 
---- We use the task_type_id referencing the project_type_id from the project which we create for the event.
---- We have one project type called „Castle Camp“ with two sub categories „SCC“ and „BCC“. 
---- When we create the event, we will have a project which then has the project type of either „SCC“ or „BCC“. 
---- Materials which can be used for both (e.g. the accommodation materials) will then have a the task_type_id 
---- of the „Castle Camp“ category, whereas the other ones have the one specific to them. 
+-- We use the task_type_id referencing the project_type_id from the project which we create for the event.
+-- We have one project type called „Castle Camp“ with two sub categories „SCC“ and „BCC“. 
+-- When we create the event, we will have a project which then has the project type of either „SCC“ or „BCC“. 
+-- Materials which can be used for both (e.g. the accommodation materials) will then have a the task_type_id 
+-- of the „Castle Camp“ category, whereas the other ones have the one specific to them. 
 
-SELECT im_category_new (102, 'Castle Camp', 'Intranet Project Type');
-SELECT im_category_new (103, 'SCC', 'Intranet Project Type');
-SELECT im_category_new (104, 'BCC', 'Intranet Project Type');
+-- SELECT im_category_new (102, 'Castle Camp', 'Intranet Project Type');
+-- SELECT im_category_new (103, 'SCC', 'Intranet Project Type');
+-- SELECT im_category_new (104, 'BCC', 'Intranet Project Type');
 
-SELECT im_category_hierarchy_new (103, 102);
-SELECT im_category_hierarchy_new (104, 102);
+-- SELECT im_category_hierarchy_new (103, 102);
+-- SELECT im_category_hierarchy_new (104, 102);
 
---- Configure when to show dynfields when using the added categories
-INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
-SELECT
-        a.attribute_id,v.column1,'edit' 
-FROM
-        (VALUES(102),(103),(104)) v,
-        im_dynfield_attributes a,
-        acs_attributes aa               
-WHERE                                   
-        a.acs_attribute_id = aa.attribute_id
-        and aa.object_type = 'im_project'
-        and also_hard_coded_p = 'f';
+-- Configure when to show dynfields when using the added categories
+-- INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
+-- SELECT
+--        a.attribute_id,v.column1,'edit' 
+-- FROM
+--         (VALUES(102),(103),(104)) v,
+--         im_dynfield_attributes a,
+--         acs_attributes aa               
+-- WHERE                                   
+--         a.acs_attribute_id = aa.attribute_id
+--         and aa.object_type = 'im_project'
+--         and also_hard_coded_p = 'f';
 
---- viewing a dynfield fails if we do not set the type_category_type
+-- viewing a dynfield fails if we do not set the type_category_type
 UPDATE acs_object_types 
 SET type_category_type='Intranet User Type' 
 WHERE object_type='im_event_participant';
-
-
---- ensures that dynfiels are editable and viewable by all user types
-INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
-SELECT 
-        a.attribute_id,c.category_id,'edit' 
-FROM
-        im_categories c, 
-        im_dynfield_attributes a,
-        acs_attributes aa               
-WHERE                                   
-        a.acs_attribute_id = aa.attribute_id
-        and aa.object_type = 'im_event_participant'
-        and also_hard_coded_p = 'f'
-        and category_type='Intranet User Type';
 
 
 SELECT im_category_new (9007, 'Food Choice', 'Intranet Material Type');
@@ -239,26 +311,29 @@ SELECT im_dynfield_widget__new (
         '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Bus Options'')}}}'
 );
 
-ALTER TABLE im_event_participants ADD accommodation integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD food_choice integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD bus_options integer REFERENCES im_materials(material_id);
---- ALTER TABLE im_event_participants ADD discounts integer REFERENCES im_materials(material_id);
---- ALTER TABLE im_event_participants ADD other integer REFERENCES im_materials(material_id);
---- ALTER TABLE im_event_participants ADD course_income integer REFERENCES im_materials(material_id);
-ALTER TABLE im_event_participants ADD payment_type integer REFERENCES im_categories(category_id);
-ALTER TABLE im_event_participants ADD payment_term integer REFERENCES im_categories(category_id);
 
 SELECT im_dynfield_attribute_new ('im_event_participant', 'accommodation', 'Accommodation', 'event_participant_accommodation', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('im_event_participant', 'food_choice', 'Food Choice', 'event_participant_food_choice', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_options', 'Bus Options', 'event_participant_bus_options', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_option', 'Bus Option', 'event_participant_bus_options', 'integer', 'f');
+-- SELECT im_dynfield_attribute_new ('im_event_participant', 'level', 'Levels', 'event_participant_levels', 'integer', 'f');
 
---- fixed fields
---- lead_p
---- partner_email
---- roommates
---- accept_terms_p
-
---- dynfields with existing widgets
+-- dynfields with existing widgets
 SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_type', 'Payment Method', 'category_payment_method', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_term', 'Payment Terms', 'payment_term', 'integer', 'f');
+
+-- ensures that dynfiels are editable and viewable by all user types
+--INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
+-- SELECT 
+--        a.attribute_id,c.category_id,'edit' 
+-- FROM
+--         im_categories c, 
+--        im_dynfield_attributes a,
+--        acs_attributes aa               
+-- WHERE                                   
+--        a.acs_attribute_id = aa.attribute_id
+--        and aa.object_type = 'im_event_participant'
+--        and also_hard_coded_p = 'f'
+--        and category_type='Intranet User Type';
+
+
 
