@@ -31,10 +31,16 @@ set form_id "registration_form"
 set action_url ""
 set object_type "im_event_participant" ;# used for appending dynfields to form
 
+if { [exists_and_not_null participant_id] } {
+    set mode display
+} else {
+    set mode edit
+}
+
 ad_form \
     -name $form_id \
     -action $action_url \
-    -mode display \
+    -mode $mode \
     -form {
 
         participant_id:key(acs_object_id_seq)
@@ -85,6 +91,23 @@ ad_form -extend -name $form_id -form {
         {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
 
 } -new_request {
+
+    if { [set user_id [ad_conn user_id]] } {
+
+        # If a registered user who is already registered for this event wants to register anew, redirect to edit the registration page
+        set sql "select participant_id from im_event_participants where person_id=:user_id and project_id=:project_id"
+        set exists_participant_id [db_string registration_exists $sql -default ""]
+        if { $exists_participant_id ne {} } {
+            ad_returnredirect [export_vars -base registration { project_id { participant_id $exists_participant_id } }]
+            return
+        }
+
+        # If a registered user who already has information in the system registers for a new event, pre fill the known information.
+        set sql "select first_names, last_name, email from cc_users where user_id=:user_id"
+        db_1row user_info $sql
+
+
+    }
 
 
 } -edit_request {
@@ -162,7 +185,7 @@ ad_form -extend -name $form_id -form {
     }
 
 } -after_submit {
-    ad_returnredirect register?participant_id=${participant_id}
+    ad_returnredirect [export_vars -base registration {participant_id}]
 }
 
 
