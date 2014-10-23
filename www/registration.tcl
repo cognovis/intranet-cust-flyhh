@@ -170,7 +170,6 @@ ad_form -extend -name $form_id -form {
             set roommate_emails [lsearch -all -inline -not [split $roommates ",| \t\n\r"] {}]
 
             foreach roommate_email $roommate_emails {
-                ns_log notice "--->>> email=$roommate_email"
                 db_exec_plsql insert_roommate "select im_event_roommate__new(
                     :participant_id,
                     :project_id,

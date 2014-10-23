@@ -482,3 +482,153 @@ select im_project__new(
     102,            -- project_type_id,
     11700           -- project_status_id
   );
+
+
+create or replace function __inline0()
+returns boolean as'
+declare
+    v_view_id integer;
+begin
+
+    v_view_id = nextval(''im_views_seq'');
+
+    insert into im_views(
+        view_id, 
+        view_name, 
+        view_status_id, 
+        view_type_id, 
+        sort_order, 
+        view_sql, 
+        view_label
+    ) values (
+        v_view_id,
+        ''event_participants_list'',
+        null,                       -- view_status_id
+        1400,                       -- view_type_id / ObjectList / Intranet DynView Type
+        null,                       -- sort_order
+        null,                       -- view_sql
+        ''Event Participants List'' -- view_label 
+    );
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        nextval(''im_view_columns_seq''),
+        v_view_id,
+        NULL,
+        ''accommodation'',
+        ''$accommodation'',
+        ''im_name_from_id(accommodation) as accommodation'',
+        '''',
+        1,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        nextval(''im_view_columns_seq''),
+        v_view_id,
+        NULL,
+        ''food_choice'',
+        ''$food_choice'',
+        ''im_name_from_id(food_choice) as food_choice'',
+        '''',
+        1,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        nextval(''im_view_columns_seq''),
+        v_view_id,
+        NULL,
+        ''bus_option'',
+        ''$bus_option'',
+        ''im_name_from_id(bus_option) as bus_option'',
+        '''',
+        1,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        nextval(''im_view_columns_seq''),
+        v_view_id,
+        NULL,
+        ''payment_type'',
+        ''$payment_type'',
+        ''im_name_from_id(payment_type) as payment_type'',
+        '''',
+        1,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        nextval(''im_view_columns_seq''),
+        v_view_id,
+        NULL,
+        ''payment_term'',
+        ''$payment_term'',
+        ''im_name_from_id(payment_term) as payment_term'',
+        '''',
+        1,
+        ''''
+    );
+
+
+    return true;
+
+end' language 'plpgsql';
+
+select __inline0();
+drop function __inline0();
+

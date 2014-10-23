@@ -1,3 +1,5 @@
+delete from im_view_columns where view_id=(select view_id from im_views where view_name='event_participants_list');
+delete from im_views where view_name='event_participants_list';
 delete from im_dynfield_type_attribute_map where attribute_id in (
     select a.attribute_id 
     from im_dynfield_attributes a inner join acs_attributes aa on (a.acs_attribute_id=aa.attribute_id) 
