@@ -32,16 +32,16 @@ where object_type = 'im_event_participant';
 
 
 create table im_event_participants (
-    participant_id      integer
+    participant_id      integer not null
                         constraint im_event_participants_pk
                         primary key,
 
-    person_id			integer
+    person_id			integer not null
                         constraint im_event_participants_person_id_fk
                         references persons(person_id),
 
     -- one project per event 
-	project_id			integer
+	project_id			integer not null
                         constraint im_event_participants__project_fk
                         references im_projects(project_id),
 
@@ -96,6 +96,30 @@ create table im_event_participants (
 
 );
 
+-- event participant roommates map
+create table im_event_roommates (
+
+    participant_id      integer not null
+                        constraint im_event_roommates__participant_id_fk
+                        references im_event_participants(participant_id),
+
+    -- project_id is available via participant_id but convenient to have it here
+	project_id			integer not null
+                        constraint im_event_participants__project_fk
+                        references im_projects(project_id),
+    
+    roommate_email      varchar(250) not null,
+
+    roommate_person_id  integer
+                        constraint im_event_roommates__person_id_fk
+                        references persons(person_id),
+
+    roommate_id         integer
+                        constraint im_event_roommates__roommate_id_fk
+                        references im_event_participants(participant_id)
+
+);
+
 -- Optional Indices for larger systems:
 -- create index im_event_participants_status_id_idx on im_event_participants(event_participant_status_id);
 -- create index im_event_participants_type_id_idx on im_event_participants(event_participant_type_id);
@@ -104,7 +128,7 @@ create table im_event_participants (
 -- Event Participant Package
 -- ------------------------------------------------------------
 
--- im_biz_object__new is illdefined in dump for flyhh, 
+-- im_biz_object__new is ill-defined in dump for flyhh, 
 -- even though it is correct in intranet-biz-objects.sql (intranet-core)
 create or replace function im_biz_object__new (integer,varchar,timestamptz,integer,varchar,integer)
 returns integer as '
@@ -186,6 +210,9 @@ BEGIN
                 p_last_name,
                 null                    -- context_id
             );
+
+            -- TODO: create user account
+
         end if;
 
         v_participant_id := im_biz_object__new (
@@ -246,6 +273,27 @@ BEGIN
 
         );
 
+        -- Fill-in missing info in the roommates table for this event.
+        --
+        -- Note: We plan to show a list of roommates which have not registered
+        -- for the event so filtering by project_id ensures that we will
+        -- not fill-in the info when the person registers for another event
+        -- and, ditto for partner_person_id.
+        --
+        update im_event_roommates set
+            roommate_person_id=v_person_id,
+            roommate_id=v_participant_id
+        where
+            roommate_email=p_email
+            and project_id=p_project_id;
+
+        -- update partner_person_id for this event
+        update im_event_participants set
+            partner_person_id=v_partner_person_id
+        where
+            partner_email=p_email
+            and project_id=p_project_id;
+
         return v_person_id;
 
 end;' language 'plpgsql';
@@ -265,6 +313,35 @@ BEGIN
 
         return v_name;
 end;' language 'plpgsql';
+
+
+create or replace function im_event_roommate__new (
+    integer, integer, varchar
+) returns boolean as '
+declare
+    p_participant_id    alias for $1;
+    p_project_id        alias for $2;
+    p_roommate_email    alias for $3;
+begin
+
+    insert into im_event_roommates(
+        participant_id,
+        project_id,
+        roommate_email,
+        roommate_person_id,
+        roommate_id
+    ) values (
+        p_participant_id,
+        p_project_id,
+        p_roommate_email,
+        (select party_id from parties where email=p_roommate_email),
+        (select participant_id from im_event_participants where project_id=p_project_id and person_id=(select party_id from parties where email=p_roommate_email))
+    );
+
+    return true;
+
+end;' language 'plpgsql';
+
 
 -- We use the task_type_id referencing the project_type_id from the project which we create for the event.
 -- We have one project type called „Castle Camp“ with two sub categories „SCC“ and „BCC“. 
@@ -389,4 +466,19 @@ SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_term', 'Payme
 --        and category_type='Intranet User Type';
 
 
-
+-- FOR DEBUGGING/DEVELOPMENT PURPOSES ONLY
+select im_project__new(
+    null,           -- project_id
+    'im_project',   -- object_type
+    now(),          -- creation_date
+    null,           -- creation_user
+    null,           -- creation_ip
+    null,           -- context_id
+    'some project', -- project_name
+    '2014_0001',    -- project_nr
+    'some project', -- project_path
+    null,           -- parent_id
+    8720,           -- company_id
+    102,            -- project_type_id,
+    11700           -- project_status_id
+  );

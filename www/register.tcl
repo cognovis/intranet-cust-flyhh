@@ -4,15 +4,25 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-10-20
+    @last-modified 2014-10-23
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
+    token:optional,notnull
 } -properties {
 } -validate {
 } -errors {
 }
 
+# TODO: token parameter is not meant to be optional
+# it is going to be a signed key that helps us extract
+# the project_id and it prevents sequential access
+# to event registration pages. For debugging purposes,
+# we use an arbitrary project_id that we create for
+# company 8720, i.e. Flying Hamburger Events UG.
+#
+set sql "select project_id from im_projects where project_type_id=102 and company_id=8720 limit 1"
+set project_id [db_string some_project_id $sql]
 
 set page_title "Registration Form"
 set context [ad_context_bar "Registration Form"]
@@ -24,6 +34,7 @@ set object_type "im_event_participant" ;# used for appending dynfields to form
 ad_form \
     -name $form_id \
     -action $action_url \
+    -mode display \
     -form {
 
         participant_id:key(acs_object_id_seq)
@@ -66,7 +77,8 @@ ad_form -extend -name $form_id -form {
         {label "Partner Email"}}
 
     {roommates:text(textarea)
-        {label "Roommates"}}
+        {label "Roommates"}
+        {html "rows 4 cols 30"}}
 
     {accepted_terms_p:boolean(checkbox)
         {label "Terms & Conditions"}
@@ -79,6 +91,12 @@ ad_form -extend -name $form_id -form {
 
     set sql "select * from im_event_participants ep inner join cc_users cc on (cc.user_id=ep.person_id) where participant_id=:participant_id"
     db_1row event_participant $sql
+
+    set sql "select * from im_event_roommates where participant_id=:participant_id"
+    set roommates ""
+    db_foreach roommate $sql {
+        append roommates $roommate_email "\n"
+    }
 
     set form_elements [template::form::get_elements $form_id]
     foreach element $form_elements {
@@ -93,43 +111,58 @@ ad_form -extend -name $form_id -form {
     if { [ad_form_new_p -key participant_id] } {
      
         set creation_ip [ns_conn peeraddr]
-        set project_id ""
         set status_id ""
         set type_id ""
         set level ""
 
-        db_exec_plsql insert_participant "select im_event_participant__new(
+        db_transaction {
 
-            :participant_id,
+            db_exec_plsql insert_participant "select im_event_participant__new(
 
-            :email,
-            :first_names,
-            :last_name,
-            :creation_ip,
+                :participant_id,
 
-            :project_id,
-            :status_id,
-            :type_id,
+                :email,
+                :first_names,
+                :last_name,
+                :creation_ip,
 
-            :lead_p,
-            :partner_email,
-            :accepted_terms_p,
+                :project_id,
+                :status_id,
+                :type_id,
 
-            :accommodation,
-            :food_choice,
-            :bus_option,
-            :level,
-            
-            :payment_type,
-            :payment_term
+                :lead_p,
+                :partner_email,
+                :accepted_terms_p,
 
-        )"
+                :accommodation,
+                :food_choice,
+                :bus_option,
+                :level,
+                
+                :payment_type,
+                :payment_term
+
+            )"
+
+            set roommate_emails [lsearch -all -inline -not [split $roommates ",| \t\n\r"] {}]
+
+            foreach roommate_email $roommate_emails {
+                ns_log notice "--->>> email=$roommate_email"
+                db_exec_plsql insert_roommate "select im_event_roommate__new(
+                    :participant_id,
+                    :project_id,
+                    :roommate_email
+                )"
+            }
+
+        }
+
     } else {
         error "pl/pgsql function im_event_participant__update not implemented yet"
     }
 
 } -after_submit {
-    ns_return 200 text/html "after_submit"
+    ad_returnredirect register?participant_id=${participant_id}
 }
 
 

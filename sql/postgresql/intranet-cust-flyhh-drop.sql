@@ -20,8 +20,12 @@ drop function im_event_participant__new(
     integer, integer, integer, integer,
     integer, integer
 );
+
+drop table im_event_roommates;
 drop table im_event_participants;
 
+delete from im_biz_objects where object_id in (select object_id from acs_objects where object_type='im_event_participant');
+delete from acs_objects where object_type='im_event_participant';
 delete from acs_object_type_tables where object_type='im_event_participant';
 delete from im_dynfield_layout_pages where object_type='im_event_participant';
 select acs_object_type__drop_type('im_event_participant',true);
