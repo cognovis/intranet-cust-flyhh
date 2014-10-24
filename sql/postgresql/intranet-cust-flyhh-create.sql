@@ -88,9 +88,9 @@ create table im_event_participants (
 
     partner_email       varchar(250),
 
-    partner_person_id   integer
-                        constraint im_event_participants__partner_person_id_fk
-                        references persons(person_id),
+    partner_participant_id integer
+                        constraint im_event_participants__partner_participant_id_fk
+                        references im_event_participants(participant_id),
 
     accepted_terms_p    boolean not null default 'f'
 
@@ -187,9 +187,9 @@ DECLARE
         p_payment_type          alias for $16;
         p_payment_term          alias for $17;
 
-        v_partner_person_id     integer;
-        v_person_id             integer;
-        v_participant_id  integer;
+        v_partner_participant_id    integer;
+        v_person_id                 integer;
+        v_participant_id            integer;
 
 BEGIN
 
@@ -198,8 +198,8 @@ BEGIN
 
         if v_person_id is null then
             select nextval(''t_acs_object_id_seq'') into v_person_id; 
-            select person__new(
-                p_person_id,
+            perform person__new(
+                v_person_id,
                 ''person'',             -- object_type
                 CURRENT_TIMESTAMP,      -- creation_date
                 null,                   -- creation_user
@@ -224,8 +224,12 @@ BEGIN
             NULL                        -- context_id
         );
 
-        select party_id into v_partner_person_id 
-        from parties where email=p_partner_email;
+        select participant_id into v_partner_participant_id 
+        from parties pa 
+        inner join im_event_participants ep 
+        on (ep.person_id=pa.party_id)
+        where email=p_partner_email
+        and project_id=p_project_id;
 
         insert into im_event_participants (
 
@@ -238,7 +242,7 @@ BEGIN
 
             lead_p,
             partner_email,
-            partner_person_id,
+            partner_participant_id,
             accepted_terms_p,
 
             accommodation,
@@ -260,7 +264,7 @@ BEGIN
 
             p_lead_p,
             p_partner_email,
-            v_partner_person_id,
+            v_partner_participant_id,
             p_accepted_terms_p,
 
             p_accommodation,
@@ -278,7 +282,7 @@ BEGIN
         -- Note: We plan to show a list of roommates which have not registered
         -- for the event so filtering by project_id ensures that we will
         -- not fill-in the info when the person registers for another event
-        -- and, ditto for partner_person_id.
+        -- and, ditto for partner_participant_id.
         --
         update im_event_roommates set
             roommate_person_id=v_person_id,
@@ -289,10 +293,11 @@ BEGIN
 
         -- update partner_person_id for this event
         update im_event_participants set
-            partner_person_id=v_partner_person_id
+            partner_participant_id=v_participant_id
         where
             partner_email=p_email
-            and project_id=p_project_id;
+            and project_id=p_project_id
+            and participant_id = v_partner_participant_id;
 
         return v_person_id;
 
@@ -510,6 +515,7 @@ begin
         ''Event Participants List'' -- view_label 
     );
 
+
     insert into im_view_columns (
         column_id, 
         view_id, 
@@ -522,7 +528,131 @@ begin
         sort_order, 
         visible_for
     ) values (
-        nextval(''im_view_columns_seq''),
+        300000, 
+        v_view_id,
+        NULL,
+        ''Email'',
+        ''email'',
+        ''$email'',
+        '''',
+        '''',
+        1,
+        ''''
+    );
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300001, 
+        v_view_id,
+        NULL,
+        ''First Name'',
+        ''first_names'',
+        ''$first_names'',
+        '''',
+        '''',
+        1,
+        ''''
+    );
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300002, 
+        v_view_id,
+        NULL,
+        ''Last Name'',
+        ''last_name'',
+        ''$last_name'',
+        '''',
+        '''',
+        1,
+        ''''
+    );
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300003, 
+        v_view_id,
+        NULL,
+        ''Lead/Follow'',
+        ''lead_p'',
+        ''[ad_decode $lead_p t Lead Follow]'',
+        '''',
+        '''',
+        1,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300004, 
+        v_view_id,
+        NULL,
+        ''Partner'',
+        ''partner_participant_id'',
+        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_email</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_email</a>"]'',
+        ''partner_email'',
+        '''',
+        1,
+        ''''
+    );
+
+
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300005,
         v_view_id,
         NULL,
         ''Accommodation'',
@@ -547,7 +677,7 @@ begin
         sort_order, 
         visible_for
     ) values (
-        nextval(''im_view_columns_seq''),
+        300006,
         v_view_id,
         NULL,
         ''Food Choice'',
@@ -572,7 +702,7 @@ begin
         sort_order, 
         visible_for
     ) values (
-        nextval(''im_view_columns_seq''),
+        300007,
         v_view_id,
         NULL,
         ''Bus Option'',
@@ -597,7 +727,7 @@ begin
         sort_order, 
         visible_for
     ) values (
-        nextval(''im_view_columns_seq''),
+        300008,
         v_view_id,
         NULL,
         ''Payment Type'',
@@ -622,7 +752,7 @@ begin
         sort_order, 
         visible_for
     ) values (
-        nextval(''im_view_columns_seq''),
+        300009,
         v_view_id,
         NULL,
         ''Payment Term'',
@@ -632,6 +762,33 @@ begin
         '''',
         1,
         ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for,
+        datatype
+    ) values (
+        300010,
+        v_view_id,
+        NULL,
+        ''Status'',
+        ''event_participant_status_id'',
+        ''$status_select'',
+        '''',
+        '''',
+        1,
+        '''',
+        ''category_pretty''
     );
 
 

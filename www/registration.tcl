@@ -103,7 +103,7 @@ ad_form -extend -name $form_id -form {
         }
 
         # If a registered user who already has information in the system registers for a new event, pre fill the known information.
-        set sql "select first_names, last_name, email from cc_users where user_id=:user_id"
+        set sql "select first_names, last_name, email from parties pa inner join persons p on (p.person_id=pa.party_id) where person_id=:user_id"
         db_1row user_info $sql
 
 
@@ -112,7 +112,12 @@ ad_form -extend -name $form_id -form {
 
 } -edit_request {
 
-    set sql "select * from im_event_participants ep inner join cc_users cc on (cc.user_id=ep.person_id) where participant_id=:participant_id"
+    set sql "select * 
+             from im_event_participants ep 
+             inner join parties pa on (pa.party_id=ep.person_id) 
+             inner join persons p on (p.person_id=ep.person_id) 
+             where participant_id=:participant_id"
+
     db_1row event_participant $sql
 
     set sql "select * from im_event_roommates where participant_id=:participant_id"
