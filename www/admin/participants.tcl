@@ -51,9 +51,22 @@ set elements {
 set dynview_name "event_participants_list"
 set sql "select * from im_view_columns where view_id=(select view_id from im_views where view_name=:dynview_name)"
 set extra_select_clause ""
+set package_id [ad_conn package_id]
+set details_column_p [parameter::get -package_id $package_id -parameter details_column_p -default "1"]
+set num_dynview_columns 0
+set display_template ""
 db_foreach im_view_column $sql {
-    lappend elements $column_name [list label $column_name display_template "@event_participants.$column_name@"] 
     append extra_select_clause ",$extra_select"
+    if { $details_column_p } {
+        append display_template "<strong>$column_name</strong>: @event_participants.$variable_name@<br>"
+    } else {
+        lappend elements $variable_name [list label $column_name display_template "@event_participants.$variable_name@"] 
+    }
+    incr num_dynview_columns
+}
+
+if { $details_column_p && $num_dynview_columns } {
+    lappend elements details [list label "Details" display_template $display_template]
 }
 
 template::list::create \

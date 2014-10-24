@@ -18,7 +18,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-        <!-- No version parameters -->
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="details_column_p"  default="1" description="enable to group dynview columns into a single table column in the list of participants"/>
         </parameters>
 
     </version>
