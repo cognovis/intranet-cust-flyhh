@@ -29,7 +29,7 @@ set context [ad_context_bar "Registration Form"]
 
 set form_id "registration_form"
 set action_url ""
-set object_type "im_event_participant" ;# used for appending dynfields to form
+set object_type "flyhh_event_participant" ;# used for appending dynfields to form
 
 if { [exists_and_not_null participant_id] } {
     set mode display
@@ -95,7 +95,7 @@ ad_form -extend -name $form_id -form {
     if { [set user_id [ad_conn user_id]] } {
 
         # If a registered user who is already registered for this event wants to register anew, redirect to edit the registration page
-        set sql "select participant_id from im_event_participants where person_id=:user_id and project_id=:project_id"
+        set sql "select participant_id from flyhh_event_participants where person_id=:user_id and project_id=:project_id"
         set exists_participant_id [db_string registration_exists $sql -default ""]
         if { $exists_participant_id ne {} } {
             ad_returnredirect [export_vars -base registration { project_id { participant_id $exists_participant_id } }]
@@ -113,14 +113,14 @@ ad_form -extend -name $form_id -form {
 } -edit_request {
 
     set sql "select * 
-             from im_event_participants ep 
+             from flyhh_event_participants ep 
              inner join parties pa on (pa.party_id=ep.person_id) 
              inner join persons p on (p.person_id=ep.person_id) 
              where participant_id=:participant_id"
 
     db_1row event_participant $sql
 
-    set sql "select * from im_event_roommates where participant_id=:participant_id"
+    set sql "select * from flyhh_event_roommates where participant_id=:participant_id"
     set roommates ""
     db_foreach roommate $sql {
         append roommates $roommate_email "\n"
@@ -141,11 +141,10 @@ ad_form -extend -name $form_id -form {
         set creation_ip [ns_conn peeraddr]
         set status_id ""
         set type_id ""
-        set level ""
 
         db_transaction {
 
-            db_exec_plsql insert_participant "select im_event_participant__new(
+            db_exec_plsql insert_participant "select flyhh_event_participant__new(
 
                 :participant_id,
 
@@ -175,7 +174,7 @@ ad_form -extend -name $form_id -form {
             set roommate_emails [lsearch -all -inline -not [split $roommates ",| \t\n\r"] {}]
 
             foreach roommate_email $roommate_emails {
-                db_exec_plsql insert_roommate "select im_event_roommate__new(
+                db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
                     :participant_id,
                     :project_id,
                     :roommate_email
@@ -185,12 +184,12 @@ ad_form -extend -name $form_id -form {
             # for the participant's partner and everyone else who declared this person as their roommate,
             # we already do this but for the given participant we need to call it now,
             # after we have inserted his/her roommates in the db
-            db_exec_plsql status_automaton "select im_event_participant__status_automaton(:participant_id)"
+            db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
 
         }
 
     } else {
-        error "pl/pgsql function im_event_participant__update not implemented yet"
+        error "pl/pgsql function flyhh_event_participant__update not implemented yet"
     }
 
 } -after_submit {

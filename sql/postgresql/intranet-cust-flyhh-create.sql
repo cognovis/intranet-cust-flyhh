@@ -3,26 +3,26 @@
 --- @last-modified 2014-10-25
 
 select acs_object_type__create_type (
-        'im_event_participant',         -- object_type
-        'Event Participant',            -- pretty_name
-        'Event Participants',           -- pretty_plural
+        'flyhh_event_participant',      -- object_type
+        'Flyhh - Event Participant',    -- pretty_name
+        'Flyhh - Event Participants',   -- pretty_plural
         'im_biz_object',                -- supertype
-        'im_event_participants',        -- table_name
+        'flyhh_event_participants',     -- table_name
         'person_id',      		        -- id_column
         'intranet-cust-flyhh', 		    -- package_name
         'f',                            -- abstract_p
         null,                           -- type_extension_table
-        'im_event_participant__name'    -- name_method
+        'flyhh_event_participant__name'    -- name_method
 );
 
 insert into acs_object_type_tables (object_type,table_name,id_column)
-values ('im_event_participant', 'im_event_participants', 'person_id');
+values ('flyhh_event_participant', 'flyhh_event_participants', 'person_id');
 
 update acs_object_types set
-        status_type_table = 'im_event_participants',
+        status_type_table = 'flyhh_event_participants',
         status_column = 'event_participant_status_id',
         type_column = 'event_participant_type_id'
-where object_type = 'im_event_participant';
+where object_type = 'flyhh_event_participant';
 
 ---insert into im_biz_object_urls (object_type, url_type, url) values (
 ---'im_project','view','/flyhh/admin/participants/view?person_id=');
@@ -31,25 +31,25 @@ where object_type = 'im_event_participant';
 
 
 
-create table im_event_participants (
+create table flyhh_event_participants (
     participant_id      integer not null
-                        constraint im_event_participants_pk
+                        constraint flyhh_event_participants_pk
                         primary key,
 
     person_id			integer not null
-                        constraint im_event_participants_person_id_fk
+                        constraint flyhh_event_participants_person_id_fk
                         references persons(person_id),
 
     -- one project per event 
     
 	project_id			integer not null
-                        constraint im_event_participants__project_fk
+                        constraint flyhh_event_participants__project_fk
                         references im_projects(project_id),
 
 	-- tracks the status of the participant for that event
 
     event_participant_status_id     integer not null 
-                                    constraint im_event_participants__status_fk 
+                                    constraint flyhh_event_participants__status_fk 
                                     references im_categories,
 
 	-- define the dynfields which are supposed to show up
@@ -58,33 +58,33 @@ create table im_event_participants (
 	-- (otherwise we would not know which dynfields to show for a project).
 
     event_participant_type_id     integer not null 
-                                  constraint im_event_participants__type_fk 
+                                  constraint flyhh_event_participants__type_fk 
                                   references im_categories,
 
     accommodation       integer
-                        constraint im_event_participants__accommodation_fk
+                        constraint flyhh_event_participants__accommodation_fk
                         references im_materials(material_id),
 
     food_choice         integer
-                        constraint im_event_participants__food_choice_fk
+                        constraint flyhh_event_participants__food_choice_fk
                         references im_materials(material_id),
     
     bus_option          integer
-                        constraint im_event_participants__bus_option_fk
+                        constraint flyhh_event_participants__bus_option_fk
                         references im_materials(material_id),
 
-    level               integer
-                        constraint im_event_participants__level_fk
-                        references im_materials(material_id),
+    level   integer
+                        constraint flyhh_event_participants__level_fk
+                        references im_categories(category_id),
     
     
 
     payment_type        integer
-                        constraint im_event_participants__payment_type_fk
+                        constraint flyhh_event_participants__payment_type_fk
                         references im_categories(category_id),
     
     payment_term        integer
-                        constraint im_event_participants__payment_term_fk
+                        constraint flyhh_event_participants__payment_term_fk
                         references im_categories(category_id),
     
     lead_p              boolean not null default 'f',
@@ -92,8 +92,8 @@ create table im_event_participants (
     partner_email       varchar(250),
 
     partner_participant_id integer
-                        constraint im_event_participants__partner_participant_id_fk
-                        references im_event_participants(participant_id),
+                        constraint flyhh_event_participants__partner_participant_id_fk
+                        references flyhh_event_participants(participant_id),
 
     accepted_terms_p    boolean not null default 'f'
 
@@ -101,33 +101,33 @@ create table im_event_participants (
 
 -- event participant roommates map
 
-create table im_event_roommates (
+create table flyhh_event_roommates (
 
     participant_id      integer not null
-                        constraint im_event_roommates__participant_id_fk
-                        references im_event_participants(participant_id),
+                        constraint flyhh_event_roommates__participant_id_fk
+                        references flyhh_event_participants(participant_id),
 
     -- project_id is available via participant_id but convenient to have it here
 
 	project_id			integer not null
-                        constraint im_event_participants__project_fk
+                        constraint flyhh_event_participants__project_fk
                         references im_projects(project_id),
     
     roommate_email      varchar(250) not null,
 
     roommate_person_id  integer
-                        constraint im_event_roommates__person_id_fk
+                        constraint flyhh_event_roommates__person_id_fk
                         references persons(person_id),
 
     roommate_id         integer
-                        constraint im_event_roommates__roommate_id_fk
-                        references im_event_participants(participant_id)
+                        constraint flyhh_event_roommates__roommate_id_fk
+                        references flyhh_event_participants(participant_id)
 
 );
 
 -- Optional Indices for larger systems:
--- create index im_event_participants_status_id_idx on im_event_participants(event_participant_status_id);
--- create index im_event_participants_type_id_idx on im_event_participants(event_participant_type_id);
+-- create index flyhh_event_participants_status_id_idx on flyhh_event_participants(event_participant_status_id);
+-- create index flyhh_event_participants_type_id_idx on flyhh_event_participants(event_participant_type_id);
 
 -- ------------------------------------------------------------
 -- Event Participant Package
@@ -165,7 +165,7 @@ end;' language 'plpgsql';
 -- TODO: we can also check whether roommates choose the same type of accommodation
 -- and whether roommates have chosen different people to stay with.
 
-create or replace function im_event_participant__status_automaton (
+create or replace function flyhh_event_participant__status_automaton (
     integer
 ) returns boolean as '
 declare
@@ -180,11 +180,11 @@ declare
 begin
 
     select case when partner_participant_id is null then true else false end into v_pending_partner_p
-    from im_event_participants
+    from flyhh_event_participants
     where participant_id = p_participant_id;
 
     select case when count(1)>0 then true else false end into v_pending_roommates_p
-    from im_event_roommates
+    from flyhh_event_roommates
     where participant_id = p_participant_id
     and roommate_id is null;
     
@@ -202,8 +202,8 @@ begin
         v_category := ''Open'';
     end if;
 
-    update im_event_participants 
-    set event_participant_status_id=(select category_id from im_categories where category=v_category and category_type=''Event Registration Status'')
+    update flyhh_event_participants 
+    set event_participant_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Status'')
     where participant_id = p_participant_id;
 
     return true;
@@ -211,7 +211,7 @@ begin
 end;' language 'plpgsql';
 
 
-create or replace function im_event_participant__new (
+create or replace function flyhh_event_participant__new (
     integer, varchar, varchar, varchar, varchar,
 	integer, integer, integer,
     boolean, varchar, boolean,
@@ -237,7 +237,7 @@ DECLARE
         p_accommodation         alias for $12;
         p_food_choice           alias for $13;
         p_bus_option            alias for $14;
-        p_level                 alias for $15;
+        p_level     alias for $15;
 
         p_payment_type          alias for $16;
         p_payment_term          alias for $17;
@@ -273,7 +273,7 @@ BEGIN
 
         v_participant_id := im_biz_object__new (
             p_participant_id,
-            ''im_event_participant'',   -- object_type
+            ''flyhh_event_participant'',   -- object_type
             CURRENT_TIMESTAMP,          -- creation_date
             null,                       -- creation_user
             p_creation_ip,
@@ -282,12 +282,12 @@ BEGIN
 
         select participant_id into v_partner_participant_id 
         from parties pa 
-        inner join im_event_participants ep 
+        inner join flyhh_event_participants ep 
         on (ep.person_id=pa.party_id)
         where email=p_partner_email
         and project_id=p_project_id;
 
-        insert into im_event_participants (
+        insert into flyhh_event_participants (
 
             participant_id,
 
@@ -340,7 +340,7 @@ BEGIN
         -- not fill-in the info when the person registers for another event
         -- and, ditto for partner_participant_id.
 
-        update im_event_roommates set
+        update flyhh_event_roommates set
             roommate_person_id=v_person_id,
             roommate_id=v_participant_id
         where
@@ -349,7 +349,7 @@ BEGIN
 
         -- update partner_person_id for this event
 
-        update im_event_participants set
+        update flyhh_event_participants set
             partner_participant_id=v_participant_id
         where
             partner_email=p_email
@@ -360,13 +360,13 @@ BEGIN
         -- Automatically transition status to pending, pending partner, pending roommates, and open
         -- for the partner and roommates but not for the given participant, see explanation below.
 
-        -- ATTENTION: im_event_participant__status_automaton needs to be invoked from
+        -- ATTENTION: flyhh_event_participant__status_automaton needs to be invoked from
         -- the registration.tcl script for the given participant (v_participant_id) 
         -- in order to take into account the roommates that are not stored in the db at this point.
 
-        perform im_event_participant__status_automaton(v_partner_participant_id);
-        perform im_event_participant__status_automaton(participant_id)
-        from im_event_roommates
+        perform flyhh_event_participant__status_automaton(v_partner_participant_id);
+        perform flyhh_event_participant__status_automaton(participant_id)
+        from flyhh_event_roommates
         where roommate_id=v_participant_id;
 
         return v_person_id;
@@ -374,7 +374,7 @@ BEGIN
 end;' language 'plpgsql';
 
 
-create or replace function im_event_participant__name (integer) 
+create or replace function flyhh_event_participant__name (integer) 
 returns varchar as '
 DECLARE
         p_person_id alias for $1;
@@ -389,7 +389,7 @@ BEGIN
 end;' language 'plpgsql';
 
 
-create or replace function im_event_roommate__new (
+create or replace function flyhh_event_roommate__new (
     integer, integer, varchar
 ) returns boolean as '
 declare
@@ -398,7 +398,7 @@ declare
     p_roommate_email    alias for $3;
 begin
 
-    insert into im_event_roommates(
+    insert into flyhh_event_roommates(
         participant_id,
         project_id,
         roommate_email,
@@ -409,7 +409,7 @@ begin
         p_project_id,
         p_roommate_email,
         (select party_id from parties where email=p_roommate_email),
-        (select participant_id from im_event_participants where project_id=p_project_id and person_id=(select party_id from parties where email=p_roommate_email))
+        (select participant_id from flyhh_event_participants where project_id=p_project_id and person_id=(select party_id from parties where email=p_roommate_email))
     );
 
     return true;
@@ -446,7 +446,7 @@ SELECT im_category_hierarchy_new (104, 102);
 -- viewing a dynfield fails if we do not set the type_category_type
 UPDATE acs_object_types 
 SET type_category_type='Intranet User Type' 
-WHERE object_type='im_event_participant';
+WHERE object_type='flyhh_event_participant';
 
 
 SELECT im_category_new (9007, 'Food Choice', 'Intranet Material Type');
@@ -465,7 +465,7 @@ SELECT im_dynfield_widget__new (
         null,                                   -- creation_ip
         null,                                   -- context_id
 
-        'event_participant_accommodation',      -- widget_name
+        'flyhh_event_participant_accommodation',      -- widget_name
         '#intranet-cust-flyhh.Accommodation#',  -- pretty_name
         '#intranet-cust-flyhh.Accommodation#',  -- pretty_plural
         10007,                                  -- storage_type_id
@@ -486,7 +486,7 @@ SELECT im_dynfield_widget__new (
         null,                                   -- creation_ip
         null,                                   -- context_id
 
-        'event_participant_food_choice',        -- widget_name
+        'flyhh_event_participant_food_choice',        -- widget_name
         '#intranet-cust-flyhh.Food_Choice#',    -- pretty_name
         '#intranet-cust-flyhh.Food_Choices#',   -- pretty_plural
         10007,                                  -- storage_type_id
@@ -505,7 +505,7 @@ SELECT im_dynfield_widget__new (
         null,                                   -- creation_ip
         null,                                   -- context_id
 
-        'event_participant_bus_options',        -- widget_name
+        'flyhh_event_participant_bus_options',        -- widget_name
         '#intranet-cust-flyhh.Bus_Options#',    -- pretty_name
         '#intranet-cust-flyhh.Bus_Options#',    -- pretty_plural
         10007,                                  -- storage_type_id
@@ -516,14 +516,34 @@ SELECT im_dynfield_widget__new (
 );
 
 
-SELECT im_dynfield_attribute_new ('im_event_participant', 'accommodation', 'Accommodation', 'event_participant_accommodation', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'food_choice', 'Food Choice', 'event_participant_food_choice', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'bus_option', 'Bus Option', 'event_participant_bus_options', 'integer', 'f');
--- SELECT im_dynfield_attribute_new ('im_event_participant', 'level', 'Levels', 'event_participant_levels', 'integer', 'f');
+SELECT im_dynfield_widget__new (
+        null,                                   -- widget_id
+        'im_dynfield_widget',                   -- object_type
+        now(),                                  -- creation_date
+        null,                                   -- creation_user
+        null,                                   -- creation_ip
+        null,                                   -- context_id
+
+        'flyhh_event_participant_levels',             -- widget_name
+        '#intranet-cust-flyhh.Levels#',         -- pretty_name
+        '#intranet-cust-flyhh.Levels#',         -- pretty_plural
+        10007,                                  -- storage_type_id
+        'integer',                              -- acs_datatype
+        'generic_sql',                          -- widget
+        'integer',                              -- sql_datatype
+        '{custom {sql {SELECT category_id,category FROM im_categories WHERE category_type=''Flyhh - Event Participant Level''}}}'
+);
+
+
+
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'accommodation', 'Accommodation', 'flyhh_event_participant_accommodation', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'food_choice', 'Food Choice', 'flyhh_event_participant_food_choice', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'bus_option', 'Bus Option', 'flyhh_event_participant_bus_options', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'level', 'Levels', 'flyhh_event_participant_levels', 'integer', 'f');
 
 -- dynfields with existing widgets
-SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_type', 'Payment Method', 'category_payment_method', 'integer', 'f');
-SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_term', 'Payment Terms', 'payment_term', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'payment_type', 'Payment Method', 'category_payment_method', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'payment_term', 'Payment Terms', 'payment_term', 'integer', 'f');
 
 -- ensures that dynfiels are editable and viewable by all user types
 --INSERT INTO im_dynfield_type_attribute_map(attribute_id,object_type_id,display_mode)
@@ -535,7 +555,7 @@ SELECT im_dynfield_attribute_new ('im_event_participant', 'payment_term', 'Payme
 --        acs_attributes aa               
 -- WHERE                                   
 --        a.acs_attribute_id = aa.attribute_id
---        and aa.object_type = 'im_event_participant'
+--        and aa.object_type = 'flyhh_event_participant'
 --        and also_hard_coded_p = 'f'
 --        and category_type='Intranet User Type';
 
@@ -576,12 +596,12 @@ begin
         view_label
     ) values (
         v_view_id,
-        ''event_participants_list'',
+        ''flyhh_event_participants_list'',
         null,                       -- view_status_id
         1400,                       -- view_type_id / ObjectList / Intranet DynView Type
         null,                       -- sort_order
         null,                       -- view_sql
-        ''Event Participants List'' -- view_label 
+        ''Flyhh - Event Participants List'' -- view_label 
     );
 
 
@@ -796,6 +816,32 @@ begin
         sort_order, 
         visible_for
     ) values (
+        300007,
+        v_view_id,
+        NULL,
+        ''Level'',
+        ''level'',
+        ''$level'',
+        ''im_name_from_id(level) as level'',
+        '''',
+        8,
+        ''''
+    );
+
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
         300008,
         v_view_id,
         NULL,
@@ -868,7 +914,7 @@ end' language 'plpgsql';
 select __inline0();
 drop function __inline0();
 
--- TODO: We need an invoice_id in the im_event_participants table
+-- TODO: We need an invoice_id in the flyhh_event_participants table
 -- Category IDs 82000-82999 reserved for Events
 -- Created
 --   Pending
@@ -886,18 +932,23 @@ drop function __inline0();
 -- Cancelled  (see http://grammarist.com/spelling/cancel/ for Canceled vs. Cancelled discussion) 
 -- Closed
 
-SELECT im_category_new (82500, 'Created', 'Event Registration Status');
-SELECT im_category_new (82501, 'Pending', 'Event Registration Status');
-SELECT im_category_new (82502, 'Pending Partner', 'Event Registration Status');
-SELECT im_category_new (82503, 'Pending Roommates', 'Event Registration Status');
-SELECT im_category_new (82504, 'Open', 'Event Registration Status');
-SELECT im_category_new (82505, 'Approved', 'Event Registration Status');
-SELECT im_category_new (82506, 'Rejected', 'Event Registration Status');
-SELECT im_category_new (82508, 'Cancelled', 'Event Registration Status');
-SELECT im_category_new (82509, 'Closed', 'Event Registration Status');
+SELECT im_category_new (82500, 'Created', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82501, 'Pending', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82502, 'Pending Partner', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82503, 'Pending Roommates', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82504, 'Open', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82505, 'Approved', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82506, 'Rejected', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82508, 'Cancelled', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82509, 'Closed', 'Flyhh - Event Registration Status');
 
 SELECT im_category_hierarchy_new (82502, 82501);  -- Pending Partner <- Pending
 SELECT im_category_hierarchy_new (82503, 82501);  -- Pending Roommates <- Pending
 SELECT im_category_hierarchy_new (82505, 82504);  -- Approved <- Open
 SELECT im_category_hierarchy_new (82506, 82504);  -- Rejected <- Open
+
+-- Flyhh - Event Participant Level
+SELECT im_category_new (82550, 'Beginner', 'Flyhh - Event Participant Level');
+SELECT im_category_new (82551, 'Intermediate', 'Flyhh - Event Participant Level');
+SELECT im_category_new (82552, 'Advanced', 'Flyhh - Event Participant Level');
 

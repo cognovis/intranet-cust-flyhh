@@ -12,7 +12,7 @@ ad_page_contract {
 
 # absence_type_id
 #
-set view_name "event_participants_list"
+set view_name "flyhh_event_participants_list"
 set view_type ""
 set department_id ""
 
@@ -106,7 +106,7 @@ set project_type_list [list]
 # Filter with Dynamic Fields
 # ---------------------------------------------------------------
 
-set form_id "event_participants_filter"
+set form_id "flyhh_event_participants_filter"
 set action_url "../registration"
 set form_mode "edit"
 
@@ -190,7 +190,7 @@ if { ![empty_string_p $extra_where] } {
 set sql "
     select *
        $extra_select 
-    from im_event_participants ep 
+    from flyhh_event_participants ep 
     inner join parties pa on (pa.party_id=ep.person_id) 
     inner join persons p on (p.person_id=ep.person_id)
     $extra_where
@@ -270,7 +270,7 @@ db_foreach event_participants_query $sql {
 
     set select_name "event_participant_status_id.$participant_id"
 
-    set status_select [im_category_select "Event Registration Status" $select_name $default]
+    set status_select [im_category_select "Flyhh - Event Registration Status" $select_name $default]
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"
