@@ -182,6 +182,11 @@ ad_form -extend -name $form_id -form {
                 )"
             }
 
+            # for the participant's partner and everyone else who declared this person as their roommate,
+            # we already do this but for the given participant we need to call it now,
+            # after we have inserted his/her roommates in the db
+            db_exec_plsql status_automaton "select im_event_participant__status_automaton(:participant_id)"
+
         }
 
     } else {

@@ -357,10 +357,13 @@ BEGIN
             and participant_id = v_partner_participant_id;
 
 
-        -- automatically transition status to pending, pending partner, pending roommates, and open
-        -- for the given participant as well as his/her partner and roommates
+        -- Automatically transition status to pending, pending partner, pending roommates, and open
+        -- for the partner and roommates but not for the given participant, see explanation below.
 
-        perform im_event_participant__status_automaton(v_participant_id);
+        -- ATTENTION: im_event_participant__status_automaton needs to be invoked from
+        -- the registration.tcl script for the given participant (v_participant_id) 
+        -- in order to take into account the roommates that are not stored in the db at this point.
+
         perform im_event_participant__status_automaton(v_partner_participant_id);
         perform im_event_participant__status_automaton(participant_id)
         from im_event_roommates
