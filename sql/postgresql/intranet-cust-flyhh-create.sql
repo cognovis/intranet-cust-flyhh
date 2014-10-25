@@ -599,8 +599,8 @@ begin
         NULL,
         ''Email'',
         ''email'',
-        ''$email'',
-        '''',
+        ''"<a href=../registration?participant_id=$participant_id>$email</a>"'',
+        ''participant_id'',
         '''',
         1,
         ''''
@@ -626,7 +626,7 @@ begin
         ''$first_names'',
         '''',
         '''',
-        1,
+        2,
         ''''
     );
 
@@ -650,7 +650,7 @@ begin
         ''$last_name'',
         '''',
         '''',
-        1,
+        3,
         ''''
     );
 
@@ -674,7 +674,7 @@ begin
         ''[ad_decode $lead_p t Lead Follow]'',
         '''',
         '''',
-        1,
+        4,
         ''''
     );
 
@@ -699,7 +699,7 @@ begin
         ''[ad_decode $partner_participant_id "" "<font color=red>$partner_email</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_email</a>"]'',
         ''partner_email'',
         '''',
-        1,
+        5,
         ''''
     );
 
@@ -726,7 +726,7 @@ begin
         ''$accommodation'',
         ''im_name_from_id(accommodation) as accommodation'',
         '''',
-        1,
+        6,
         ''''
     );
 
@@ -751,7 +751,7 @@ begin
         ''$food_choice'',
         ''im_name_from_id(food_choice) as food_choice'',
         '''',
-        1,
+        7,
         ''''
     );
 
@@ -776,7 +776,7 @@ begin
         ''$bus_option'',
         ''im_name_from_id(bus_option) as bus_option'',
         '''',
-        1,
+        8,
         ''''
     );
 
@@ -801,7 +801,7 @@ begin
         ''$payment_type'',
         ''im_name_from_id(payment_type) as payment_type'',
         '''',
-        1,
+        9,
         ''''
     );
 
@@ -826,7 +826,7 @@ begin
         ''$payment_term'',
         ''im_name_from_id(payment_term) as payment_term'',
         '''',
-        1,
+        10,
         ''''
     );
 
@@ -852,7 +852,7 @@ begin
         ''$status_select'',
         '''',
         '''',
-        1,
+        11,
         '''',
         ''category_pretty''
     );
