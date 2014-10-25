@@ -816,7 +816,7 @@ begin
         sort_order, 
         visible_for
     ) values (
-        300007,
+        300008,
         v_view_id,
         NULL,
         ''Level'',
@@ -824,35 +824,10 @@ begin
         ''$level'',
         ''im_name_from_id(level) as level'',
         '''',
-        8,
-        ''''
-    );
-
-
-
-    insert into im_view_columns (
-        column_id, 
-        view_id, 
-        group_id, 
-        column_name,
-        variable_name,
-        column_render_tcl, 
-        extra_select, 
-        extra_where, 
-        sort_order, 
-        visible_for
-    ) values (
-        300008,
-        v_view_id,
-        NULL,
-        ''Payment Type'',
-        ''payment_type'',
-        ''$payment_type'',
-        ''im_name_from_id(payment_type) as payment_type'',
-        '''',
         9,
         ''''
     );
+
 
 
     insert into im_view_columns (
@@ -870,12 +845,37 @@ begin
         300009,
         v_view_id,
         NULL,
+        ''Payment Type'',
+        ''payment_type'',
+        ''$payment_type'',
+        ''im_name_from_id(payment_type) as payment_type'',
+        '''',
+        10,
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for
+    ) values (
+        300010,
+        v_view_id,
+        NULL,
         ''Payment Term'',
         ''payment_term'',
         ''$payment_term'',
         ''im_name_from_id(payment_term) as payment_term'',
         '''',
-        10,
+        11,
         ''''
     );
 
@@ -893,7 +893,7 @@ begin
         visible_for,
         datatype
     ) values (
-        300010,
+        300011,
         v_view_id,
         NULL,
         ''Status'',
@@ -901,7 +901,7 @@ begin
         ''$status_select'',
         '''',
         '''',
-        11,
+        12,
         '''',
         ''category_pretty''
     );
