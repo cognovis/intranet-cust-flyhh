@@ -162,6 +162,55 @@ begin
 end;' language 'plpgsql';
 
 
+-- TODO: we can also check whether roommates choose the same type of accommodation
+-- and whether roommates have chosen different people to stay with.
+
+create or replace function im_event_participant__status_automaton (
+    integer
+) returns boolean as '
+declare
+
+    p_participant_id                alias for $1;
+
+    v_pending_p                     boolean;
+    v_pending_partner_p             boolean;
+    v_pending_roommates_p           boolean;
+    v_category                      varchar;
+
+begin
+
+    select case when partner_participant_id is null then true else false end into v_pending_partner_p
+    from im_event_participants
+    where participant_id = p_participant_id;
+
+    select case when count(1)>0 then true else false end into v_pending_roommates_p
+    from im_event_roommates
+    where participant_id = p_participant_id
+    and roommate_id is null;
+    
+    v_pending_p := v_pending_partner_p and v_pending_roommates_p;
+
+    if v_pending_partner_p or v_pending_roommates_p then
+        if v_pending_p then
+            v_category := ''Pending'';
+        elsif v_pending_partner_p then
+            v_category := ''Pending Partner'';
+        else
+            v_category := ''Pending Roommates'';
+        end if;
+    else
+        v_category := ''Open'';
+    end if;
+
+    update im_event_participants 
+    set event_participant_status_id=(select category_id from im_categories where category=v_category and category_type=''Event Registration Status'')
+    where participant_id = p_participant_id;
+
+    return true;
+
+end;' language 'plpgsql';
+
+
 create or replace function im_event_participant__new (
     integer, varchar, varchar, varchar, varchar,
 	integer, integer, integer,
@@ -196,6 +245,7 @@ DECLARE
         v_partner_participant_id    integer;
         v_person_id                 integer;
         v_participant_id            integer;
+
 
 BEGIN
 
@@ -289,7 +339,7 @@ BEGIN
         -- for the event so filtering by project_id ensures that we will
         -- not fill-in the info when the person registers for another event
         -- and, ditto for partner_participant_id.
-        --
+
         update im_event_roommates set
             roommate_person_id=v_person_id,
             roommate_id=v_participant_id
@@ -298,6 +348,7 @@ BEGIN
             and project_id=p_project_id;
 
         -- update partner_person_id for this event
+
         update im_event_participants set
             partner_participant_id=v_participant_id
         where
@@ -305,10 +356,19 @@ BEGIN
             and project_id=p_project_id
             and participant_id = v_partner_participant_id;
 
+
+        -- automatically transition status to pending, pending partner, pending roommates, and open
+        -- for the given participant as well as his/her partner and roommates
+
+        perform im_event_participant__status_automaton(v_participant_id);
+        perform im_event_participant__status_automaton(v_partner_participant_id);
+        perform im_event_participant__status_automaton(participant_id)
+        from im_event_roommates
+        where roommate_id=v_participant_id;
+
         return v_person_id;
 
 end;' language 'plpgsql';
-
 
 
 create or replace function im_event_participant__name (integer) 
