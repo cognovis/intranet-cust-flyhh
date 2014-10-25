@@ -268,9 +268,9 @@ db_foreach event_participants_query $sql {
 
     set default $event_participant_status_id
 
-    set select_name "event_participant.$participant_id"
+    set select_name "event_participant_status_id.$participant_id"
 
-    set status_select [im_category_select "Intranet Company Status" $select_name $default]
+    set status_select [im_category_select "Event Registration Status" $select_name $default]
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"

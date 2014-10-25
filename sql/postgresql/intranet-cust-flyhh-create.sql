@@ -1,6 +1,6 @@
 --- @author Neophytos Demetriou
 --- @creation-date 2014-10-15
---- @last-modified 2014-10-20
+--- @last-modified 2014-10-25
 
 select acs_object_type__create_type (
         'im_event_participant',         -- object_type
@@ -41,11 +41,13 @@ create table im_event_participants (
                         references persons(person_id),
 
     -- one project per event 
+    
 	project_id			integer not null
                         constraint im_event_participants__project_fk
                         references im_projects(project_id),
 
 	-- tracks the status of the participant for that event
+
     event_participant_status_id     integer not null 
                                     constraint im_event_participants__status_fk 
                                     references im_categories,
@@ -54,6 +56,7 @@ create table im_event_participants (
 	-- we use the aux_int1 field of the event_participant_type_id (aka: category_id) 
 	-- to link the event_participant type to the project_type_id 
 	-- (otherwise we would not know which dynfields to show for a project).
+
     event_participant_type_id     integer not null 
                                   constraint im_event_participants__type_fk 
                                   references im_categories,
@@ -97,6 +100,7 @@ create table im_event_participants (
 );
 
 -- event participant roommates map
+
 create table im_event_roommates (
 
     participant_id      integer not null
@@ -104,6 +108,7 @@ create table im_event_roommates (
                         references im_event_participants(participant_id),
 
     -- project_id is available via participant_id but convenient to have it here
+
 	project_id			integer not null
                         constraint im_event_participants__project_fk
                         references im_projects(project_id),
@@ -130,6 +135,7 @@ create table im_event_roommates (
 
 -- im_biz_object__new is ill-defined in dump for flyhh, 
 -- even though it is correct in intranet-biz-objects.sql (intranet-core)
+
 create or replace function im_biz_object__new (integer,varchar,timestamptz,integer,varchar,integer)
 returns integer as '
 declare
@@ -259,7 +265,7 @@ BEGIN
 
             v_person_id, 
             p_project_id,
-            11700,              -- Active / event_participant_status_id
+            82500,              -- Created / event_participant_status_id
             102,                -- Castle Camp / event_participant_type_id
 
             p_lead_p,
@@ -483,9 +489,9 @@ select im_project__new(
     '2014_0001',    -- project_nr
     'some project', -- project_path
     null,           -- parent_id
-    8720,           -- company_id
+    8720,           -- company_id (=Flying Hamburger)
     102,            -- project_type_id,
-    11700           -- project_status_id
+    11700           -- project_status_id (=Active)
   );
 
 
@@ -798,4 +804,37 @@ end' language 'plpgsql';
 
 select __inline0();
 drop function __inline0();
+
+-- TODO: We need an invoice_id in the im_event_participants table
+-- Category IDs 82000-82999 reserved for Events
+-- Created
+--   Pending
+--      Pending Partner
+--      Pending Roommate
+-- Open
+--   Approved
+--     Invoice Created
+--     Invoice Past Due
+--     Invoice Outstanding
+--     Invoice Partially Paid
+--     Invoice Paid
+--     Invoice Filed
+--   Rejected
+-- Cancelled  (see http://grammarist.com/spelling/cancel/ for Canceled vs. Cancelled discussion) 
+-- Closed
+
+SELECT im_category_new (82500, 'Created', 'Event Registration Status');
+SELECT im_category_new (82501, 'Pending', 'Event Registration Status');
+SELECT im_category_new (82502, 'Pending Partner', 'Event Registration Status');
+SELECT im_category_new (82503, 'Pending Roommates', 'Event Registration Status');
+SELECT im_category_new (82504, 'Open', 'Event Registration Status');
+SELECT im_category_new (82505, 'Approved', 'Event Registration Status');
+SELECT im_category_new (82506, 'Rejected', 'Event Registration Status');
+SELECT im_category_new (82508, 'Cancelled', 'Event Registration Status');
+SELECT im_category_new (82509, 'Closed', 'Event Registration Status');
+
+SELECT im_category_hierarchy_new (82502, 82501);  -- Pending Partner <- Pending
+SELECT im_category_hierarchy_new (82503, 82501);  -- Pending Roommates <- Pending
+SELECT im_category_hierarchy_new (82505, 82504);  -- Approved <- Open
+SELECT im_category_hierarchy_new (82506, 82504);  -- Rejected <- Open
 
