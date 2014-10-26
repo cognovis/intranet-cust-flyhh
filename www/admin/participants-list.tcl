@@ -135,7 +135,7 @@ ad_form \
 
     } -on_submit {
 
-        foreach varname {lead_p level event_participant_status_id} {
+        foreach varname {lead_p level event_participant_status_id validation_status_id} {
 
             if { [exists_and_not_null $varname] } {
 
