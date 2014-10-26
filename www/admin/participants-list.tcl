@@ -125,6 +125,10 @@ ad_form \
             {label "[_ intranet-cust-flyhh.Level]"} 
             {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
+        {validation_status_id:text(im_category_tree),optional
+            {label "[_ intranet-cust-flyhh.Validation]"} 
+            {custom {category_type "Flyhh - Event Registration Validation" translate_p 1 package_key "intranet-cust-flyhh"}}}
+
         {event_participant_status_id:text(im_category_tree),optional
             {label "[_ intranet-cust-flyhh.Status]"} 
             {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
@@ -138,27 +142,13 @@ ad_form \
                 set value [set $varname]
                 set quoted_value [ns_dbquotevalue $value]
 
-                if { $varname eq {event_participant_status_id} } {
+                if { $varname eq {validation_status_id} && ( $value eq {82513} || $value eq {82514} ) } {
 
-                    if { $value eq {82503} || $value eq {82504} } {
+                        # if filtering participants by those who lack partner (82513 - Invalid Partner)
+                        # or roommates (82514 - Invalid Roommates) then include participants that lack
+                        # both (82512 - Invalid Both).
 
-                        # if filtering participants by those who lack partner (82503 - Pending Partner)
-                        # or roommates (82504 - Pending Roommates) then include participants that lack
-                        # both (82502 - Pending Both).
-
-                        lappend criteria "($varname = $quoted_value OR $varname = '82502')"
-
-                    } else {
-
-                        # filter by given category id or by any of its child categories
-
-                        lappend criteria "($varname = $quoted_value 
-                                            OR EXISTS (select 1 
-                                                       from im_category_hierarchy 
-                                                       where child_id=event_participant_status_id 
-                                                       and parent_id=$quoted_value))"
-
-                    }
+                        lappend criteria "($varname = $quoted_value OR $varname = '82512')"
 
                 } else {
 

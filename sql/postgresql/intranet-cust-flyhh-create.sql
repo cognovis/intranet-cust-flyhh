@@ -50,7 +50,7 @@ create table flyhh_event_participants (
 
     event_participant_status_id     integer not null 
                                     constraint flyhh_event_participants__status_fk 
-                                    references im_categories,
+                                    references im_categories(category_id),
 
 	-- define the dynfields which are supposed to show up
 	-- we use the aux_int1 field of the event_participant_type_id (aka: category_id) 
@@ -59,7 +59,12 @@ create table flyhh_event_participants (
 
     event_participant_type_id     integer not null 
                                   constraint flyhh_event_participants__type_fk 
-                                  references im_categories,
+                                  references im_categories(category_id),
+
+    validation_status_id          integer not null 
+                                  constraint flyhh_event_participants__validation_fk 
+                                  references im_categories(category_id),
+
 
     accommodation       integer
                         constraint flyhh_event_participants__accommodation_fk
@@ -172,40 +177,66 @@ declare
 
     p_participant_id                alias for $1;
 
-    v_pending_both_p                boolean;
-    v_pending_partner_p             boolean;
-    v_pending_roommates_p           boolean;
+    v_invalid_both_p                boolean;
+    v_invalid_partner_p             boolean;
+    v_invalid_roommates_p           boolean;
+    v_mismatch_lead_follow_p        boolean;
+    v_mismatch_accommodation_p      boolean;
     v_category                      varchar;
 
 begin
 
-    select case when partner_participant_id is null then true else false end into v_pending_partner_p
+    select case when partner_participant_id is null then true else false end into v_invalid_partner_p
     from flyhh_event_participants
     where participant_id = p_participant_id;
 
-    select case when count(1)>0 then true else false end into v_pending_roommates_p
+    select case when count(1)>0 then true else false end into v_invalid_roommates_p
     from flyhh_event_roommates
     where participant_id = p_participant_id
     and roommate_id is null;
     
 
-    if v_pending_partner_p or v_pending_roommates_p then
+    if v_invalid_partner_p or v_invalid_roommates_p then
 
-        v_pending_both_p := v_pending_partner_p and v_pending_roommates_p;
+        v_invalid_both_p := v_invalid_partner_p and v_invalid_roommates_p;
 
-        if v_pending_both_p then
-            v_category := ''Pending Both'';
-        elsif v_pending_partner_p then
-            v_category := ''Pending Partner'';
+        if v_invalid_both_p then
+            v_category := ''Invalid Both'';
+        elsif v_invalid_partner_p then
+            v_category := ''Invalid Partner'';
         else
-            v_category := ''Pending Roommates'';
+            v_category := ''Invalid Roommate(s)'';
         end if;
     else
-        v_category := ''Open'';
+
+
+        select case when count(1)>0 then true else false end into v_mismatch_lead_follow_p
+        from flyhh_event_participants p1
+        inner join flyhh_event_participants p2
+        on (p1.partner_participant_id = p2.participant_id)
+        where p1.participant_id = p_participant_id
+        and p1.lead_p = p2.lead_p;
+
+        select case when count(1)>0 then true else false end into v_mismatch_accommodation_p
+        from flyhh_event_roommates m
+        inner join flyhh_event_participants r
+        on (m.roommate_id = r.participant_id)
+        inner join flyhh_event_participants p
+        on (m.participant_id = p.participant_id)
+        where m.participant_id = p_participant_id
+        and p.accommodation != r.accommodation;
+
+        if v_mismatch_lead_follow_p then
+            v_category := ''Mismatch L/F'';
+        elsif v_mismatch_accommodation_p then
+            v_category := ''Mismatch Acc'';
+        else
+            v_category := ''Completed'';
+        end if;
     end if;
 
     update flyhh_event_participants 
-    set event_participant_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Status'')
+    set validation_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Validation'')
     where participant_id = p_participant_id;
 
     return true;
@@ -297,6 +328,7 @@ BEGIN
             project_id,
             event_participant_status_id,
             event_participant_type_id,
+            validation_status_id,
 
             lead_p,
             partner_email,
@@ -317,8 +349,9 @@ BEGIN
 
             v_person_id, 
             p_project_id,
-            82500,              -- Created / event_participant_status_id
+            82500,              -- Waiting List / event_participant_status_id
             102,                -- Castle Camp / event_participant_type_id
+            82510,              -- Created / validation_status_id
 
             p_lead_p,
             p_partner_email,
@@ -898,12 +931,39 @@ begin
         300011,
         v_view_id,
         NULL,
+        ''Validation'',
+        ''validation_status_id'',
+        ''$validation'',
+        ''im_name_from_id(validation_status_id) as validation'',
+        '''',
+        12,
+        '''',
+        ''''
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for,
+        datatype
+    ) values (
+        300012,
+        v_view_id,
+        NULL,
         ''Status'',
         ''event_participant_status_id'',
         ''$status_select'',
         '''',
         '''',
-        12,
+        13,
         '''',
         ''category_pretty''
     );
@@ -916,43 +976,52 @@ end' language 'plpgsql';
 select __inline0();
 drop function __inline0();
 
--- TODO: We need an invoice_id in the flyhh_event_participants table
 -- Category IDs 82000-82999 reserved for Events
--- Created
---   Pending
---      Pending Both
---      Pending Partner
---      Pending Roommate
--- Open
---   Approved
---     Invoice Created
---     Invoice Past Due
---     Invoice Outstanding
---     Invoice Partially Paid
---     Invoice Paid
---     Invoice Filed
---   Rejected
--- Cancelled  (see http://grammarist.com/spelling/cancel/ for Canceled vs. Cancelled discussion) 
--- Closed
 
-SELECT im_category_new (82500, 'Created', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82501, 'Pending', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82502, 'Pending Both', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82503, 'Pending Partner', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82504, 'Pending Roommates', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82505, 'Open', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82506, 'Approved', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82507, 'Rejected', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82508, 'Cancelled', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82509, 'Closed', 'Flyhh - Event Registration Status');
+--
+-- Flyhh - Event Registration Status
+-- (status Options in the normal flow of things)
+--
 
-SELECT im_category_hierarchy_new (82502, 82501);  -- Pending Both <- Pending
-SELECT im_category_hierarchy_new (82503, 82501);  -- Pending Partner <- Pending
-SELECT im_category_hierarchy_new (82504, 82501);  -- Pending Roommates <- Pending
-SELECT im_category_hierarchy_new (82506, 82505);  -- Approved <- Open
-SELECT im_category_hierarchy_new (82507, 82505);  -- Rejected <- Open
+-- if the participant registers he is put onto a waiting list
+SELECT im_category_new (82500, 'Waiting List', 'Flyhh - Event Registration Status');
 
+-- this is the status we provide if the participant is accepted from our side into the camp
+SELECT im_category_new (82501, 'Confirmed', 'Flyhh - Event Registration Status');
+
+-- this is the status once the participant clicks the link to get the payment information
+SELECT im_category_new (82502, 'Pending Payment', 'Flyhh - Event Registration Status');
+
+-- this is the status once the participant has partially paid
+SELECT im_category_new (82503, 'Partially Paid', 'Flyhh - Event Registration Status');
+
+-- this is the status once the participant has fully paid
+SELECT im_category_new (82504, 'Registered', 'Flyhh - Event Registration Status');
+
+-- this is the status if the system kicks the partipanct out or we cancel the participant. 
+-- This only happens if the participant is not registered yet
+SELECT im_category_new (82505, 'Refused', 'Flyhh - Event Registration Status');
+
+-- this is if the participant decided not to come anymore
+SELECT im_category_new (82506, 'Cancelled', 'Flyhh - Event Registration Status');
+
+
+--
+-- Flyhh - Event Registration Validation
+--
+
+SELECT im_category_new (82510, 'Created', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82512, 'Invalid Both', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82513, 'Invalid Partner', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82514, 'Invalid Roommate(s)', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82515, 'Mismatch Acc', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82516, 'Mismatch L/F', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82517, 'Completed', 'Flyhh - Event Registration Validation');
+
+--
 -- Flyhh - Event Participant Level
+--
+
 SELECT im_category_new (82550, 'Beginner', 'Flyhh - Event Participant Level');
 SELECT im_category_new (82551, 'Intermediate', 'Flyhh - Event Participant Level');
 SELECT im_category_new (82552, 'Advanced', 'Flyhh - Event Participant Level');

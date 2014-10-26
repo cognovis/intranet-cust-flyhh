@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <message_catalog package_key="intranet-cust-flyhh" locale="en_US" charset="ISO-8859-1">
 
+  <msg key="Advanced">Advanced</msg>
+  <msg key="Beginner">Beginner</msg>
+  <msg key="Cancelled">Cancelled</msg>
+  <msg key="Completed">Completed</msg>
+  <msg key="Confirmed">Confirmed</msg>
+  <msg key="Created">Created</msg>
   <msg key="Filter_Participants">Filter Participants</msg>
+  <msg key="Intermediate">Intermediate</msg>
+  <msg key="Invalid_Both">Invalid Both</msg>
+  <msg key="Invalid_Partner">Invalid Partner</msg>
+  <msg key="Invalid_Roommates">Invalid Roommates</msg>
   <msg key="Lead_or_follow">Lead/Follow</msg>
   <msg key="Level">Level</msg>
+  <msg key="List_of_participants">List of participants</msg>
+  <msg key="Mismatch_Acc">Mismatch Acc</msg>
+  <msg key="Mismatch_LF">Mismatch L/F</msg>
+  <msg key="Partially_Paid">Partially Paid</msg>
+  <msg key="Pending_Payment">Pending Payment</msg>
+  <msg key="Refused">Refused</msg>
+  <msg key="Registered">Registered</msg>
   <msg key="Status">Status</msg>
+  <msg key="Validation">Validation</msg>
+  <msg key="Waiting_List">Waiting List</msg>
 </message_catalog>
