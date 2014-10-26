@@ -182,6 +182,7 @@ declare
     v_invalid_roommates_p           boolean;
     v_mismatch_lead_follow_p        boolean;
     v_mismatch_accommodation_p      boolean;
+    v_mismatch_level_p              boolean;
     v_category                      varchar;
 
 begin
@@ -226,10 +227,20 @@ begin
         where m.participant_id = p_participant_id
         and p.accommodation != r.accommodation;
 
+        select case when count(1)>0 then true else false end into v_mismatch_level_p
+        from flyhh_event_participants p1
+        inner join flyhh_event_participants p2
+        on (p1.partner_participant_id = p2.participant_id)
+        where p1.participant_id = p_participant_id
+        and p1.level != p2.level;
+
+
         if v_mismatch_lead_follow_p then
             v_category := ''Mismatch L/F'';
         elsif v_mismatch_accommodation_p then
             v_category := ''Mismatch Acc'';
+        elsif v_mismatch_level_p then
+            v_category := ''Mismatch Level'';
         else
             v_category := ''Completed'';
         end if;
@@ -1016,7 +1027,8 @@ SELECT im_category_new (82513, 'Invalid Partner', 'Flyhh - Event Registration Va
 SELECT im_category_new (82514, 'Invalid Roommate(s)', 'Flyhh - Event Registration Validation');
 SELECT im_category_new (82515, 'Mismatch Acc', 'Flyhh - Event Registration Validation');
 SELECT im_category_new (82516, 'Mismatch L/F', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82517, 'Completed', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82517, 'Mismatch Level', 'Flyhh - Event Registration Validation');
+SELECT im_category_new (82518, 'Completed', 'Flyhh - Event Registration Validation');
 
 --
 -- Flyhh - Event Participant Level
