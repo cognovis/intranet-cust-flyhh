@@ -18,7 +18,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="details_column_p"  default="1" description="enable to group dynview columns into a single table column in the list of participants"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="restrict_edit_list"  default="82505 82506 82507 82508 82509" description="do not allow the editing of any fields but the name, address, dance partner and room mates for any status_id in this list"/>
         </parameters>
 
     </version>
