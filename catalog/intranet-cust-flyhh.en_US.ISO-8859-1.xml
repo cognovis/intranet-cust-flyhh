@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="intranet-cust-flyhh" locale="en_US" charset="ISO-8859-1">
+
+  <msg key="Filter_Participants">Filter Participants</msg>
+  <msg key="Lead_or_follow">Lead/Follow</msg>
+  <msg key="Level">Level</msg>
+  <msg key="Status">Status</msg>
+</message_catalog>

@@ -172,7 +172,7 @@ declare
 
     p_participant_id                alias for $1;
 
-    v_pending_p                     boolean;
+    v_pending_both_p                boolean;
     v_pending_partner_p             boolean;
     v_pending_roommates_p           boolean;
     v_category                      varchar;
@@ -188,11 +188,13 @@ begin
     where participant_id = p_participant_id
     and roommate_id is null;
     
-    v_pending_p := v_pending_partner_p and v_pending_roommates_p;
 
     if v_pending_partner_p or v_pending_roommates_p then
-        if v_pending_p then
-            v_category := ''Pending'';
+
+        v_pending_both_p := v_pending_partner_p and v_pending_roommates_p;
+
+        if v_pending_both_p then
+            v_category := ''Pending Both'';
         elsif v_pending_partner_p then
             v_category := ''Pending Partner'';
         else
@@ -918,6 +920,7 @@ drop function __inline0();
 -- Category IDs 82000-82999 reserved for Events
 -- Created
 --   Pending
+--      Pending Both
 --      Pending Partner
 --      Pending Roommate
 -- Open
@@ -934,18 +937,20 @@ drop function __inline0();
 
 SELECT im_category_new (82500, 'Created', 'Flyhh - Event Registration Status');
 SELECT im_category_new (82501, 'Pending', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82502, 'Pending Partner', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82503, 'Pending Roommates', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82504, 'Open', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82505, 'Approved', 'Flyhh - Event Registration Status');
-SELECT im_category_new (82506, 'Rejected', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82502, 'Pending Both', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82503, 'Pending Partner', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82504, 'Pending Roommates', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82505, 'Open', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82506, 'Approved', 'Flyhh - Event Registration Status');
+SELECT im_category_new (82507, 'Rejected', 'Flyhh - Event Registration Status');
 SELECT im_category_new (82508, 'Cancelled', 'Flyhh - Event Registration Status');
 SELECT im_category_new (82509, 'Closed', 'Flyhh - Event Registration Status');
 
-SELECT im_category_hierarchy_new (82502, 82501);  -- Pending Partner <- Pending
-SELECT im_category_hierarchy_new (82503, 82501);  -- Pending Roommates <- Pending
-SELECT im_category_hierarchy_new (82505, 82504);  -- Approved <- Open
-SELECT im_category_hierarchy_new (82506, 82504);  -- Rejected <- Open
+SELECT im_category_hierarchy_new (82502, 82501);  -- Pending Both <- Pending
+SELECT im_category_hierarchy_new (82503, 82501);  -- Pending Partner <- Pending
+SELECT im_category_hierarchy_new (82504, 82501);  -- Pending Roommates <- Pending
+SELECT im_category_hierarchy_new (82506, 82505);  -- Approved <- Open
+SELECT im_category_hierarchy_new (82507, 82505);  -- Rejected <- Open
 
 -- Flyhh - Event Participant Level
 SELECT im_category_new (82550, 'Beginner', 'Flyhh - Event Participant Level');

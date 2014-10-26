@@ -99,15 +99,14 @@ db_foreach column_list_sql $column_sql {
 }
 
 
-set project_type_list [list]
-
-
 # ---------------------------------------------------------------
 # Filter with Dynamic Fields
 # ---------------------------------------------------------------
 
+set criteria [list]
+
 set form_id "flyhh_event_participants_filter"
-set action_url "../registration"
+set action_url "participants-list"
 set form_mode "edit"
 
 ad_form \
@@ -117,30 +116,66 @@ ad_form \
     -method GET \
     -export {order_by}\
     -form {
-        {project_type_id:text(select) {label "[_ intranet-cust-flyhh.Project_Type]"} {options $project_type_list }}
+
+        {lead_p:text(select),optional
+            {label "[_ intranet-cust-flyhh.Lead_or_follow]"}
+            {options {{"" ""} {Lead t} {Follow f}}}}
+
+        {level:text(im_category_tree),optional
+            {label "[_ intranet-cust-flyhh.Level]"} 
+            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
+
+        {event_participant_status_id:text(im_category_tree),optional
+            {label "[_ intranet-cust-flyhh.Status]"} 
+            {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
+
+    } -on_submit {
+
+        foreach varname {lead_p level event_participant_status_id} {
+
+            if { [exists_and_not_null $varname] } {
+
+                set value [set $varname]
+                set quoted_value [ns_dbquotevalue $value]
+
+                if { $varname eq {event_participant_status_id} } {
+
+                    if { $value eq {82503} || $value eq {82504} } {
+
+                        # if filtering participants by those who lack partner (82503 - Pending Partner)
+                        # or roommates (82504 - Pending Roommates) then include participants that lack
+                        # both (82502 - Pending Both).
+
+                        lappend criteria "($varname = $quoted_value OR $varname = '82502')"
+
+                    } else {
+
+                        # filter by given category id or by any of its child categories
+
+                        lappend criteria "($varname = $quoted_value 
+                                            OR EXISTS (select 1 
+                                                       from im_category_hierarchy 
+                                                       where child_id=event_participant_status_id 
+                                                       and parent_id=$quoted_value))"
+
+                    }
+
+                } else {
+
+                    lappend criteria "$varname = $quoted_value" 
+
+                }
+
+            }
+
+        }
+
     }
 
-
-# List to store the view_type_options
-set view_type_options [list [list HTML ""]]
-
-# Run callback to extend the filter and/or add items to the view_type_options
-#callback im_projects_index_filter -form_id $form_id
-#ad_form -extend -name $form_id -form {
-#    {view_type:text(select),optional {label "#intranet-openoffice.View_type#"} {options $view_type_options}}
-#}
 
 # ---------------------------------------------------------------
 # 5. Generate SQL Query
 # ---------------------------------------------------------------
-
-set criteria [list]
-
-# If the user isn't HR, we can only see employees where the current user is the supervisor
-# if {![im_user_is_hr_p $user_id]} {
-    # Only HR can view all users, everyone only the users he is supervising
-#    lappend extra_wheres "employee_id in (select employee_id from im_employees where supervisor_id = :user_id)"
-# }
 
 
 if {$view_order_by_clause != ""} {
@@ -149,9 +184,9 @@ if {$view_order_by_clause != ""} {
     set order_by_clause "order by participant_id"
 }
 
-set where_clause [join $criteria " and "]
-if { ![empty_string_p $where_clause] } {
-    set where_clause " and $where_clause"
+set where_clause [join [concat $criteria $extra_wheres] " and "]
+if { $where_clause ne {} } {
+    set where_clause "where $where_clause"
 }
 
 set extra_select [join $extra_selects ","]
@@ -164,36 +199,13 @@ if { ![empty_string_p $extra_from] } {
     set extra_from ",$extra_from"
 }
 
-set extra_where [join $extra_wheres " and "]
-if { ![empty_string_p $extra_where] } {
-    set extra_where " and $extra_where"
-}
-
-# Get a table with
-# - Username (from the owner of the absence /leave entitlement)
-# - Department of the owner
-# - Vacation already taken (in the current year)
-# - Vacation days left (in the current year)
-# - Vacation approved yet coming up this year
-# Grouping should be by vacation type
-# Ordering should be by default by the owner
-
-
-#set booking_year [string range $reference_date 0 3]
-#set eoy "${booking_year}-12-31"
-#set soy "${booking_year}-01-01"
-
-
-# Fill Has values for each employee that is visible
-#set active_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_active]]]
-#set requested_category_ids [template::util::tcl_to_sql_list [im_sub_categories [im_user_absence_status_requested]]]
 set sql "
     select *
-       $extra_select 
+        $extra_select 
     from flyhh_event_participants ep 
     inner join parties pa on (pa.party_id=ep.person_id) 
     inner join persons p on (p.person_id=ep.person_id)
-    $extra_where
+    $where_clause
     $order_by_clause
 "
 
@@ -324,7 +336,7 @@ set filter_html $__adp_output
 set left_navbar_html "
 	<div class='filter-block'>
         	<div class='filter-title'>
-	           #intranet-cust-flyhh.Filter_Projects# $filter_admin_html
+	           #intranet-cust-flyhh.Filter_Participants# $filter_admin_html
         	</div>
             	$filter_html
       	</div>

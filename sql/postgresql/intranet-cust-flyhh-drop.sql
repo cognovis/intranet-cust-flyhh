@@ -31,3 +31,7 @@ delete from acs_objects where object_type='flyhh_event_participant';
 delete from acs_object_type_tables where object_type='flyhh_event_participant';
 delete from im_dynfield_layout_pages where object_type='flyhh_event_participant';
 select acs_object_type__drop_type('flyhh_event_participant',true);
+
+delete from im_category_hierarchy where parent_id in (82500,82501,82502,82503,82504,82505,82506,82507,82508,82509);
+delete from im_categories where category_id in (82500,82501,82502,82503,82504,82505,82506,82507,82508,82509);
+
