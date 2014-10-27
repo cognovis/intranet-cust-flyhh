@@ -5,6 +5,7 @@
 ad_page_contract { 
 
     
+    @param order_by participants display order
 
 } {
     { order_by "" }
@@ -242,7 +243,7 @@ set ctr 0
 foreach col $column_headers {
     set wrench_html [lindex $column_headers_admin $ctr]
     regsub -all " " $col "_" col_txt
-    set col_txt [lang::message::lookup "" intranet-core.$col_txt $col]
+    set col_txt [lang::message::lookup "" intranet-cust-flyhh.$col_txt $col]
     if {[info exists order_by_p($col)]} {
         append table_header_html "<td class=rowtitle><a href=\"${url}order_by=[ns_urlencode $col]\">$col_txt</a>$wrench_html</td>\n"
     } else {
@@ -267,12 +268,6 @@ set ctr 0
 
 db_foreach event_participants_query $sql {
 
-
-    set default $event_participant_status_id
-
-    set select_name "event_participant_status_id.$participant_id"
-
-    set status_select [im_category_select "Flyhh - Event Registration Status" $select_name $default]
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"

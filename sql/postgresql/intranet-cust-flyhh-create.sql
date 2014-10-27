@@ -462,6 +462,47 @@ begin
 
 end;' language 'plpgsql';
 
+create or replace function flyhh_event_roommates__html (
+    integer,varchar
+) returns varchar as '
+declare
+    p_participant_id    alias for $1;
+    p_base_url          alias for $2;
+
+    v_roommate record;
+    v_result varchar;
+    
+begin
+
+    v_result := '''';
+    for v_roommate in 
+        select r1.*, 
+            first_names || '' '' || last_name as person_name,
+            case when r2.participant_id is null then false else true end as mutual_p
+        from 
+            flyhh_event_roommates r1 left outer join persons p on (p.person_id = r1.roommate_person_id)
+            left outer join flyhh_event_roommates r2 on (r2.participant_id=r1.roommate_id and r2.roommate_id=r1.participant_id)
+        where 
+            r1.participant_id=p_participant_id 
+    loop
+        if v_roommate.roommate_id is null then
+            if v_roommate.roommate_person_id is null then
+                v_result := v_result || '' '' || ''<div style="color:red;" title="no event registration and no user account">'' || v_roommate.roommate_email || ''</div>'';
+            else
+                v_result := v_result || '' '' || ''<div style="color:red;" title="no event registration">'' || v_roommate.roommate_email || ''</div>'';
+            end if;
+        else
+            if v_roommate.mutual_p then
+                v_result := v_result || '' '' || ''<a href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'' || v_roommate.person_name || ''</a>'';
+            else
+                v_result := v_result || '' '' || ''(<a title="not mutual" style="color:red;" href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'' || v_roommate.person_name || ''</a>)'';
+            end if;
+        end if;
+    end loop;
+
+    return substring(v_result from 2);
+end;' language 'plpgsql';
+
 
 -- We use the task_type_id referencing the project_type_id from the project which we create for the event.
 -- We have one project type called „Castle Camp“ with two sub categories „SCC“ and „BCC“. 
@@ -942,15 +983,16 @@ begin
         300011,
         v_view_id,
         NULL,
-        ''Validation'',
-        ''validation_status_id'',
-        ''$validation'',
-        ''im_name_from_id(validation_status_id) as validation'',
+        ''Roommate(s)'',
+        ''roommates'',
+        ''$roommates_html'',
+        ''flyhh_event_roommates__html(participant_id,''''../registration'''') as roommates_html'',
         '''',
         12,
         '''',
-        ''''
+        ''category_pretty''
     );
+
 
 
     insert into im_view_columns (
@@ -969,12 +1011,38 @@ begin
         300012,
         v_view_id,
         NULL,
-        ''Status'',
-        ''event_participant_status_id'',
-        ''$status_select'',
-        '''',
+        ''Validation'',
+        ''validation_status_id'',
+        ''$validation'',
+        ''im_name_from_id(validation_status_id) as validation'',
         '''',
         13,
+        '''',
+        ''''
+    );
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for,
+        datatype
+    ) values (
+        300013,
+        v_view_id,
+        NULL,
+        ''Status'',
+        ''event_participant_status_id'',
+        ''[im_category_select "Flyhh - Event Registration Status" "event_participant_status_id.$participant_id" $event_participant_status_id]'',
+        ''participant_id,event_participant_status_id'',
+        '''',
+        14,
         '''',
         ''category_pretty''
     );
