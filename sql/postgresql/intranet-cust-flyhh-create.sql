@@ -117,7 +117,17 @@ create table flyhh_event_participants (
     -- in order to mark the value as such in the user interface
     partner_double_p    boolean default 'f',
 
-    accepted_terms_p    boolean not null default 'f'
+    accepted_terms_p    boolean not null default 'f',
+
+    invalid_partner_p   boolean not null default 'f',
+
+    invalid_roommates_p boolean not null default 'f',
+
+    mismatch_accomm_p   boolean not null default 'f',
+
+    mismatch_lead_p     boolean not null default 'f',
+
+    mismatch_level_p    boolean not null default 'f'
 
 );
 
@@ -197,7 +207,7 @@ declare
     v_invalid_both_p                boolean;
     v_invalid_partner_p             boolean;
     v_invalid_roommates_p           boolean;
-    v_mismatch_lead_follow_p        boolean;
+    v_mismatch_lead_p               boolean;
     v_mismatch_accommodation_p      boolean;
     v_mismatch_level_p              boolean;
     v_category                      varchar;
@@ -212,7 +222,29 @@ begin
     from flyhh_event_roommates
     where participant_id = p_participant_id
     and roommate_id is null;
-    
+
+    select case when count(1)>0 then true else false end into v_mismatch_lead_p
+    from flyhh_event_participants p1
+    inner join flyhh_event_participants p2
+    on (p1.partner_participant_id = p2.participant_id)
+    where p1.participant_id = p_participant_id
+    and p1.lead_p = p2.lead_p;
+
+    select case when count(1)>0 then true else false end into v_mismatch_accommodation_p
+    from flyhh_event_roommates m
+    inner join flyhh_event_participants r
+    on (m.roommate_id = r.participant_id)
+    inner join flyhh_event_participants p
+    on (m.participant_id = p.participant_id)
+    where m.participant_id = p_participant_id
+    and p.accommodation != r.accommodation;
+
+    select case when count(1)>0 then true else false end into v_mismatch_level_p
+    from flyhh_event_participants p1
+    inner join flyhh_event_participants p2
+    on (p1.partner_participant_id = p2.participant_id)
+    where p1.participant_id = p_participant_id
+    and p1.level != p2.level;
 
     if v_invalid_partner_p or v_invalid_roommates_p then
 
@@ -225,34 +257,10 @@ begin
         else
             v_category := ''Invalid Roommate(s)'';
         end if;
+
     else
 
-
-        select case when count(1)>0 then true else false end into v_mismatch_lead_follow_p
-        from flyhh_event_participants p1
-        inner join flyhh_event_participants p2
-        on (p1.partner_participant_id = p2.participant_id)
-        where p1.participant_id = p_participant_id
-        and p1.lead_p = p2.lead_p;
-
-        select case when count(1)>0 then true else false end into v_mismatch_accommodation_p
-        from flyhh_event_roommates m
-        inner join flyhh_event_participants r
-        on (m.roommate_id = r.participant_id)
-        inner join flyhh_event_participants p
-        on (m.participant_id = p.participant_id)
-        where m.participant_id = p_participant_id
-        and p.accommodation != r.accommodation;
-
-        select case when count(1)>0 then true else false end into v_mismatch_level_p
-        from flyhh_event_participants p1
-        inner join flyhh_event_participants p2
-        on (p1.partner_participant_id = p2.participant_id)
-        where p1.participant_id = p_participant_id
-        and p1.level != p2.level;
-
-
-        if v_mismatch_lead_follow_p then
+        if v_mismatch_lead_p then
             v_category := ''Mismatch L/F'';
         elsif v_mismatch_accommodation_p then
             v_category := ''Mismatch Acc'';
@@ -261,10 +269,20 @@ begin
         else
             v_category := ''Completed'';
         end if;
+
     end if;
 
-    update flyhh_event_participants 
-    set validation_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Validation'')
+    -- TODO: update all roommates with an accommodation mismatch of the given participant
+    -- TODO: update partner with lead/follow mismatch
+    -- TODO: update partner with level mismatch
+
+    update flyhh_event_participants set
+        invalid_partner_p   = v_invalid_partner_p,
+        invalid_roommates_p = v_invalid_roommates_p,
+        mismatch_accomm_p   = v_mismatch_accommodation_p,
+        mismatch_lead_p     = v_mismatch_lead_p,
+        mismatch_level_p    = v_mismatch_level_p,
+        validation_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Validation'')
     where participant_id = p_participant_id;
 
     return true;
@@ -803,7 +821,7 @@ begin
         NULL,
         ''L/F'',
         ''lead_p'',
-        ''[ad_decode $lead_p t Lead Follow]'',
+        ''[ad_decode $mismatch_lead_p f [set text [ad_decode $lead_p t Lead Follow]] "<font color=red>$text</font>"]'',
         '''',
         '''',
         4,
