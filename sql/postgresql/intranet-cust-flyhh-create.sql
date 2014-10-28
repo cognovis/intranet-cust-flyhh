@@ -94,11 +94,26 @@ create table flyhh_event_participants (
     
     lead_p              boolean not null default 'f',
 
+    -- partner_name is different than partner_person_name (see participant-list.tcl)
+    -- the former is given by the participant as the name of their partner
+    -- the latter is the name we have on record for a user account
+
+    partner_name        varchar(250),
+
     partner_email       varchar(250),
 
     partner_participant_id integer
                         constraint flyhh_event_participants__partner_participant_id_fk
                         references flyhh_event_participants(participant_id),
+    
+    partner_person_id   integer
+                        constraint flyhh_event_participants__partner_person_id_fk
+                        references persons(person_id),
+
+    -- if all we've got is the partner's name and the search returned
+    -- more than one participant with the given name, we set this flag
+    -- in order to mark the value as such in the user interface
+    partner_double_p    boolean default 'f',
 
     accepted_terms_p    boolean not null default 'f'
 
@@ -258,7 +273,7 @@ end;' language 'plpgsql';
 create or replace function flyhh_event_participant__new (
     integer, varchar, varchar, varchar, varchar,
 	integer, integer, integer,
-    boolean, varchar, boolean,
+    boolean, varchar, varchar, boolean,
     integer, integer, integer, integer,
     integer, integer
 ) returns integer as '
@@ -275,20 +290,22 @@ DECLARE
         p_type_id               alias for $8;
 
         p_lead_p                alias for $9;
-        p_partner_email         alias for $10;
-        p_accepted_terms_p      alias for $11;
+        p_partner_name          alias for $10;
+        p_partner_email         alias for $11;
+        p_accepted_terms_p      alias for $12;
 
-        p_accommodation         alias for $12;
-        p_food_choice           alias for $13;
-        p_bus_option            alias for $14;
-        p_level     alias for $15;
+        p_accommodation         alias for $13;
+        p_food_choice           alias for $14;
+        p_bus_option            alias for $15;
+        p_level                 alias for $16;
 
-        p_payment_type          alias for $16;
-        p_payment_term          alias for $17;
+        p_payment_type          alias for $17;
+        p_payment_term          alias for $18;
 
         v_partner_participant_id    integer;
         v_person_id                 integer;
         v_participant_id            integer;
+        v_partner_double_p          boolean;
 
 
 BEGIN
@@ -342,8 +359,10 @@ BEGIN
             validation_status_id,
 
             lead_p,
+            partner_name,
             partner_email,
             partner_participant_id,
+            partner_person_id,
             accepted_terms_p,
 
             accommodation,
@@ -365,8 +384,10 @@ BEGIN
             82510,              -- Created / validation_status_id
 
             p_lead_p,
+            p_partner_name,
             p_partner_email,
             v_partner_participant_id,
+            (select person_id from flyhh_event_participants where participant_id=v_partner_participant_id),
             p_accepted_terms_p,
 
             p_accommodation,
@@ -387,21 +408,41 @@ BEGIN
         -- and, ditto for partner_participant_id.
 
         update flyhh_event_roommates set
-            roommate_person_id=v_person_id,
-            roommate_id=v_participant_id
+            roommate_person_id = v_person_id,
+            roommate_id = v_participant_id
         where
-            roommate_email=p_email
-            and project_id=p_project_id;
+            roommate_email = p_email
+            and project_id = p_project_id;
 
-        -- update partner_person_id for this event
+        -- update partner_participant_id using email or name
 
         update flyhh_event_participants set
-            partner_participant_id=v_participant_id
+            partner_participant_id = v_participant_id,
+            partner_person_id = v_person_id
         where
-            partner_email=p_email
-            and project_id=p_project_id
+            (partner_email= p_email OR partner_name = p_first_names || '' '' || p_last_name)
+            and project_id = p_project_id
             and participant_id = v_partner_participant_id;
 
+        -- mark partners named multiple times
+
+        -- select case when count(1)>1 then true else false end into v_partner_double_p
+        -- from flyhh_event_participants
+        -- where 
+        --    project_id=p_project_id
+        -- and (partner_participant_id = v_participant_id 
+        --        OR partner_email = p_email 
+        --        OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
+
+        -- if v_partner_double_p then
+        --    update flyhh_event_participants set
+        --        partner_double_p = true
+        --    where
+        --        project_id=p_project_id
+        --    and (partner_participant_id = v_participant_id 
+        --            OR partner_email = p_email 
+        --            OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
+        -- end if;
 
         -- Automatically transition status to pending, pending partner, pending roommates, and open
         -- for the partner and roommates but not for the given participant, see explanation below.
@@ -691,31 +732,6 @@ begin
         ''Flyhh - Event Participants List'' -- view_label 
     );
 
-
-    insert into im_view_columns (
-        column_id, 
-        view_id, 
-        group_id, 
-        column_name,
-        variable_name,
-        column_render_tcl, 
-        extra_select, 
-        extra_where, 
-        sort_order, 
-        visible_for
-    ) values (
-        300000, 
-        v_view_id,
-        NULL,
-        ''Email'',
-        ''email'',
-        ''"<a href=../registration?participant_id=$participant_id>$email</a>"'',
-        ''participant_id'',
-        '''',
-        1,
-        ''''
-    );
-
     insert into im_view_columns (
         column_id, 
         view_id, 
@@ -731,14 +747,15 @@ begin
         300001, 
         v_view_id,
         NULL,
-        ''First Name'',
-        ''first_names'',
-        ''$first_names'',
+        ''Reg.ID'',
+        ''participant_id'',
+        ''$participant_id'',
         '''',
         '''',
-        2,
+        1,
         ''''
     );
+
 
     insert into im_view_columns (
         column_id, 
@@ -750,18 +767,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300002, 
         v_view_id,
         NULL,
-        ''Last Name'',
-        ''last_name'',
-        ''$last_name'',
+        ''Name'',
+        ''full_name'',
+        ''"<a href=../registration?participant_id=$participant_id>$full_name</a><br>$email"'',
+        ''first_names || '''' '''' || last_name as full_name, email, participant_id'',
         '''',
+        2,
         '''',
-        3,
-        ''''
+        ''last_name,first_names,email''
     );
 
     insert into im_view_columns (
@@ -779,7 +798,7 @@ begin
         300003, 
         v_view_id,
         NULL,
-        ''Lead/Follow'',
+        ''L/F'',
         ''lead_p'',
         ''[ad_decode $lead_p t Lead Follow]'',
         '''',
@@ -806,7 +825,7 @@ begin
         NULL,
         ''Partner'',
         ''partner_participant_id'',
-        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_email</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_email</a>"]'',
+        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_email</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a><br>$partner_email"]'',
         ''partner_email'',
         '''',
         5,
@@ -831,7 +850,7 @@ begin
         300005,
         v_view_id,
         NULL,
-        ''Accommodation'',
+        ''Accomm.'',
         ''accommodation'',
         ''$accommodation'',
         ''im_name_from_id(accommodation) as accommodation'',

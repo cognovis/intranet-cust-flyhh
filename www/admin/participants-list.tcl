@@ -196,6 +196,7 @@ set sql "
     from flyhh_event_participants ep 
     inner join parties pa on (pa.party_id=ep.person_id) 
     inner join persons p on (p.person_id=ep.person_id)
+    left outer join (select person_id, first_names || ' ' || last_name as partner_person_name from persons) partner on (partner.person_id = ep.partner_person_id)
     $where_clause
     $order_by_clause
 "

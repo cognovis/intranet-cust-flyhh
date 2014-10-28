@@ -73,14 +73,20 @@ im_dynfield::append_attributes_to_form \
 im_dynfield::set_form_values_from_http -form_id $form_id
 im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
+set email_re {([^\s\.]+@[^\s\.]+.(?:[^\s\.]+)+)}
+set name_re {((?:[^\s]+\s+){2,})}
+set name_email_re "${name_re}\\s*${email_re}"
+
 ad_form -extend -name $form_id -form {
 
     {lead_p:text(select)
         {label "Lead/Follow"}
         {options {{Lead t} {Follow f}}}}
 
-    {partner_email:text
-        {label "Partner Email"}}
+    {partner_text:text
+        {label "Partner"}
+        {help_text "email address (preferable), full name, or both"}
+        {html {style "width:300px;"}}}
 
     {roommates:text(textarea)
         {label "Roommates"}
@@ -112,7 +118,7 @@ ad_form -extend -name $form_id -form {
 
 } -edit_request {
 
-    set sql "select * 
+    set sql "select *, partner_name || ' ' || partner_email as partner_text  
              from flyhh_event_participants ep 
              inner join parties pa on (pa.party_id=ep.person_id) 
              inner join persons p on (p.person_id=ep.person_id) 
@@ -146,6 +152,12 @@ ad_form -extend -name $form_id -form {
         }
     }
 
+} -validate {
+
+    {partner_text
+        {[regexp -- $name_email_re $partner_text]}
+        "partner text must be an email address, full name, or both"}
+
 } -on_submit {
     
     if { [ad_form_new_p -key participant_id] } {
@@ -153,6 +165,11 @@ ad_form -extend -name $form_id -form {
         set creation_ip [ns_conn peeraddr]
         set status_id ""
         set type_id ""
+
+        # we have already checked that the regular expression succeeds
+        regexp -- $name_email_re $partner_text _dummy_ partner_name partner_email
+        set partner_name [string trim $partner_name " "]
+
 
         db_transaction {
 
@@ -170,6 +187,7 @@ ad_form -extend -name $form_id -form {
                 :type_id,
 
                 :lead_p,
+                :partner_name,
                 :partner_email,
                 :accepted_terms_p,
 
