@@ -948,7 +948,7 @@ begin
         NULL,
         ''Level'',
         ''level'',
-        ''$level'',
+        ''[ad_decode $mismatch_level_p f $level "<font color=red>$level</font>"]'',
         ''im_name_from_id(level) as level'',
         '''',
         9,
