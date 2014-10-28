@@ -61,9 +61,7 @@ create table flyhh_event_participants (
                                   constraint flyhh_event_participants__type_fk 
                                   references im_categories(category_id),
 
-    validation_status_id          integer not null 
-                                  constraint flyhh_event_participants__validation_fk 
-                                  references im_categories(category_id),
+    validation_mask             integer not null,
 
 
     accommodation       integer
@@ -246,31 +244,6 @@ begin
     where p1.participant_id = p_participant_id
     and p1.level != p2.level;
 
-    if v_invalid_partner_p or v_invalid_roommates_p then
-
-        v_invalid_both_p := v_invalid_partner_p and v_invalid_roommates_p;
-
-        if v_invalid_both_p then
-            v_category := ''Invalid Both'';
-        elsif v_invalid_partner_p then
-            v_category := ''Invalid Partner'';
-        else
-            v_category := ''Invalid Roommate(s)'';
-        end if;
-
-    else
-
-        if v_mismatch_lead_p then
-            v_category := ''Mismatch L/F'';
-        elsif v_mismatch_accommodation_p then
-            v_category := ''Mismatch Acc'';
-        elsif v_mismatch_level_p then
-            v_category := ''Mismatch Level'';
-        else
-            v_category := ''Completed'';
-        end if;
-
-    end if;
 
     -- TODO: update all roommates with an accommodation mismatch of the given participant
     -- TODO: update partner with lead/follow mismatch
@@ -282,7 +255,12 @@ begin
         mismatch_accomm_p   = v_mismatch_accommodation_p,
         mismatch_lead_p     = v_mismatch_lead_p,
         mismatch_level_p    = v_mismatch_level_p,
-        validation_status_id=(select category_id from im_categories where category=v_category and category_type=''Flyhh - Event Registration Validation'')
+        validation_mask = 
+            (case when v_invalid_partner_p then 1 else 0 end)
+            + (case when v_invalid_roommates_p then 2 else 0 end)
+            + (case when v_mismatch_accommodation_p then 4 else 0 end)
+            + (case when v_mismatch_lead_p then 8 else 0 end)
+            + (case when v_mismatch_level_p then 16 else 0 end)
     where participant_id = p_participant_id;
 
     return true;
@@ -375,7 +353,7 @@ BEGIN
             project_id,
             event_participant_status_id,
             event_participant_type_id,
-            validation_status_id,
+            validation_mask,
 
             lead_p,
             partner_text,
@@ -401,7 +379,7 @@ BEGIN
             p_project_id,
             82500,              -- Waiting List / event_participant_status_id
             102,                -- Castle Camp / event_participant_type_id
-            82510,              -- Created / validation_status_id
+            0,                  -- validation_mask
 
             p_lead_p,
             p_partner_text,
@@ -496,6 +474,34 @@ BEGIN
         return v_name;
 end;' language 'plpgsql';
 
+create or replace function flyhh_event_participant__validation_text (integer) 
+returns varchar as '
+declare
+        p_validation_mask alias for $1;
+        v_validation_text varchar;
+begin
+
+        v_validation_text := '''';
+
+        if p_validation_mask & 1 > 0 then
+            v_validation_text := v_validation_text || ''Invalid Partner'' || ''<br>'';
+        end if;
+        if p_validation_mask & 2 > 0 then
+            v_validation_text := v_validation_text || ''Invalid Roommates'' || ''<br>'';
+        end if;
+        if p_validation_mask & 4 > 0 then
+            v_validation_text := v_validation_text || ''Mismatch Accomm.'' || ''<br>'';
+        end if;
+        if p_validation_mask & 8 > 0 then
+            v_validation_text := v_validation_text || ''Mismatch L/F'' || ''<br>'';
+        end if;
+        if p_validation_mask & 16 > 0 then
+            v_validation_text := v_validation_text || ''Mismatch Level'' || ''<br>'';
+        end if;
+        
+        return v_validation_text;
+
+end;' language 'plpgsql';
 
 create or replace function flyhh_event_roommate__new (
     integer, integer, varchar
@@ -1052,9 +1058,9 @@ begin
         v_view_id,
         NULL,
         ''Validation'',
-        ''validation_status_id'',
-        ''$validation'',
-        ''im_name_from_id(validation_status_id) as validation'',
+        ''validation_mask'',
+        ''$validation_text'',
+        ''flyhh_event_participant__validation_text(validation_mask) as validation_text'',
         '''',
         13,
         '''',
@@ -1123,20 +1129,6 @@ SELECT im_category_new (82505, 'Refused', 'Flyhh - Event Registration Status');
 
 -- this is if the participant decided not to come anymore
 SELECT im_category_new (82506, 'Cancelled', 'Flyhh - Event Registration Status');
-
-
---
--- Flyhh - Event Registration Validation
---
-
-SELECT im_category_new (82510, 'Created', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82512, 'Invalid Both', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82513, 'Invalid Partner', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82514, 'Invalid Roommate(s)', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82515, 'Mismatch Acc', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82516, 'Mismatch L/F', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82517, 'Mismatch Level', 'Flyhh - Event Registration Validation');
-SELECT im_category_new (82518, 'Completed', 'Flyhh - Event Registration Validation');
 
 --
 -- Flyhh - Event Participant Level

@@ -126,15 +126,31 @@ ad_form \
             {label "[_ intranet-cust-flyhh.Level]"} 
             {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
-        {validation_status_id:text(im_category_tree),optional
+        {validation_mask:text(multiselect),optional,multiple
             {label "[_ intranet-cust-flyhh.Validation]"} 
-            {custom {category_type "Flyhh - Event Registration Validation" translate_p 1 package_key "intranet-cust-flyhh"}}}
+            {options {
+                {"" ""} 
+                {"Invalid Partner" 1} 
+                {"Invalid Roommates" 2} 
+                {"Mismatch Accomm." 4} 
+                {"Mismatch L/F" 8}
+                {"Mismatch Level" 16}
+            }}} 
 
         {event_participant_status_id:text(im_category_tree),optional
             {label "[_ intranet-cust-flyhh.Status]"} 
             {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
     } -on_submit {
+
+        set mask 0
+        foreach num $validation_mask {
+            if { $num == 1 } { lappend criteria "invalid_partner_p" }
+            if { $num == 2 } { lappend criteria "invalid_roommates_p" }
+            if { $num == 4 } { lappend criteria "mismatch_accomm_p" }
+            if { $num == 8 } { lappend criteria "mismatch_lead_p" }
+            if { $num == 16 } { lappend criteria "mismatch_level_p" }
+        }
 
         foreach varname {lead_p level event_participant_status_id validation_status_id} {
 
