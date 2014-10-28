@@ -1,6 +1,6 @@
 --- @author Neophytos Demetriou
 --- @creation-date 2014-10-15
---- @last-modified 2014-10-25
+--- @last-modified 2014-10-28
 
 select acs_object_type__create_type (
         'flyhh_event_participant',      -- object_type
@@ -97,6 +97,8 @@ create table flyhh_event_participants (
     -- partner_name is different than partner_person_name (see participant-list.tcl)
     -- the former is given by the participant as the name of their partner
     -- the latter is the name we have on record for a user account
+
+    partner_text        varchar(250),
 
     partner_name        varchar(250),
 
@@ -272,8 +274,8 @@ end;' language 'plpgsql';
 
 create or replace function flyhh_event_participant__new (
     integer, varchar, varchar, varchar, varchar,
-	integer, integer, integer,
-    boolean, varchar, varchar, boolean,
+	integer,
+    boolean, varchar, varchar, varchar, boolean,
     integer, integer, integer, integer,
     integer, integer
 ) returns integer as '
@@ -286,21 +288,20 @@ DECLARE
         p_creation_ip           alias for $5;
 
         p_project_id            alias for $6;
-        p_status_id             alias for $7;
-        p_type_id               alias for $8;
 
-        p_lead_p                alias for $9;
-        p_partner_name          alias for $10;
-        p_partner_email         alias for $11;
-        p_accepted_terms_p      alias for $12;
+        p_lead_p                alias for $7;
+        p_partner_text          alias for $8;
+        p_partner_name          alias for $9;
+        p_partner_email         alias for $10;
+        p_accepted_terms_p      alias for $11;
 
-        p_accommodation         alias for $13;
-        p_food_choice           alias for $14;
-        p_bus_option            alias for $15;
-        p_level                 alias for $16;
+        p_accommodation         alias for $12;
+        p_food_choice           alias for $13;
+        p_bus_option            alias for $14;
+        p_level                 alias for $15;
 
-        p_payment_type          alias for $17;
-        p_payment_term          alias for $18;
+        p_payment_type          alias for $16;
+        p_payment_term          alias for $17;
 
         v_partner_participant_id    integer;
         v_person_id                 integer;
@@ -359,6 +360,7 @@ BEGIN
             validation_status_id,
 
             lead_p,
+            partner_text,
             partner_name,
             partner_email,
             partner_participant_id,
@@ -384,6 +386,7 @@ BEGIN
             82510,              -- Created / validation_status_id
 
             p_lead_p,
+            p_partner_text,
             p_partner_name,
             p_partner_email,
             v_partner_participant_id,
@@ -420,7 +423,7 @@ BEGIN
             partner_participant_id = v_participant_id,
             partner_person_id = v_person_id
         where
-            (partner_email= p_email OR partner_name = p_first_names || '' '' || p_last_name)
+            (partner_email = p_email or partner_name = (p_first_names || '' '' || p_last_name))
             and project_id = p_project_id
             and participant_id = v_partner_participant_id;
 
@@ -825,7 +828,7 @@ begin
         NULL,
         ''Partner'',
         ''partner_participant_id'',
-        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_email</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a><br>$partner_email"]'',
+        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a><br>[ad_decode $partner_email "" "(match by name)" $partner_email]"]'',
         ''partner_email'',
         '''',
         5,

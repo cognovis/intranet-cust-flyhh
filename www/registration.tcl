@@ -4,7 +4,7 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-10-23
+    @last-modified 2014-10-28
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
@@ -73,9 +73,9 @@ im_dynfield::append_attributes_to_form \
 im_dynfield::set_form_values_from_http -form_id $form_id
 im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
-set email_re {([^\s\.]+@[^\s\.]+.(?:[^\s\.]+)+)}
-set name_re {((?:[^\s]+\s+){2,})}
-set name_email_re "${name_re}\\s*${email_re}"
+set email_re {([^\s\.]+@[^\s\.]+\.(?:[^\s\.]+)+)}
+set name_re {((?:[^\s]+\s+)+[^\s]+)}
+set name_email_re "${name_re}\\s+${email_re}"
 
 ad_form -extend -name $form_id -form {
 
@@ -118,7 +118,7 @@ ad_form -extend -name $form_id -form {
 
 } -edit_request {
 
-    set sql "select *, partner_name || ' ' || partner_email as partner_text  
+    set sql "select *
              from flyhh_event_participants ep 
              inner join parties pa on (pa.party_id=ep.person_id) 
              inner join persons p on (p.person_id=ep.person_id) 
@@ -155,7 +155,11 @@ ad_form -extend -name $form_id -form {
 } -validate {
 
     {partner_text
-        {[regexp -- $name_email_re $partner_text]}
+
+        {[regexp -- $name_email_re $partner_text] 
+            || [regexp -- $email_re $partner_text] 
+            || [regexp -- $name_re $partner_text]}
+
         "partner text must be an email address, full name, or both"}
 
 } -on_submit {
@@ -163,11 +167,15 @@ ad_form -extend -name $form_id -form {
     if { [ad_form_new_p -key participant_id] } {
      
         set creation_ip [ns_conn peeraddr]
-        set status_id ""
-        set type_id ""
 
         # we have already checked that the regular expression succeeds
-        regexp -- $name_email_re $partner_text _dummy_ partner_name partner_email
+        set partner_name ""
+        set partner_email ""
+        if { ![regexp -- $name_email_re $partner_text _dummy_ partner_name partner_email] } {
+            if { ![regexp -- $email_re $partner_text _dummy_ partner_email] } {
+                regexp -- $name_re $partner_text _dummy_ partner_name
+            }
+        }
         set partner_name [string trim $partner_name " "]
 
 
@@ -183,10 +191,9 @@ ad_form -extend -name $form_id -form {
                 :creation_ip,
 
                 :project_id,
-                :status_id,
-                :type_id,
 
                 :lead_p,
+                :partner_text,
                 :partner_name,
                 :partner_email,
                 :accepted_terms_p,

@@ -17,8 +17,8 @@ where widget_name in ('flyhh_event_participation_accommodation','flyhh_event_par
 drop function flyhh_event_participant__name(integer);
 drop function flyhh_event_participant__new(
     integer, varchar, varchar, varchar, varchar,
-	integer, integer, integer,
-    boolean, varchar, varchar, boolean,
+	integer,
+    boolean, varchar, varchar, varchar, boolean,
     integer, integer, integer, integer,
     integer, integer
 );
