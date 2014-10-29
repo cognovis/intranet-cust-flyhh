@@ -143,7 +143,9 @@ create table flyhh_event_roommates (
                         constraint flyhh_event_participants__project_fk
                         references im_projects(project_id),
     
-    roommate_email      varchar(250) not null,
+    roommate_name      varchar(250),
+
+    roommate_email      varchar(250),
 
     roommate_person_id  integer
                         constraint flyhh_event_roommates__person_id_fk
@@ -151,7 +153,9 @@ create table flyhh_event_roommates (
 
     roommate_id         integer
                         constraint flyhh_event_roommates__roommate_id_fk
-                        references flyhh_event_participants(participant_id)
+                        references flyhh_event_participants(participant_id),
+
+    roommate_mutual_p   boolean not null default 'f'
 
 );
 
@@ -195,7 +199,7 @@ end;' language 'plpgsql';
 -- TODO: we can also check whether roommates choose the same type of accommodation
 -- and whether roommates have chosen different people to stay with.
 
-create or replace function flyhh_event_participant__status_automaton (
+create or replace function flyhh_event_participant__status_automaton_helper (
     integer
 ) returns boolean as '
 declare
@@ -219,7 +223,7 @@ begin
     select case when count(1)>0 then true else false end into v_invalid_roommates_p
     from flyhh_event_roommates
     where participant_id = p_participant_id
-    and roommate_id is null;
+    and (roommate_id is null or not(roommate_mutual_p));
 
     select case when count(1)>0 then true else false end into v_mismatch_lead_p
     from flyhh_event_participants p1
@@ -262,6 +266,34 @@ begin
             + (case when v_mismatch_lead_p then 8 else 0 end)
             + (case when v_mismatch_level_p then 16 else 0 end)
     where participant_id = p_participant_id;
+
+    return true;
+
+end;' language 'plpgsql';
+
+create or replace function flyhh_event_participant__status_automaton (
+    integer
+) returns boolean as '
+declare
+    p_participant_id        alias for $1;
+begin
+
+    -- Mark invalid fields across participants, e.g. invalid partner, invalid roommates, and so on.
+    -- but not for the given participant (v_participant_id). In that case, it has to be called from the 
+    -- the registration.tcl script in order to take into account the roommates that are not stored 
+    -- in the db at this point.
+
+    perform flyhh_event_participant__status_automaton_helper(partner_participant_id)
+    from flyhh_event_participants
+    where participant_id=p_participant_id 
+    and partner_participant_id is not null;
+
+
+    perform flyhh_event_participant__status_automaton_helper(participant_id)
+    from flyhh_event_roommates
+    where roommate_id=p_participant_id;
+
+    perform flyhh_event_participant__status_automaton_helper(p_participant_id);
 
     return true;
 
@@ -451,18 +483,7 @@ BEGIN
         --            OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
         -- end if;
 
-        -- Automatically transition status to pending, pending partner, pending roommates, and open
-        -- for the partner and roommates but not for the given participant, see explanation below.
-
-        -- ATTENTION: flyhh_event_participant__status_automaton needs to be invoked from
-        -- the registration.tcl script for the given participant (v_participant_id) 
-        -- in order to take into account the roommates that are not stored in the db at this point.
-
-        perform flyhh_event_participant__status_automaton(v_partner_participant_id);
-        perform flyhh_event_participant__status_automaton(participant_id)
-        from flyhh_event_roommates
-        where roommate_id=v_participant_id;
-
+        
         return v_person_id;
 
 end;' language 'plpgsql';
@@ -511,28 +532,71 @@ begin
 
 end;' language 'plpgsql';
 
+create or replace function flyhh_person_id_from_email_or_name(
+    integer,varchar, varchar
+) returns integer as '
+declare
+    p_project_id        alias for $1;
+    p_email             alias for $2;
+    p_name              alias for $3;
+begin
+
+    return (select party_id 
+            from parties pa inner join persons p on (p.person_id=pa.party_id) 
+            inner join flyhh_event_participants ep on (p.person_id=ep.person_id)
+            where project_id=p_project_id and (email=p_email or (first_names || '' '' || last_name)=p_name));
+
+end;' language 'plpgsql';
+
 create or replace function flyhh_event_roommate__new (
-    integer, integer, varchar
+    integer, integer, varchar, varchar
 ) returns boolean as '
 declare
     p_participant_id    alias for $1;
     p_project_id        alias for $2;
     p_roommate_email    alias for $3;
+    p_roommate_name     alias for $4;
+
+    v_roommate_person_id    integer;
+    v_roommate_id           integer;
+    v_roommate_mutual_p     boolean;
 begin
+
+    select flyhh_person_id_from_email_or_name(p_project_id,p_roommate_email,p_roommate_name) into v_roommate_person_id;
+
+    v_roommate_mutual_p := false;
+
+    if v_roommate_person_id is not null then
+
+        select participant_id into v_roommate_id
+        from flyhh_event_participants 
+        where project_id=p_project_id 
+        and person_id=v_roommate_person_id;
+
+    end if;
 
     insert into flyhh_event_roommates(
         participant_id,
         project_id,
         roommate_email,
         roommate_person_id,
-        roommate_id
+        roommate_id,
+        roommate_mutual_p
     ) values (
         p_participant_id,
         p_project_id,
         p_roommate_email,
-        (select party_id from parties where email=p_roommate_email),
-        (select participant_id from flyhh_event_participants where project_id=p_project_id and person_id=(select party_id from parties where email=p_roommate_email))
+        v_roommate_person_id,
+        v_roommate_id,
+        exists (select 1 from flyhh_event_roommates where participant_id=v_roommate_id and roommate_id=p_participant_id)
     );
+
+    if v_roommate_id is not null then 
+        update flyhh_event_roommates 
+        set roommate_mutual_p=true 
+        where participant_id=v_roommate_id 
+        and roommate_id=p_participant_id;
+    end if;
 
     return true;
 
@@ -555,7 +619,7 @@ begin
     for v_roommate in 
         select r1.*, 
             first_names || '' '' || last_name as person_name,
-            case when r2.participant_id is null then false else true end as mutual_p
+            case when r2.participant_id is null then false else true end as no_reg_p
         from 
             flyhh_event_roommates r1 left outer join persons p on (p.person_id = r1.roommate_person_id)
             left outer join flyhh_event_roommates r2 on (r2.participant_id=r1.roommate_id and r2.roommate_id=r1.participant_id)
@@ -573,7 +637,7 @@ begin
                 v_result := v_result || v_roommate.roommate_email || ''</div> (no reg)'';
             end if;
         else
-            if v_roommate.mutual_p then
+            if v_roommate.roommate_mutual_p then
                 v_result := v_result || ''<a href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'';
                 v_result := v_result || v_roommate.person_name || ''</a>'';
             else

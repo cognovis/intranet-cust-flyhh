@@ -23,6 +23,9 @@ drop function flyhh_event_participant__new(
     integer, integer
 );
 
+drop function flyhh_person_id_from_email_or_name(integer,varchar,varchar);
+drop function flyhh_event_roommate__new(integer,integer,varchar,varchar);
+
 drop table flyhh_event_roommates;
 drop table flyhh_event_participants;
 

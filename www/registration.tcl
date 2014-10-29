@@ -211,16 +211,19 @@ ad_form -extend -name $form_id -form {
             set roommate_emails [lsearch -all -inline -not [split $roommates ",| \t\n\r"] {}]
 
             foreach roommate_email $roommate_emails {
+
+                # TODO: to be extracted from roommate_text
+                set roommate_name ""
+
                 db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
                     :participant_id,
                     :project_id,
-                    :roommate_email
+                    :roommate_email,
+                    :roommate_name
                 )"
+
             }
 
-            # for the participant's partner and everyone else who declared this person as their roommate,
-            # we already do this but for the given participant we need to call it now,
-            # after we have inserted his/her roommates in the db
             db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
 
         }
