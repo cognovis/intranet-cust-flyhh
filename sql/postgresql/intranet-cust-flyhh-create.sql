@@ -212,7 +212,7 @@ declare
 
 begin
 
-    select case when partner_participant_id is null then true else false end into v_invalid_partner_p
+    select case when (partner_participant_id is null OR NOT(partner_mutual_p)) then true else false end into v_invalid_partner_p
     from flyhh_event_participants
     where participant_id = p_participant_id;
 
@@ -361,6 +361,7 @@ BEGIN
             partner_email,
             partner_participant_id,
             partner_person_id,
+            partner_mutual_p,
             accepted_terms_p,
 
             accommodation,
@@ -387,6 +388,11 @@ BEGIN
             p_partner_email,
             v_partner_participant_id,
             (select person_id from flyhh_event_participants where participant_id=v_partner_participant_id),
+            case when exists (
+                select 1 from flyhh_event_participants 
+                where participant_id=v_partner_participant_id 
+                and ((partner_email = p_email) or (partner_name = (p_first_names || '' '' || p_last_name)))
+            ) then true else false end,
             p_accepted_terms_p,
 
             p_accommodation,
@@ -418,10 +424,12 @@ BEGIN
         update flyhh_event_participants set
             partner_participant_id = v_participant_id,
             partner_person_id = v_person_id,
-            partner_mutual_p = case when participant_id = v_partner_participant_id then true else false end
+            partner_mutual_p = case when participant_id=v_partner_participant_id then true else false end
         where
             ((partner_email = p_email) or (partner_name = (p_first_names || '' '' || p_last_name)))
-            and project_id = p_project_id;
+            and project_id = p_project_id
+            and partner_participant_id is null;
+
 
         -- mark partners named multiple times
 
