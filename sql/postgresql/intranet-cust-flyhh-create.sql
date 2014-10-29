@@ -113,7 +113,7 @@ create table flyhh_event_participants (
     -- if all we've got is the partner's name and the search returned
     -- more than one participant with the given name, we set this flag
     -- in order to mark the value as such in the user interface
-    partner_double_p    boolean default 'f',
+    partner_mutual_p    boolean default 'f',
 
     accepted_terms_p    boolean not null default 'f',
 
@@ -302,7 +302,6 @@ DECLARE
         v_partner_participant_id    integer;
         v_person_id                 integer;
         v_participant_id            integer;
-        v_partner_double_p          boolean;
 
 
 BEGIN
@@ -339,11 +338,12 @@ BEGIN
         );
 
         select participant_id into v_partner_participant_id 
-        from parties pa 
-        inner join flyhh_event_participants ep 
-        on (ep.person_id=pa.party_id)
-        where email=p_partner_email
-        and project_id=p_project_id;
+        from parties pa inner join flyhh_event_participants ep on (ep.person_id=pa.party_id)
+        inner join persons p on (p.person_id = ep.person_id)
+        where (email=p_partner_email or (first_names || '' '' || last_name) ilike p_partner_name)
+        and project_id=p_project_id
+        order by participant_id
+        limit 1;
 
         insert into flyhh_event_participants (
 
@@ -417,11 +417,11 @@ BEGIN
 
         update flyhh_event_participants set
             partner_participant_id = v_participant_id,
-            partner_person_id = v_person_id
+            partner_person_id = v_person_id,
+            partner_mutual_p = case when participant_id = v_partner_participant_id then true else false end
         where
-            (partner_email = p_email or partner_name = (p_first_names || '' '' || p_last_name))
-            and project_id = p_project_id
-            and participant_id = v_partner_participant_id;
+            ((partner_email = p_email) or (partner_name = (p_first_names || '' '' || p_last_name)))
+            and project_id = p_project_id;
 
         -- mark partners named multiple times
 
@@ -537,8 +537,9 @@ declare
     p_participant_id    alias for $1;
     p_base_url          alias for $2;
 
-    v_roommate record;
-    v_result varchar;
+    v_count     integer;
+    v_roommate  record;
+    v_result    varchar;
     
 begin
 
@@ -553,22 +554,35 @@ begin
         where 
             r1.participant_id=p_participant_id 
     loop
+
         if v_roommate.roommate_id is null then
+
             if v_roommate.roommate_person_id is null then
-                v_result := v_result || '' '' || ''<div style="color:red;" title="no event registration and no user account">'' || v_roommate.roommate_email || ''</div>'';
+                v_result := v_result || ''<div style="color:red;" title="no event registration and no user account">'';
+                v_result := v_result || v_roommate.roommate_email || ''</div> (no reg & no usr)'';
             else
-                v_result := v_result || '' '' || ''<div style="color:red;" title="no event registration">'' || v_roommate.roommate_email || ''</div>'';
+                v_result := v_result || ''<div style="color:red;" title="no event registration">'';
+                v_result := v_result || v_roommate.roommate_email || ''</div> (no reg)'';
             end if;
         else
             if v_roommate.mutual_p then
-                v_result := v_result || '' '' || ''<a href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'' || v_roommate.person_name || ''</a>'';
+                v_result := v_result || ''<a href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'';
+                v_result := v_result || v_roommate.person_name || ''</a>'';
             else
-                v_result := v_result || '' '' || ''(<a title="not mutual" style="color:red;" href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'' || v_roommate.person_name || ''</a>)'';
+                v_result := v_result || ''<a style="color:green;" href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'';
+                v_result := v_result || v_roommate.person_name || ''</a> (not mutual)'';
             end if;
+
         end if;
+
+        v_result := v_result || ''<br>'';
+
+        v_count := v_count + 1;
+
     end loop;
 
-    return substring(v_result from 2);
+    return v_result; 
+
 end;' language 'plpgsql';
 
 
@@ -852,7 +866,7 @@ begin
         NULL,
         ''Partner'',
         ''partner_participant_id'',
-        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a><br>[ad_decode $partner_email "" "(match by name)" $partner_email]"]'',
+        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a [ad_decode $partner_mutual_p f \"style=color:green;\" \"\"] href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a>[ad_decode $partner_email "" "<br>(match by name)" "<br>($partner_email)"][ad_decode $partner_mutual_p f "<br>(not mutual)" ""]"]'',
         ''partner_email'',
         '''',
         5,
