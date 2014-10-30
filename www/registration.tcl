@@ -4,13 +4,25 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-10-29
+    @last-modified 2014-10-30
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
+    project_id:integer,notnull
     token:optional,notnull
 } -properties {
 } -validate {
+
+    event_exists_ck -requires {project_id:integer} {
+
+        set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
+        set is_event_proj_p [db_string check_event_project $sql -default 0]
+        if { !$is_event_proj_p } {
+            ad_complain "no event found for the given project_id (=$project_id)"
+        }
+
+    }
+
 } -errors {
 }
 
@@ -21,8 +33,8 @@ ad_page_contract {
 # we use an arbitrary project_id that we create for
 # company 8720, i.e. Flying Hamburger Events UG.
 #
-set sql "select project_id from im_projects where project_type_id=102 and company_id=8720 limit 1"
-set project_id [db_string some_project_id $sql]
+#set sql "select project_id from im_projects where project_type_id=102 and company_id=8720 limit 1"
+#set project_id [db_string some_project_id $sql]
 
 set page_title "Registration Form"
 set context [ad_context_bar $page_title]
@@ -41,6 +53,7 @@ ad_form \
     -name $form_id \
     -action $action_url \
     -mode $mode \
+    -export project_id \
     -form {
 
         participant_id:key(acs_object_id_seq)
@@ -68,10 +81,6 @@ im_dynfield::append_attributes_to_form \
 im_dynfield::set_form_values_from_http -form_id $form_id
 im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
-set email_re {([^\s\.]+@[^\s\.]+\.(?:[^\s\.]+)+)}
-set name_re {((?:[^\s]+\s+)+[^\s]+)}
-set name_email_re "${name_re}\\s+${email_re}"
-
 ad_form -extend -name $form_id -form {
 
     {lead_p:text(select)
@@ -80,12 +89,13 @@ ad_form -extend -name $form_id -form {
 
     {partner_text:text
         {label "Partner"}
-        {help_text "email address (preferable), full name, or both"}
+        {help_text "email address, name, or both"}
         {html {style "width:300px;"}}}
 
     {roommates:text(textarea)
         {label "Roommates"}
-        {html "rows 4 cols 30"}}
+        {html "rows 4 cols 30"}
+        {help_text "comma-separated list of email addresses, names, or both"}}
 
     {accepted_terms_p:boolean(checkbox)
         {label "Terms & Conditions"}
@@ -151,9 +161,7 @@ ad_form -extend -name $form_id -form {
 
     {partner_text
 
-        {[regexp -- $name_email_re $partner_text] 
-            || [regexp -- $email_re $partner_text] 
-            || [regexp -- $name_re $partner_text]}
+        {[flyhh_match_name_email $partner_text partner_name partner_email]}
 
         "partner text must be an email address, full name, or both"}
 
@@ -161,18 +169,9 @@ ad_form -extend -name $form_id -form {
     
     if { [ad_form_new_p -key participant_id] } {
      
-        set creation_ip [ns_conn peeraddr]
+        set creation_ip [ad_conn peeraddr]
 
-        # we have already checked that the regular expression succeeds
-        set partner_name ""
-        set partner_email ""
-        if { ![regexp -- $name_email_re $partner_text _dummy_ partner_name partner_email] } {
-            if { ![regexp -- $email_re $partner_text _dummy_ partner_email] } {
-                regexp -- $name_re $partner_text _dummy_ partner_name
-            }
-        }
-        set partner_name [string trim $partner_name " "]
-
+        flyhh_match_name_email $partner_text partner_name partner_email
 
         db_transaction {
 
@@ -203,12 +202,11 @@ ad_form -extend -name $form_id -form {
 
             )"
 
-            set roommate_emails [lsearch -all -inline -not [split $roommates ",| \t\n\r"] {}]
+            set roommates_list [lsearch -all -inline -not [split $roommates ",|\t\n\r"] {}]
 
-            foreach roommate_email $roommate_emails {
+            foreach roommate_text $roommates_list {
 
-                # TODO: to be extracted from roommate_text
-                set roommate_name ""
+                flyhh_match_name_email $roommate_text roommate_name roommate_email
 
                 db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
                     :participant_id,
@@ -224,11 +222,62 @@ ad_form -extend -name $form_id -form {
         }
 
     } else {
-        error "pl/pgsql function flyhh_event_participant__update not implemented yet"
+
+        set creation_ip [ad_conn peeraddr]
+
+        db_transaction {
+
+            db_exec_plsql insert_participant "select flyhh_event_participant__update(
+
+                :participant_id,
+
+                :email,
+                :first_names,
+                :last_name,
+                :creation_ip,
+
+                :project_id,
+
+                :lead_p,
+                :partner_text,
+                :partner_name,
+                :partner_email,
+                :accepted_terms_p,
+
+                :accommodation,
+                :food_choice,
+                :bus_option,
+                :level,
+                
+                :payment_type,
+                :payment_term
+
+            )"
+
+            set roommates_list [lsearch -all -inline -not [split $roommates ",|\t\n\r"] {}]
+
+            foreach roommate_text $roommates_list {
+
+                flyhh_match_name_email $roommate_text roommate_name roommate_email
+
+                # TODO: updating roommates is not done yet
+
+                db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
+                    :participant_id,
+                    :project_id,
+                    :roommate_email,
+                    :roommate_name
+                )"
+
+            }
+
+            db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+
+        }
     }
 
 } -after_submit {
-    ad_returnredirect [export_vars -base registration {participant_id}]
+    ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
 
 

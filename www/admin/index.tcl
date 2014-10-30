@@ -18,7 +18,8 @@ template::list::create \
         actions {
             label "Actions"
             display_template {
-                <a href="participants-list?project_id=@events.project_id@">see participants</a>
+                <a class="button" href="participants-list?project_id=@events.project_id@">see participants</a>
+                <a class="button" href="../registration?project_id=@events.project_id@">add participant</a>
             }
         }
     }

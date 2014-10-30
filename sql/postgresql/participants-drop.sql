@@ -19,6 +19,13 @@ from im_dynfield_widgets
 where widget_name in ('flyhh_event_participation_accommodation','flyhh_event_participant_food_choice','flyhh_event_participant_bus_options');
 
 drop function flyhh_event_participant__name(integer);
+drop function flyhh_event_participant__update(
+    integer, varchar, varchar, varchar, varchar,
+	integer,
+    boolean, varchar, varchar, varchar, boolean,
+    integer, integer, integer, integer,
+    integer, integer
+);
 drop function flyhh_event_participant__new(
     integer, varchar, varchar, varchar, varchar,
 	integer,

@@ -278,200 +278,259 @@ create or replace function flyhh_event_participant__new (
     integer, integer, integer, integer,
     integer, integer
 ) returns integer as '
-DECLARE
-        p_participant_id        alias for $1;
+declare
 
-        p_email                 alias for $2;
-        p_first_names           alias for $3;
-        p_last_name             alias for $4;
-        p_creation_ip           alias for $5;
+    p_participant_id        alias for $1;
 
-        p_project_id            alias for $6;
+    p_email                 alias for $2;
+    p_first_names           alias for $3;
+    p_last_name             alias for $4;
+    p_creation_ip           alias for $5;
 
-        p_lead_p                alias for $7;
-        p_partner_text          alias for $8;
-        p_partner_name          alias for $9;
-        p_partner_email         alias for $10;
-        p_accepted_terms_p      alias for $11;
+    p_project_id            alias for $6;
 
-        p_accommodation         alias for $12;
-        p_food_choice           alias for $13;
-        p_bus_option            alias for $14;
-        p_level                 alias for $15;
+    p_lead_p                alias for $7;
+    p_partner_text          alias for $8;
+    p_partner_name          alias for $9;
+    p_partner_email         alias for $10;
+    p_accepted_terms_p      alias for $11;
 
-        p_payment_type          alias for $16;
-        p_payment_term          alias for $17;
+    p_accommodation         alias for $12;
+    p_food_choice           alias for $13;
+    p_bus_option            alias for $14;
+    p_level                 alias for $15;
 
-        v_partner_participant_id    integer;
-        v_person_id                 integer;
-        v_participant_id            integer;
+    p_payment_type          alias for $16;
+    p_payment_term          alias for $17;
 
+    v_partner_participant_id    integer;
+    v_person_id                 integer;
+    v_participant_id            integer;
 
-BEGIN
+begin
 
-        select party_id into v_person_id
-        from parties where email=p_email;
+    select party_id into v_person_id
+    from parties where email=p_email;
 
-        if v_person_id is null then
-            select nextval(''t_acs_object_id_seq'') into v_person_id; 
-            perform person__new(
-                v_person_id,
-                ''person'',             -- object_type
-                CURRENT_TIMESTAMP,      -- creation_date
-                null,                   -- creation_user
-                p_creation_ip,
-                p_email,
-                null,
-                p_first_names,
-                p_last_name,
-                null                    -- context_id
-            );
-
-            -- TODO: create user account
-
-        end if;
-
-        v_participant_id := im_biz_object__new (
-            p_participant_id,
-            ''flyhh_event_participant'',   -- object_type
-            CURRENT_TIMESTAMP,          -- creation_date
-            null,                       -- creation_user
+    if v_person_id is null then
+        select nextval(''t_acs_object_id_seq'') into v_person_id; 
+        perform person__new(
+            v_person_id,
+            ''person'',             -- object_type
+            CURRENT_TIMESTAMP,      -- creation_date
+            null,                   -- creation_user
             p_creation_ip,
-            NULL                        -- context_id
+            p_email,
+            null,
+            p_first_names,
+            p_last_name,
+            null                    -- context_id
         );
 
-        select participant_id into v_partner_participant_id 
-        from parties pa inner join flyhh_event_participants ep on (ep.person_id=pa.party_id)
-        inner join persons p on (p.person_id = ep.person_id)
-        where (email=p_partner_email or (first_names || '' '' || last_name) ilike p_partner_name)
-        and project_id=p_project_id
-        order by participant_id
-        limit 1;
+        -- TODO: create user account
 
-        insert into flyhh_event_participants (
+    end if;
 
-            participant_id,
+    v_participant_id := im_biz_object__new (
+        p_participant_id,
+        ''flyhh_event_participant'',   -- object_type
+        CURRENT_TIMESTAMP,          -- creation_date
+        null,                       -- creation_user
+        p_creation_ip,
+        NULL                        -- context_id
+    );
 
-            person_id, 
-            project_id,
-            event_participant_status_id,
-            event_participant_type_id,
-            validation_mask,
+    select participant_id into v_partner_participant_id 
+    from parties pa inner join flyhh_event_participants ep on (ep.person_id=pa.party_id)
+    where (email=p_partner_email or person__name(ep.person_id) = p_partner_name)
+    and project_id=p_project_id
+    order by participant_id
+    limit 1;
 
-            lead_p,
-            partner_text,
-            partner_name,
-            partner_email,
-            partner_participant_id,
-            partner_person_id,
-            partner_mutual_p,
-            accepted_terms_p,
+    insert into flyhh_event_participants (
 
-            accommodation,
-            food_choice,
-            bus_option,
-            level,
+        participant_id,
 
-            payment_type,
-            payment_term
+        person_id, 
+        project_id,
+        event_participant_status_id,
+        event_participant_type_id,
+        validation_mask,
 
-        ) values (
+        lead_p,
+        partner_text,
+        partner_name,
+        partner_email,
+        partner_participant_id,
+        partner_person_id,
+        partner_mutual_p,
+        accepted_terms_p,
 
-            v_participant_id,
+        accommodation,
+        food_choice,
+        bus_option,
+        level,
 
-            v_person_id, 
-            p_project_id,
-            82500,              -- Waiting List / event_participant_status_id
-            102,                -- Castle Camp / event_participant_type_id
-            0,                  -- validation_mask
+        payment_type,
+        payment_term
 
-            p_lead_p,
-            p_partner_text,
-            p_partner_name,
-            p_partner_email,
-            v_partner_participant_id,
-            (select person_id from flyhh_event_participants where participant_id=v_partner_participant_id),
-            case when exists (
-                select 1 from flyhh_event_participants 
-                where participant_id=v_partner_participant_id 
-                and ((partner_email = p_email) or (partner_name = (p_first_names || '' '' || p_last_name)))
-            ) then true else false end,
-            p_accepted_terms_p,
+    ) values (
 
-            p_accommodation,
-            p_food_choice,
-            p_bus_option,
-            p_level,
+        v_participant_id,
 
-            p_payment_type,
-            p_payment_term
+        v_person_id, 
+        p_project_id,
+        82500,              -- Waiting List / event_participant_status_id
+        102,                -- Castle Camp / event_participant_type_id
+        0,                  -- validation_mask
 
-        );
+        p_lead_p,
+        p_partner_text,
+        p_partner_name,
+        p_partner_email,
+        v_partner_participant_id,
+        (select person_id from flyhh_event_participants where participant_id=v_partner_participant_id),
+        case when exists (
+            select 1 from flyhh_event_participants 
+            where participant_id=v_partner_participant_id 
+            and ((partner_email = p_email) or (partner_name = person__name(person_id)))
+        ) then true else false end,
+        p_accepted_terms_p,
 
-        -- Fill-in missing info in the roommates table for this event.
-        --
-        -- Note: We plan to show a list of roommates which have not registered
-        -- for the event so filtering by project_id ensures that we will
-        -- not fill-in the info when the person registers for another event
-        -- and, ditto for partner_participant_id.
+        p_accommodation,
+        p_food_choice,
+        p_bus_option,
+        p_level,
 
-        update flyhh_event_roommates set
-            roommate_person_id = v_person_id,
-            roommate_id = v_participant_id
-        where
-            roommate_email = p_email
-            and project_id = p_project_id;
+        p_payment_type,
+        p_payment_term
 
-        -- update partner_participant_id using email or name
+    );
 
-        update flyhh_event_participants set
-            partner_participant_id = v_participant_id,
-            partner_person_id = v_person_id,
-            partner_mutual_p = case when participant_id=v_partner_participant_id then true else false end
-        where
-            ((partner_email = p_email) or (partner_name = (p_first_names || '' '' || p_last_name)))
-            and project_id = p_project_id
-            and partner_participant_id is null;
+    -- Fill-in missing info in the roommates table for this event.
+    --
+    -- Note: We plan to show a list of roommates which have not registered
+    -- for the event so filtering by project_id ensures that we will
+    -- not fill-in the info when the person registers for another event
+    -- and, ditto for partner_participant_id.
+
+    update flyhh_event_roommates set
+        roommate_person_id = v_person_id,
+        roommate_id = v_participant_id
+    where
+        roommate_email = p_email
+        and project_id = p_project_id;
+
+    -- update partner_participant_id using email or name
+
+    update flyhh_event_participants set
+        partner_participant_id = v_participant_id,
+        partner_person_id = v_person_id,
+        partner_mutual_p = case when participant_id=v_partner_participant_id then true else false end
+    where
+        ((partner_email = p_email) or (partner_name = person__name(v_person_id)))
+        and project_id = p_project_id
+        and partner_participant_id is null;
 
 
-        -- mark partners named multiple times
+    -- mark partners named multiple times
 
-        -- select case when count(1)>1 then true else false end into v_partner_double_p
-        -- from flyhh_event_participants
-        -- where 
-        --    project_id=p_project_id
-        -- and (partner_participant_id = v_participant_id 
-        --        OR partner_email = p_email 
-        --        OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
+    -- select case when count(1)>1 then true else false end into v_partner_double_p
+    -- from flyhh_event_participants
+    -- where 
+    --    project_id=p_project_id
+    -- and (partner_participant_id = v_participant_id 
+    --        OR partner_email = p_email 
+    --        OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
 
-        -- if v_partner_double_p then
-        --    update flyhh_event_participants set
-        --        partner_double_p = true
-        --    where
-        --        project_id=p_project_id
-        --    and (partner_participant_id = v_participant_id 
-        --            OR partner_email = p_email 
-        --            OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
-        -- end if;
+    -- if v_partner_double_p then
+    --    update flyhh_event_participants set
+    --        partner_double_p = true
+    --    where
+    --        project_id=p_project_id
+    --    and (partner_participant_id = v_participant_id 
+    --            OR partner_email = p_email 
+    --            OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
+    -- end if;
 
-        
-        return v_person_id;
+    
+    return v_person_id;
+
+end;' language 'plpgsql';
+
+
+create or replace function flyhh_event_participant__update (
+    integer, varchar, varchar, varchar, varchar,
+	integer,
+    boolean, varchar, varchar, varchar, boolean,
+    integer, integer, integer, integer,
+    integer, integer
+) returns boolean as '
+declare
+
+    p_participant_id        alias for $1;
+
+    p_email                 alias for $2;
+    p_first_names           alias for $3;
+    p_last_name             alias for $4;
+    p_creation_ip           alias for $5;
+
+    p_project_id            alias for $6;
+
+    p_lead_p                alias for $7;
+    p_partner_text          alias for $8;
+    p_partner_name          alias for $9;
+    p_partner_email         alias for $10;
+    p_accepted_terms_p      alias for $11;
+
+    p_accommodation         alias for $12;
+    p_food_choice           alias for $13;
+    p_bus_option            alias for $14;
+    p_level                 alias for $15;
+
+    p_payment_type          alias for $16;
+    p_payment_term          alias for $17;
+
+    v_person_id                 integer;
+    v_partner_participant_id    integer;
+
+begin
+
+    select person_id into v_person_id
+    from flyhh_event_participants
+    where participant_id = p_participant_id;
+
+    update persons set
+        first_names = p_first_names,
+        last_name = p_last_name
+    where
+        person_id = v_person_id;
+
+    update flyhh_event_participants set
+        lead_p              = p_lead_p,
+        partner_text        = p_partner_text,
+        partner_name        = p_partner_name,
+        partner_email       = p_partner_email,
+        accepted_terms_p    = p_accepted_terms_p,
+        accommodation       = p_accommodation,
+        food_choice         = p_food_choice,
+        bus_option          = p_bus_option,
+        level               = p_level,
+        payment_type        = p_payment_type,
+        payment_term        = p_payment_term
+    where participant_id=p_participant_id;
+
+    return true;
 
 end;' language 'plpgsql';
 
 
 create or replace function flyhh_event_participant__name (integer) 
 returns varchar as '
-DECLARE
+declare
         p_person_id alias for $1;
-        v_name  varchar;
-BEGIN
-        select  first_names || '' '' || last_name
-        into    v_name
-        from    persons
-        where   person_id = p_person_id;
-
-        return v_name;
+begin
+    return person__name(p_person_id);
 end;' language 'plpgsql';
 
 create or replace function flyhh_event_participant__validation_text (integer) 
@@ -512,10 +571,10 @@ declare
     p_name              alias for $3;
 begin
 
-    return (select party_id 
-            from parties pa inner join persons p on (p.person_id=pa.party_id) 
-            inner join flyhh_event_participants ep on (p.person_id=ep.person_id)
-            where project_id=p_project_id and (email=p_email or (first_names || '' '' || last_name)=p_name));
+    return (select ep.person_id
+            from flyhh_event_participants ep inner join persons p on (p.person_id=ep.person_id)
+            inner join parties pa on (pa.party_id=ep.person_id)
+            where project_id=p_project_id and (email=p_email or person__name(ep.person_id)=p_name));
 
 end;' language 'plpgsql';
 
@@ -574,53 +633,54 @@ begin
 end;' language 'plpgsql';
 
 create or replace function flyhh_event_roommates__html (
-    integer,varchar
+    integer,integer,varchar
 ) returns varchar as '
 declare
-    p_participant_id    alias for $1;
-    p_base_url          alias for $2;
+    p_project_id        alias for $1;
+    p_participant_id    alias for $2;
+    p_base_url          alias for $3;
 
-    v_count     integer;
+    v_stub_url  varchar;
     v_roommate  record;
     v_result    varchar;
     
 begin
 
+    v_stub_url := p_base_url || ''?project_id='' || p_project_id || ''&participant_id='';
+
     v_result := '''';
+
     for v_roommate in 
-        select r1.*, 
-            first_names || '' '' || last_name as person_name,
-            case when r2.participant_id is null then false else true end as no_reg_p
+        select *, 
+            coalesce(roommate_email,roommate_name,''roommate_text'') as roommate_text,
+            coalesce(person__name(roommate_person_id),''person_name'') as person_name
         from 
-            flyhh_event_roommates r1 left outer join persons p on (p.person_id = r1.roommate_person_id)
-            left outer join flyhh_event_roommates r2 on (r2.participant_id=r1.roommate_id and r2.roommate_id=r1.participant_id)
+            flyhh_event_roommates
         where 
-            r1.participant_id=p_participant_id 
+            participant_id=p_participant_id 
     loop
 
         if v_roommate.roommate_id is null then
 
             if v_roommate.roommate_person_id is null then
                 v_result := v_result || ''<div style="color:red;" title="no event registration and no user account">'';
-                v_result := v_result || v_roommate.roommate_email || ''</div> (no reg & no usr)'';
+                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg & no usr)'';
             else
                 v_result := v_result || ''<div style="color:red;" title="no event registration">'';
-                v_result := v_result || v_roommate.roommate_email || ''</div> (no reg)'';
+                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg)'';
             end if;
         else
             if v_roommate.roommate_mutual_p then
-                v_result := v_result || ''<a href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'';
+                v_result := v_result || ''<a href="'' || v_stub_url || v_roommate.roommate_id || ''">'';
                 v_result := v_result || v_roommate.person_name || ''</a>'';
             else
-                v_result := v_result || ''<a style="color:green;" href="'' || p_base_url || ''?participant_id='' || v_roommate.roommate_id || ''">'';
+                v_result := v_result || ''<a style="color:green;" href="'' || v_stub_url || v_roommate.roommate_id || ''">'';
                 v_result := v_result || v_roommate.person_name || ''</a> (not mutual)'';
             end if;
 
         end if;
 
         v_result := v_result || ''<br>'';
-
-        v_count := v_count + 1;
 
     end loop;
 
@@ -859,12 +919,12 @@ begin
         NULL,
         ''Name'',
         ''full_name'',
-        ''"<a href=../registration?participant_id=$participant_id>$full_name</a><br>$email"'',
-        ''first_names || '''' '''' || last_name as full_name, email, participant_id'',
+        ''"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$full_name</a><br>$email"'',
+        ''person__name(person_id) as full_name, participant_id'',
         '''',
         2,
         '''',
-        ''last_name,first_names,email''
+        ''last_name,first_names''
     );
 
     insert into im_view_columns (
@@ -909,8 +969,8 @@ begin
         NULL,
         ''Partner'',
         ''partner_participant_id'',
-        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a [ad_decode $partner_mutual_p f \"style=color:green;\" \"\"] href=[export_vars -base ../registration { { participant_id $partner_participant_id } }]>$partner_person_name</a>[ad_decode $partner_email "" "<br>(match by name)" "<br>($partner_email)"][ad_decode $partner_mutual_p f "<br>(not mutual)" ""]"]'',
-        ''partner_email'',
+        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a [ad_decode $partner_mutual_p f \"style=color:green;\" \"\"] href=[export_vars -base ../registration { { project_id $project_id } { participant_id $partner_participant_id } }]>$partner_person_name</a>[ad_decode $partner_email "" "<br>(match by name)" "<br>($partner_email)"][ad_decode $partner_mutual_p f "<br>(not mutual)" ""]"]'',
+        ''partner_text,partner_name,partner_email,partner_mutual_p, project_id'',
         '''',
         5,
         ''''
@@ -1089,7 +1149,7 @@ begin
         ''Roommate(s)'',
         ''roommates'',
         ''$roommates_html'',
-        ''flyhh_event_roommates__html(participant_id,''''../registration'''') as roommates_html'',
+        ''flyhh_event_roommates__html(project_id,participant_id,''''../registration'''') as roommates_html'',
         '''',
         12,
         '''',

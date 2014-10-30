@@ -6,9 +6,28 @@ ad_page_contract {
 
     
     @param order_by participants display order
+    
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-10-15
+    @last-modified 2014-10-30
+    @cvs-id $Id$
 
 } {
+    project_id:integer,notnull
     { order_by "" }
+} -properties {
+} -validate {
+
+    event_exists_ck -requires {project_id:integer} {
+
+        set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
+        set is_event_proj_p [db_string check_event_project $sql -default 0]
+        if { !$is_event_proj_p } {
+            ad_complain "no event found for the given project_id (=$project_id)"
+        }
+
+    }
+
 }
 
 # absence_type_id
@@ -207,12 +226,11 @@ if { ![empty_string_p $extra_from] } {
 }
 
 set sql "
-    select *
+    select *, 
+        person__name(partner_person_id) as partner_person_name, 
+        party__email(person_id) as email
         $extra_select 
-    from flyhh_event_participants ep 
-    inner join parties pa on (pa.party_id=ep.person_id) 
-    inner join persons p on (p.person_id=ep.person_id)
-    left outer join (select person_id, first_names || ' ' || last_name as partner_person_name from persons) partner on (partner.person_id = ep.partner_person_id)
+    from flyhh_event_participants 
     $where_clause
     $order_by_clause
 "
