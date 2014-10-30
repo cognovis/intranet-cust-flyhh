@@ -34,7 +34,7 @@ create table flyhh_events (
                         constraint flyhh_events_pk
                         primary key,
 
-    event_title         varchar(250) not null,
+    event_name          varchar(250) not null,
 
     -- one project per event 
     
@@ -42,16 +42,54 @@ create table flyhh_events (
                         constraint flyhh_event_participants__project_fk
                         references im_projects(project_id),
 
-	-- tracks the status of the event
-
-    status_id           integer not null 
-                        constraint flyhh_event_participants__status_fk 
-                        references im_categories(category_id),
-
-    type_id             integer not null 
-                        constraint flyhh_event_participants__type_fk 
-                        references im_categories(category_id)
+    enabled_p           boolean not null default 'f'
 
 ); 
 
+create or replace function flyhh_event__new(
+    integer,varchar,integer,varchar,integer,boolean
+) returns boolean as '
+declare
+    p_event_id          alias for $1;
+    p_event_name        alias for $2;
+    p_company_id        alias for $3;
+    p_project_nr        alias for $4;
+    p_project_type_id   alias for $5;
+    p_enabled_p         alias for $6;
+
+    v_project_id        integer;
+
+begin
+
+    select im_project__new(
+        null,               -- project_id
+        ''im_project'',     -- object_type
+        now(),              -- creation_date
+        null,               -- creation_user
+        null,               -- creation_ip
+        null,               -- context_id
+        ''Event Project: '' || p_event_name,   -- project_name
+        p_project_nr,       -- project_nr
+        p_project_nr,       -- project_path
+        null,               -- parent_id
+        p_company_id,       -- company_id
+        p_project_type_id,  -- project_type_id,
+        76                  -- project_status_id (=Open)
+      ) into v_project_id;
+
+    insert into flyhh_events (
+        event_id,
+        event_name,
+        project_id,
+        enabled_p
+    ) values (
+        p_event_id,
+        p_event_name,
+        v_project_id,
+        p_enabled_p
+    );
+
+    return true;
+
+end;' language 'plpgsql';
 

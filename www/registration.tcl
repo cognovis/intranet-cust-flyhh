@@ -4,7 +4,7 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-10-28
+    @last-modified 2014-10-29
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
@@ -25,7 +25,7 @@ set sql "select project_id from im_projects where project_type_id=102 and compan
 set project_id [db_string some_project_id $sql]
 
 set page_title "Registration Form"
-set context [ad_context_bar "Registration Form"]
+set context [ad_context_bar $page_title]
 
 set form_id "registration_form"
 set action_url ""
@@ -57,11 +57,6 @@ ad_form \
         }
 
     }
-
-
-
-
-# TODO: figure out how to filter materials in the select box for the given material_type dynfield
 
 im_dynfield::append_attributes_to_form \
     -object_type $object_type \
