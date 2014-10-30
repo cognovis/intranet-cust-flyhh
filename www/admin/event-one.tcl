@@ -87,8 +87,8 @@ ad_form -extend -name $form_id -select_query {
         select flyhh_event__update(
             :event_id,
             :event_name,
-            :company_id,
-            :project_type_id
+            :project_type_id,
+            :enabled_p
         );
     "
 

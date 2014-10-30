@@ -40,7 +40,7 @@ create table flyhh_events (
     
 	project_id			integer not null
                         constraint flyhh_event_participants__project_fk
-                        references im_projects(project_id),
+                        references im_projects(project_id) on delete cascade,
 
     enabled_p           boolean not null default 'f'
 
@@ -88,6 +88,28 @@ begin
         v_project_id,
         p_enabled_p
     );
+
+    return true;
+
+end;' language 'plpgsql';
+
+create or replace function flyhh_event__update(
+    integer,varchar,integer,boolean
+) returns boolean as '
+declare
+    p_event_id          alias for $1;
+    p_event_name        alias for $2;
+    p_project_type_id   alias for $3;
+    p_enabled_p         alias for $4;
+begin
+
+    -- TODO: update corresponding project record
+
+    update flyhh_events set
+        event_name = p_event_name,
+        enabled_p = p_enabled_p
+    where
+        event_id = p_event_id;
 
     return true;
 
