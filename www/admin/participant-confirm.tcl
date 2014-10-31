@@ -1,4 +1,18 @@
 ad_page_contract {
+
+    Confirmed & Confirmation E-Mail:
+
+    * If we save the registrant in the list page or the edit page and 
+      put him/her to confirmed, send out an E-Mail to the registrant 
+      that they have a spot for the Camp. The E-Mail should contain 
+      what they signed up for as well as a link to get to the payment 
+      page for that registration
+
+    * Once we confirm the user, a Quote (invoice type) is created in 
+      the system based on the materials used for the registration. This 
+      basically is the transformation of the registration into a financial 
+      document. We can talk a little bit more about this in skype.
+
 } {
     participant_id:integer,multiple,notnull
     return_url:trim,notnull
