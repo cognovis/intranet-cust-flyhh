@@ -305,7 +305,7 @@ declare
 
     v_partner_participant_id    integer;
     v_person_id                 integer;
-    v_participant_id            integer;
+    v_person_name               varchar;
 
 begin
 
@@ -313,7 +313,9 @@ begin
     from parties where email=p_email;
 
     if v_person_id is null then
+
         select nextval(''t_acs_object_id_seq'') into v_person_id; 
+
         perform person__new(
             v_person_id,
             ''person'',             -- object_type
@@ -331,7 +333,7 @@ begin
 
     end if;
 
-    v_participant_id := im_biz_object__new (
+    perform im_biz_object__new (
         p_participant_id,
         ''flyhh_event_participant'',   -- object_type
         CURRENT_TIMESTAMP,          -- creation_date
@@ -376,7 +378,7 @@ begin
 
     ) values (
 
-        v_participant_id,
+        p_participant_id,
 
         v_person_id, 
         p_project_id,
@@ -393,7 +395,7 @@ begin
         case when exists (
             select 1 from flyhh_event_participants 
             where participant_id=v_partner_participant_id 
-            and ((partner_email = p_email) or (partner_name = person__name(person_id)))
+            and ((partner_email = p_email) or (partner_name = person__name(v_person_id)))
         ) then true else false end,
         p_accepted_terms_p,
 
@@ -414,21 +416,23 @@ begin
     -- not fill-in the info when the person registers for another event
     -- and, ditto for partner_participant_id.
 
+    v_person_name := person__name(v_person_id);
+
     update flyhh_event_roommates set
         roommate_person_id = v_person_id,
-        roommate_id = v_participant_id
+        roommate_id = p_participant_id
     where
-        roommate_email = p_email
+        (roommate_email = p_email or roommate_name = v_person_name)
         and project_id = p_project_id;
 
     -- update partner_participant_id using email or name
 
     update flyhh_event_participants set
-        partner_participant_id = v_participant_id,
+        partner_participant_id = p_participant_id,
         partner_person_id = v_person_id,
         partner_mutual_p = case when participant_id=v_partner_participant_id then true else false end
     where
-        ((partner_email = p_email) or (partner_name = person__name(v_person_id)))
+        ((partner_email = p_email) or (partner_name = v_person_name))
         and project_id = p_project_id
         and partner_participant_id is null;
 
