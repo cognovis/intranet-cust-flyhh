@@ -143,7 +143,7 @@ create table flyhh_event_roommates (
                         constraint flyhh_event_participants__project_fk
                         references im_projects(project_id),
     
-    roommate_name      varchar(250),
+    roommate_name       varchar(250),
 
     roommate_email      varchar(250),
 
@@ -609,6 +609,7 @@ begin
         participant_id,
         project_id,
         roommate_email,
+        roommate_name,
         roommate_person_id,
         roommate_id,
         roommate_mutual_p
@@ -616,6 +617,7 @@ begin
         p_participant_id,
         p_project_id,
         p_roommate_email,
+        p_roommate_name,
         v_roommate_person_id,
         v_roommate_id,
         exists (select 1 from flyhh_event_roommates where participant_id=v_roommate_id and roommate_id=p_participant_id)
