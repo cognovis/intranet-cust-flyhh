@@ -669,8 +669,11 @@ begin
         if v_roommate.roommate_id is null then
 
             if v_roommate.roommate_person_id is null then
-                v_result := v_result || ''<div style="color:red;" title="no event registration and no user account">'';
-                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg & no usr)'';
+                -- this used to be the case "no reg & no usr" but we no longer try to match the user accounts by name
+                -- as the user we end up choosing might not register for the event and the one we did not (but has the
+                -- same name) does register (so it would complicate things further, so we simplify like this for now)
+                v_result := v_result || ''<div style="color:red;" title="no event registration">'';
+                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg)'';
             else
                 v_result := v_result || ''<div style="color:red;" title="no event registration">'';
                 v_result := v_result || v_roommate.roommate_text || ''</div> (no reg)'';
@@ -925,12 +928,12 @@ begin
         NULL,
         ''Name'',
         ''full_name'',
-        ''"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$full_name</a><br>$email"'',
-        ''person__name(person_id) as full_name, participant_id'',
+        ''"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"'',
+        ''person__name(person_id) as participant_person_name, participant_id'',
         '''',
         2,
         '''',
-        ''last_name,first_names''
+        ''participant_person_name''
     );
 
     insert into im_view_columns (
@@ -943,7 +946,8 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300003, 
         v_view_id,
@@ -954,7 +958,8 @@ begin
         '''',
         '''',
         4,
-        ''''
+        '''',
+        ''lead_p''
     );
 
 
@@ -968,7 +973,8 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300004, 
         v_view_id,
@@ -979,7 +985,8 @@ begin
         ''partner_text,partner_name,partner_email,partner_mutual_p, project_id'',
         '''',
         5,
-        ''''
+        '''',
+        ''partner_person_name,partner_text''
     );
 
 
@@ -995,18 +1002,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300005,
         v_view_id,
         NULL,
         ''Accomm.'',
         ''accommodation'',
-        ''$accommodation'',
-        ''im_name_from_id(accommodation) as accommodation'',
+        ''[ad_decode $mismatch_accomm_p f $accommodation_text "<font color=red>$accommodation_text</font>"]'',
+        ''im_name_from_id(accommodation) as accommodation_text'',
         '''',
         6,
-        ''''
+        '''',
+        ''accommodation_text''
     );
 
 
@@ -1020,18 +1029,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300006,
         v_view_id,
         NULL,
         ''Food Choice'',
         ''food_choice'',
-        ''$food_choice'',
-        ''im_name_from_id(food_choice) as food_choice'',
+        ''$food_choice_text'',
+        ''im_name_from_id(food_choice) as food_choice_text'',
         '''',
         7,
-        ''''
+        '''',
+        ''food_choice_text''
     );
 
 
@@ -1045,18 +1056,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300007,
         v_view_id,
         NULL,
         ''Bus Option'',
         ''bus_option'',
-        ''$bus_option'',
-        ''im_name_from_id(bus_option) as bus_option'',
+        ''$bus_option_text'',
+        ''im_name_from_id(bus_option) as bus_option_text'',
         '''',
         8,
-        ''''
+        '''',
+        ''bus_option_text''
     );
 
 
@@ -1070,18 +1083,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300008,
         v_view_id,
         NULL,
         ''Level'',
         ''level'',
-        ''[ad_decode $mismatch_level_p f $level "<font color=red>$level</font>"]'',
-        ''im_name_from_id(level) as level'',
+        ''[ad_decode $mismatch_level_p f $level_text "<font color=red>$level_text</font>"]'',
+        ''im_name_from_id(level) as level_text'',
         '''',
         9,
-        ''''
+        '''',
+        ''level_text''
     );
 
 
@@ -1096,18 +1111,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300009,
         v_view_id,
         NULL,
         ''Payment Type'',
         ''payment_type'',
-        ''$payment_type'',
-        ''im_name_from_id(payment_type) as payment_type'',
+        ''$payment_type_text'',
+        ''im_name_from_id(payment_type) as payment_type_text'',
         '''',
         10,
-        ''''
+        '''',
+        ''payment_type_text''
     );
 
 
@@ -1121,18 +1138,20 @@ begin
         extra_select, 
         extra_where, 
         sort_order, 
-        visible_for
+        visible_for,
+        order_by_clause
     ) values (
         300010,
         v_view_id,
         NULL,
         ''Payment Term'',
         ''payment_term'',
-        ''$payment_term'',
-        ''im_name_from_id(payment_term) as payment_term'',
+        ''$payment_term_text'',
+        ''im_name_from_id(payment_term) as payment_term_text'',
         '''',
         11,
-        ''''
+        '''',
+        ''payment_term_text''
     );
 
 
