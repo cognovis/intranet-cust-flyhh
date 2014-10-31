@@ -345,7 +345,7 @@ No users        </b></ul></td></tr>"
 
 if { $bulk_actions ne {} } {
     foreach {label url title} $bulk_actions {
-        append row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
+        set row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
         append table_body_html $row_html
     }
     append table_body_html "</form>"
