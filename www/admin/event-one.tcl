@@ -14,7 +14,8 @@ ad_page_contract {
 }
 
 set page_title "Event Form"
-set context [ad_context_bar $page_title]
+set context ""
+set context_bar [ad_context_bar $page_title]
 
 set form_id "event_form"
 set action_url ""

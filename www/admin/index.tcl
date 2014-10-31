@@ -1,6 +1,7 @@
 
 set page_title "Flyhh Event Management - Administration Page"
-set context [ad_context_bar $page_title]
+set context ""
+set context_bar [ad_context_bar $page_title]
 
 set list_id "events_list"
 set multirow "events"
@@ -14,6 +15,18 @@ template::list::create \
         }
         event_name {
             label "Event Name"
+            link_url_eval {[export_vars -base event-one {event_id}]}
+        }
+        enabled_p {
+            label "Enabled?"
+            display_template {
+                <if @events.enabled_p@ true>
+                    yes
+                </if>
+                <else>
+                    no
+                </else>
+            }
         }
         actions {
             label "Actions"

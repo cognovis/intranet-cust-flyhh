@@ -7,9 +7,10 @@
 
 <SCRIPT Language=JavaScript src=/resources/diagram/diagram/diagram.js></SCRIPT>
 
+    @context_bar;noquote@
+    <p>
     <a class="button" href="../registration?project_id=@project_id@">add participant</a>
-    <br>
-    <br>
+    <p>
 	<table class="table_list_page">
             <%= $table_header_html %>
             <%= $table_body_html %>
