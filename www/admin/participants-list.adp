@@ -12,6 +12,6 @@
     <a class="button" href="../registration?project_id=@project_id@">add participant</a>
     <p>
 	<table class="table_list_page">
-            <%= $table_header_html %>
-            <%= $table_body_html %>
+            @table_header_html;noquote@
+            @table_body_html;noquote@ 
 	</table>

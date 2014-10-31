@@ -30,11 +30,16 @@ ad_page_contract {
 
 }
 
-# absence_type_id
+# 
 #
 set view_name "flyhh_event_participants_list"
-set view_type ""
-set department_id ""
+set key "participant_id"
+set bulk_actions {
+    "Confirm" "participant-confirm" "Confirm checked participants"
+}
+set bulk_actions_form_id "flyhh_event_participants_form"
+set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
+
 
 # ---------------------------------------------------------------
 # 2. Defaults & Security
@@ -82,6 +87,13 @@ set extra_selects [list]
 set extra_froms [list]
 set extra_wheres [list]
 set view_order_by_clause ""
+
+if { $bulk_actions ne {} } {
+    lappend column_headers "<input type=\"checkbox\">"
+    lappend column_vars {[set _out_ "<input type=\"checkbox\" name=\"$key\" value=\"[set $key]\">"]}
+    lappend column_headers_admin ""
+}
+
 
 set column_sql "
 select
@@ -298,8 +310,10 @@ set bgcolor(0) " class=roweven "
 set bgcolor(1) " class=rowodd "
 set ctr 0
 
-# callback im_projects_index_before_render -view_name $view_name \
-#    -view_type $view_type -sql $selection -table_header $page_title -variable_set $form_vars
+if { $bulk_actions ne {} } {
+    append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"\" method=\"post\">"
+    append table_body_html "<input type=hidden name=\"return_url\" value=\"${return_url}\">"
+}
 
 db_foreach event_participants_query $sql {
 
@@ -327,6 +341,14 @@ if { [empty_string_p $table_body_html] } {
     set table_body_html "
         <tr><td colspan=$colspan><ul><li><b> 
 No users        </b></ul></td></tr>"
+}
+
+if { $bulk_actions ne {} } {
+    foreach {label url title} $bulk_actions {
+        append row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
+        append table_body_html $row_html
+    }
+    append table_body_html "</form>"
 }
 
 # ---------------------------------------------------------------
