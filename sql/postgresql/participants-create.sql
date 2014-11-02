@@ -19,9 +19,9 @@ insert into acs_object_type_tables (object_type,table_name,id_column)
 values ('flyhh_event_participant', 'flyhh_event_participants', 'person_id');
 
 update acs_object_types set
-        status_type_table = 'flyhh_event_participants',
-        status_column = 'event_participant_status_id',
-        type_column = 'event_participant_type_id'
+    status_type_table = 'flyhh_event_participants',
+    status_column = 'event_participant_status_id',
+    type_column = 'event_participant_type_id'
 where object_type = 'flyhh_event_participant';
 
 ---insert into im_biz_object_urls (object_type, url_type, url) values (

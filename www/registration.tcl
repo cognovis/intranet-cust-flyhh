@@ -161,7 +161,7 @@ ad_form -extend -name $form_id -form {
 
     {partner_text
 
-        {[flyhh_match_name_email $partner_text partner_name partner_email]}
+        {[::flyhh::match_name_email $partner_text partner_name partner_email]}
 
         "partner text must be an email address, full name, or both"}
 
@@ -171,7 +171,7 @@ ad_form -extend -name $form_id -form {
      
         set creation_ip [ad_conn peeraddr]
 
-        flyhh_match_name_email $partner_text partner_name partner_email
+        ::flyhh::match_name_email $partner_text partner_name partner_email
 
         db_transaction {
 
@@ -206,7 +206,7 @@ ad_form -extend -name $form_id -form {
 
             foreach roommate_text $roommates_list {
 
-                flyhh_match_name_email $roommate_text roommate_name roommate_email
+                ::flyhh::match_name_email $roommate_text roommate_name roommate_email
 
                 db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
                     :participant_id,
@@ -258,7 +258,7 @@ ad_form -extend -name $form_id -form {
 
             foreach roommate_text $roommates_list {
 
-                flyhh_match_name_email $roommate_text roommate_name roommate_email
+                ::flyhh::match_name_email $roommate_text roommate_name roommate_email
 
                 # TODO: updating roommates is not done yet
 

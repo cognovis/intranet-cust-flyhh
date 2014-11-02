@@ -46,6 +46,9 @@ create table flyhh_events (
 
 ); 
 
+-- we query for the event_name using project_id
+create index flyhh_events__project_id__idx on flyhh_events(project_id);
+
 create or replace function flyhh_event__new(
     p_event_id          integer,
     p_event_name        varchar,
@@ -111,6 +114,25 @@ begin
 
     return true;
 
+end;
+$$ language 'plpgsql';
+
+create or replace function flyhh_event__name(
+    p_event_id          integer
+) returns varchar as
+$$
+begin
+    return event_name from flyhh_events where event_id=p_event_id;
+end;
+$$ language 'plpgsql';
+
+-- one project per event
+create or replace function flyhh_event__name_from_project_id(
+    p_project_id        integer
+) returns varchar as
+$$
+begin
+    return event_name from flyhh_events where project_id=p_project_id;
 end;
 $$ language 'plpgsql';
 
