@@ -47,28 +47,26 @@ create table flyhh_events (
 ); 
 
 create or replace function flyhh_event__new(
-    integer,varchar,integer,varchar,integer,boolean
-) returns boolean as '
+    p_event_id          integer,
+    p_event_name        varchar,
+    p_company_id        integer,
+    p_project_nr        varchar,
+    p_project_type_id   integer,
+    p_enabled_p         boolean
+) returns boolean as 
+$$
 declare
-    p_event_id          alias for $1;
-    p_event_name        alias for $2;
-    p_company_id        alias for $3;
-    p_project_nr        alias for $4;
-    p_project_type_id   alias for $5;
-    p_enabled_p         alias for $6;
-
     v_project_id        integer;
-
 begin
 
     select im_project__new(
         null,               -- project_id
-        ''im_project'',     -- object_type
+        'im_project',     -- object_type
         now(),              -- creation_date
         null,               -- creation_user
         null,               -- creation_ip
         null,               -- context_id
-        ''Event Project: '' || p_event_name,   -- project_name
+        'Event Project: ' || p_event_name,   -- project_name
         p_project_nr,       -- project_nr
         p_project_nr,       -- project_path
         null,               -- parent_id
@@ -91,16 +89,16 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 create or replace function flyhh_event__update(
-    integer,varchar,integer,boolean
-) returns boolean as '
-declare
-    p_event_id          alias for $1;
-    p_event_name        alias for $2;
-    p_project_type_id   alias for $3;
-    p_enabled_p         alias for $4;
+    p_event_id          integer,
+    p_event_name        varchar,
+    p_project_type_id   integer,
+    p_enabled_p         boolean
+) returns boolean as 
+$$
 begin
 
     -- TODO: update corresponding project record
@@ -113,5 +111,6 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 

@@ -171,11 +171,10 @@ create table flyhh_event_roommates (
 -- and whether roommates have chosen different people to stay with.
 
 create or replace function flyhh_event_participant__status_automaton_helper (
-    integer
-) returns boolean as '
+    p_participant_id        integer
+) returns boolean as
+$$
 declare
-
-    p_participant_id                alias for $1;
 
     v_invalid_both_p                boolean;
     v_invalid_partner_p             boolean;
@@ -240,13 +239,13 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 create or replace function flyhh_event_participant__status_automaton (
-    integer
-) returns boolean as '
-declare
-    p_participant_id        alias for $1;
+    p_participant_id        integer
+) returns boolean as
+$$
 begin
 
     -- Mark invalid fields across participants, e.g. invalid partner, invalid roommates, and so on.
@@ -268,40 +267,31 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
 create or replace function flyhh_event_participant__new (
-    integer, varchar, varchar, varchar, varchar,
-	integer,
-    boolean, varchar, varchar, varchar, boolean,
-    integer, integer, integer, integer,
-    integer, integer
-) returns integer as '
+    p_participant_id        integer,
+    p_email                 varchar,
+    p_first_names           varchar,
+    p_last_name             varchar,
+    p_creation_ip           varchar,
+	p_project_id            integer,
+    p_lead_p                boolean,
+    p_partner_text          varchar,
+    p_partner_name          varchar,
+    p_partner_email         varchar,
+    p_accepted_terms_p      boolean,
+    p_accommodation         integer,
+    p_food_choice           integer,
+    p_bus_option            integer,
+    p_level                 integer,
+    p_payment_type          integer,
+    p_payment_term          integer
+) returns integer as 
+$$
 declare
-
-    p_participant_id        alias for $1;
-
-    p_email                 alias for $2;
-    p_first_names           alias for $3;
-    p_last_name             alias for $4;
-    p_creation_ip           alias for $5;
-
-    p_project_id            alias for $6;
-
-    p_lead_p                alias for $7;
-    p_partner_text          alias for $8;
-    p_partner_name          alias for $9;
-    p_partner_email         alias for $10;
-    p_accepted_terms_p      alias for $11;
-
-    p_accommodation         alias for $12;
-    p_food_choice           alias for $13;
-    p_bus_option            alias for $14;
-    p_level                 alias for $15;
-
-    p_payment_type          alias for $16;
-    p_payment_term          alias for $17;
 
     v_partner_participant_id    integer;
     v_person_id                 integer;
@@ -314,11 +304,11 @@ begin
 
     if v_person_id is null then
 
-        select nextval(''t_acs_object_id_seq'') into v_person_id; 
+        select nextval('t_acs_object_id_seq') into v_person_id; 
 
         perform person__new(
             v_person_id,
-            ''person'',             -- object_type
+            'person',             -- object_type
             CURRENT_TIMESTAMP,      -- creation_date
             null,                   -- creation_user
             p_creation_ip,
@@ -335,7 +325,7 @@ begin
 
     perform im_biz_object__new (
         p_participant_id,
-        ''flyhh_event_participant'',   -- object_type
+        'flyhh_event_participant',  -- object_type
         CURRENT_TIMESTAMP,          -- creation_date
         null,                       -- creation_user
         p_creation_ip,
@@ -460,40 +450,31 @@ begin
     
     return v_person_id;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
 create or replace function flyhh_event_participant__update (
-    integer, varchar, varchar, varchar, varchar,
-	integer,
-    boolean, varchar, varchar, varchar, boolean,
-    integer, integer, integer, integer,
-    integer, integer
-) returns boolean as '
+    p_participant_id        integer,
+    p_email                 varchar,
+    p_first_names           varchar,
+    p_last_name             varchar,
+    p_creation_ip           varchar,
+	p_project_id            integer,
+    p_lead_p                boolean,
+    p_partner_text          varchar,
+    p_partner_name          varchar,
+    p_partner_email         varchar,
+    p_accepted_terms_p      boolean,
+    p_accommodation         integer,
+    p_food_choice           integer,
+    p_bus_option            integer,
+    p_level                 integer,
+    p_payment_type          integer,
+    p_payment_term          integer
+) returns boolean as
+$$
 declare
-
-    p_participant_id        alias for $1;
-
-    p_email                 alias for $2;
-    p_first_names           alias for $3;
-    p_last_name             alias for $4;
-    p_creation_ip           alias for $5;
-
-    p_project_id            alias for $6;
-
-    p_lead_p                alias for $7;
-    p_partner_text          alias for $8;
-    p_partner_name          alias for $9;
-    p_partner_email         alias for $10;
-    p_accepted_terms_p      alias for $11;
-
-    p_accommodation         alias for $12;
-    p_food_choice           alias for $13;
-    p_bus_option            alias for $14;
-    p_level                 alias for $15;
-
-    p_payment_type          alias for $16;
-    p_payment_term          alias for $17;
 
     v_person_id                 integer;
     v_partner_participant_id    integer;
@@ -526,53 +507,56 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
-create or replace function flyhh_event_participant__name (integer) 
-returns varchar as '
-declare
-        p_person_id alias for $1;
+create or replace function flyhh_event_participant__name (
+    p_person_id integer
+) returns varchar as
+$$
 begin
     return person__name(p_person_id);
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
-create or replace function flyhh_event_participant__validation_text (integer) 
-returns varchar as '
+create or replace function flyhh_event_participant__validation_text (
+    p_validation_mask integer
+) returns varchar as
+$$
 declare
-        p_validation_mask alias for $1;
-        v_validation_text varchar;
+    v_validation_text varchar;
 begin
 
-        v_validation_text := '''';
+    v_validation_text := '';
 
-        if p_validation_mask & 1 > 0 then
-            v_validation_text := v_validation_text || ''Invalid Partner'' || ''<br>'';
-        end if;
-        if p_validation_mask & 2 > 0 then
-            v_validation_text := v_validation_text || ''Invalid Roommates'' || ''<br>'';
-        end if;
-        if p_validation_mask & 4 > 0 then
-            v_validation_text := v_validation_text || ''Mismatch Accomm.'' || ''<br>'';
-        end if;
-        if p_validation_mask & 8 > 0 then
-            v_validation_text := v_validation_text || ''Mismatch L/F'' || ''<br>'';
-        end if;
-        if p_validation_mask & 16 > 0 then
-            v_validation_text := v_validation_text || ''Mismatch Level'' || ''<br>'';
-        end if;
-        
-        return v_validation_text;
+    if p_validation_mask & 1 > 0 then
+        v_validation_text := v_validation_text || 'Invalid Partner' || '<br>';
+    end if;
+    if p_validation_mask & 2 > 0 then
+        v_validation_text := v_validation_text || 'Invalid Roommates' || '<br>';
+    end if;
+    if p_validation_mask & 4 > 0 then
+        v_validation_text := v_validation_text || 'Mismatch Accomm.' || '<br>';
+    end if;
+    if p_validation_mask & 8 > 0 then
+        v_validation_text := v_validation_text || 'Mismatch L/F' || '<br>';
+    end if;
+    if p_validation_mask & 16 > 0 then
+        v_validation_text := v_validation_text || 'Mismatch Level' || '<br>';
+    end if;
+    
+    return v_validation_text;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 create or replace function flyhh_person_id_from_email_or_name(
-    integer,varchar, varchar
-) returns integer as '
-declare
-    p_project_id        alias for $1;
-    p_email             alias for $2;
-    p_name              alias for $3;
+    p_project_id        integer,
+    p_email             varchar, 
+    p_name              varchar
+) returns integer as 
+$$
 begin
 
     return (select ep.person_id
@@ -580,17 +564,17 @@ begin
             inner join parties pa on (pa.party_id=ep.person_id)
             where project_id=p_project_id and (email=p_email or person__name(ep.person_id)=p_name));
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 create or replace function flyhh_event_roommate__new (
-    integer, integer, varchar, varchar
-) returns boolean as '
+    p_participant_id    integer,
+    p_project_id        integer,
+    p_roommate_email    varchar,
+    p_roommate_name     varchar
+) returns boolean as 
+$$
 declare
-    p_participant_id    alias for $1;
-    p_project_id        alias for $2;
-    p_roommate_email    alias for $3;
-    p_roommate_name     alias for $4;
-
     v_roommate_person_id    integer;
     v_roommate_id           integer;
     v_roommate_mutual_p     boolean;
@@ -636,15 +620,16 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 create or replace function flyhh_event_roommates__html (
-    integer,integer,varchar
-) returns varchar as '
+    p_project_id        integer,
+    p_participant_id    integer,
+    p_base_url          varchar
+) returns varchar as 
+$$
 declare
-    p_project_id        alias for $1;
-    p_participant_id    alias for $2;
-    p_base_url          alias for $3;
 
     v_stub_url  varchar;
     v_roommate  record;
@@ -652,14 +637,14 @@ declare
     
 begin
 
-    v_stub_url := p_base_url || ''?project_id='' || p_project_id || ''&participant_id='';
+    v_stub_url := p_base_url || '?project_id=' || p_project_id || '&participant_id=';
 
-    v_result := '''';
+    v_result := '';
 
     for v_roommate in 
         select *, 
-            coalesce(roommate_email,roommate_name,''roommate_text'') as roommate_text,
-            coalesce(person__name(roommate_person_id),''person_name'') as person_name
+            coalesce(roommate_email,roommate_name,'roommate_text') as roommate_text,
+            coalesce(person__name(roommate_person_id),'person_name') as person_name
         from 
             flyhh_event_roommates
         where 
@@ -672,30 +657,31 @@ begin
                 -- this used to be the case "no reg & no usr" but we no longer try to match the user accounts by name
                 -- as the user we end up choosing might not register for the event and the one we did not (but has the
                 -- same name) does register (so it would complicate things further, so we simplify like this for now)
-                v_result := v_result || ''<div style="color:red;" title="no event registration">'';
-                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg)'';
+                v_result := v_result || '<div style="color:red;" title="no event registration">';
+                v_result := v_result || v_roommate.roommate_text || '</div> (no reg)';
             else
-                v_result := v_result || ''<div style="color:red;" title="no event registration">'';
-                v_result := v_result || v_roommate.roommate_text || ''</div> (no reg)'';
+                v_result := v_result || '<div style="color:red;" title="no event registration">';
+                v_result := v_result || v_roommate.roommate_text || '</div> (no reg)';
             end if;
         else
             if v_roommate.roommate_mutual_p then
-                v_result := v_result || ''<a href="'' || v_stub_url || v_roommate.roommate_id || ''">'';
-                v_result := v_result || v_roommate.person_name || ''</a>'';
+                v_result := v_result || '<a href="' || v_stub_url || v_roommate.roommate_id || '">';
+                v_result := v_result || v_roommate.person_name || '</a>';
             else
-                v_result := v_result || ''<a style="color:green;" href="'' || v_stub_url || v_roommate.roommate_id || ''">'';
-                v_result := v_result || v_roommate.person_name || ''</a> (not mutual)'';
+                v_result := v_result || '<a style="color:green;" href="' || v_stub_url || v_roommate.roommate_id || '">';
+                v_result := v_result || v_roommate.person_name || '</a> (not mutual)';
             end if;
 
         end if;
 
-        v_result := v_result || ''<br>'';
+        v_result := v_result || '<br>';
 
     end loop;
 
     return v_result; 
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
 -- We use the task_type_id referencing the project_type_id from the project which we create for the event.
@@ -841,31 +827,14 @@ SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'payment_term', 'Pa
 --        and category_type='Intranet User Type';
 
 
--- FOR DEBUGGING/DEVELOPMENT PURPOSES ONLY
-select im_project__new(
-    null,           -- project_id
-    'im_project',   -- object_type
-    now(),          -- creation_date
-    null,           -- creation_user
-    null,           -- creation_ip
-    null,           -- context_id
-    'some project', -- project_name
-    '2014_0001',    -- project_nr
-    'some project', -- project_path
-    null,           -- parent_id
-    8720,           -- company_id (=Flying Hamburger)
-    102,            -- project_type_id,
-    11700           -- project_status_id (=Active)
-  );
-
-
 create or replace function __inline0()
-returns boolean as'
+returns boolean as
+$$
 declare
     v_view_id integer;
 begin
 
-    v_view_id = nextval(''im_views_seq'');
+    v_view_id = nextval('im_views_seq');
 
     insert into im_views(
         view_id, 
@@ -877,12 +846,12 @@ begin
         view_label
     ) values (
         v_view_id,
-        ''flyhh_event_participants_list'',
+        'flyhh_event_participants_list',
         null,                       -- view_status_id
         1400,                       -- view_type_id / ObjectList / Intranet DynView Type
         null,                       -- sort_order
         null,                       -- view_sql
-        ''Flyhh - Event Participants List'' -- view_label 
+        'Flyhh - Event Participants List' -- view_label 
     );
 
     insert into im_view_columns (
@@ -900,13 +869,13 @@ begin
         300001, 
         v_view_id,
         NULL,
-        ''Reg.ID'',
-        ''participant_id'',
-        ''$participant_id'',
-        '''',
-        '''',
+        'Reg.ID',
+        'participant_id',
+        '$participant_id',
+        '',
+        '',
         1,
-        ''''
+        ''
     );
 
 
@@ -926,14 +895,14 @@ begin
         300002, 
         v_view_id,
         NULL,
-        ''Name'',
-        ''full_name'',
-        ''"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"'',
-        ''person__name(person_id) as participant_person_name, participant_id'',
-        '''',
+        'Name',
+        'full_name',
+        '"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"',
+        'person__name(person_id) as participant_person_name, participant_id',
+        '',
         2,
-        '''',
-        ''participant_person_name''
+        '',
+        'participant_person_name'
     );
 
     insert into im_view_columns (
@@ -952,14 +921,14 @@ begin
         300003, 
         v_view_id,
         NULL,
-        ''L/F'',
-        ''lead_p'',
-        ''[ad_decode $mismatch_lead_p f [set text [ad_decode $lead_p t Lead Follow]] "<font color=red>$text</font>"]'',
-        '''',
-        '''',
+        'L/F',
+        'lead_p',
+        '[ad_decode $mismatch_lead_p f [set text [ad_decode $lead_p t Lead Follow]] "<font color=red>$text</font>"]',
+        '',
+        '',
         4,
-        '''',
-        ''lead_p''
+        '',
+        'lead_p'
     );
 
 
@@ -979,14 +948,14 @@ begin
         300004, 
         v_view_id,
         NULL,
-        ''Partner'',
-        ''partner_participant_id'',
-        ''[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a [ad_decode $partner_mutual_p f \"style=color:green;\" \"\"] href=[export_vars -base ../registration { { project_id $project_id } { participant_id $partner_participant_id } }]>$partner_person_name</a>[ad_decode $partner_email "" "<br>(match by name)" "<br>($partner_email)"][ad_decode $partner_mutual_p f "<br>(not mutual)" ""]"]'',
-        ''partner_text,partner_name,partner_email,partner_mutual_p, project_id'',
-        '''',
+        'Partner',
+        'partner_participant_id',
+        E'[ad_decode $partner_participant_id "" "<font color=red>$partner_text</font>" "<a [ad_decode $partner_mutual_p f \"style=color:green;\" \"\"] href=[export_vars -base ../registration { { project_id $project_id } { participant_id $partner_participant_id } }]>$partner_person_name</a>[ad_decode $partner_email "" "<br>(match by name)" "<br>($partner_email)"][ad_decode $partner_mutual_p f "<br>(not mutual)" ""]"]',
+        'partner_text,partner_name,partner_email,partner_mutual_p, project_id',
+        '',
         5,
-        '''',
-        ''partner_person_name,partner_text''
+        '',
+        'partner_person_name,partner_text'
     );
 
 
@@ -1008,14 +977,14 @@ begin
         300005,
         v_view_id,
         NULL,
-        ''Accomm.'',
-        ''accommodation'',
-        ''[ad_decode $mismatch_accomm_p f $accommodation_text "<font color=red>$accommodation_text</font>"]'',
-        ''im_name_from_id(accommodation) as accommodation_text'',
-        '''',
+        'Accomm.',
+        'accommodation',
+        '[ad_decode $mismatch_accomm_p f $accommodation_text "<font color=red>$accommodation_text</font>"]',
+        'im_name_from_id(accommodation) as accommodation_text',
+        '',
         6,
-        '''',
-        ''accommodation_text''
+        '',
+        'accommodation_text'
     );
 
 
@@ -1035,14 +1004,14 @@ begin
         300006,
         v_view_id,
         NULL,
-        ''Food Choice'',
-        ''food_choice'',
-        ''$food_choice_text'',
-        ''im_name_from_id(food_choice) as food_choice_text'',
-        '''',
+        'Food Choice',
+        'food_choice',
+        '$food_choice_text',
+        'im_name_from_id(food_choice) as food_choice_text',
+        '',
         7,
-        '''',
-        ''food_choice_text''
+        '',
+        'food_choice_text'
     );
 
 
@@ -1062,14 +1031,14 @@ begin
         300007,
         v_view_id,
         NULL,
-        ''Bus Option'',
-        ''bus_option'',
-        ''$bus_option_text'',
-        ''im_name_from_id(bus_option) as bus_option_text'',
-        '''',
+        'Bus Option',
+        'bus_option',
+        '$bus_option_text',
+        'im_name_from_id(bus_option) as bus_option_text',
+        '',
         8,
-        '''',
-        ''bus_option_text''
+        '',
+        'bus_option_text'
     );
 
 
@@ -1089,14 +1058,14 @@ begin
         300008,
         v_view_id,
         NULL,
-        ''Level'',
-        ''level'',
-        ''[ad_decode $mismatch_level_p f $level_text "<font color=red>$level_text</font>"]'',
-        ''im_name_from_id(level) as level_text'',
-        '''',
+        'Level',
+        'level',
+        '[ad_decode $mismatch_level_p f $level_text "<font color=red>$level_text</font>"]',
+        'im_name_from_id(level) as level_text',
+        '',
         9,
-        '''',
-        ''level_text''
+        '',
+        'level_text'
     );
 
 
@@ -1117,14 +1086,14 @@ begin
         300009,
         v_view_id,
         NULL,
-        ''Payment Type'',
-        ''payment_type'',
-        ''$payment_type_text'',
-        ''im_name_from_id(payment_type) as payment_type_text'',
-        '''',
+        'Payment Type',
+        'payment_type',
+        '$payment_type_text',
+        'im_name_from_id(payment_type) as payment_type_text',
+        '',
         10,
-        '''',
-        ''payment_type_text''
+        '',
+        'payment_type_text'
     );
 
 
@@ -1144,14 +1113,14 @@ begin
         300010,
         v_view_id,
         NULL,
-        ''Payment Term'',
-        ''payment_term'',
-        ''$payment_term_text'',
-        ''im_name_from_id(payment_term) as payment_term_text'',
-        '''',
+        'Payment Term',
+        'payment_term',
+        '$payment_term_text',
+        'im_name_from_id(payment_term) as payment_term_text',
+        '',
         11,
-        '''',
-        ''payment_term_text''
+        '',
+        'payment_term_text'
     );
 
 
@@ -1171,14 +1140,14 @@ begin
         300011,
         v_view_id,
         NULL,
-        ''Roommate(s)'',
-        ''roommates'',
-        ''$roommates_html'',
-        ''flyhh_event_roommates__html(project_id,participant_id,''''../registration'''') as roommates_html'',
-        '''',
+        'Roommate(s)',
+        'roommates',
+        '$roommates_html',
+        'flyhh_event_roommates__html(project_id,participant_id,''../registration'') as roommates_html',
+        '',
         12,
-        '''',
-        ''category_pretty''
+        '',
+        'category_pretty'
     );
 
 
@@ -1199,14 +1168,14 @@ begin
         300012,
         v_view_id,
         NULL,
-        ''Validation'',
-        ''validation_mask'',
-        ''$validation_text'',
-        ''flyhh_event_participant__validation_text(validation_mask) as validation_text'',
-        '''',
+        'Validation',
+        'validation_mask',
+        '$validation_text',
+        'flyhh_event_participant__validation_text(validation_mask) as validation_text',
+        '',
         13,
-        '''',
-        ''''
+        '',
+        ''
     );
 
     insert into im_view_columns (
@@ -1225,20 +1194,21 @@ begin
         300013,
         v_view_id,
         NULL,
-        ''Status'',
-        ''event_participant_status_id'',
-        ''[im_category_select "Flyhh - Event Registration Status" "event_participant_status_id.$participant_id" $event_participant_status_id]'',
-        ''participant_id,event_participant_status_id'',
-        '''',
+        'Status',
+        'event_participant_status_id',
+        '[im_category_select "Flyhh - Event Registration Status" "event_participant_status_id.$participant_id" $event_participant_status_id]',
+        'participant_id,event_participant_status_id',
+        '',
         14,
-        '''',
-        ''category_pretty''
+        '',
+        'category_pretty'
     );
 
 
     return true;
 
-end' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 select __inline0();
 drop function __inline0();

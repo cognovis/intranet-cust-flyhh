@@ -45,16 +45,16 @@ SELECT im_category_new (82552, 'Advanced', 'Flyhh - Event Participant Level');
 -- im_biz_object__new is ill-defined in dump for flyhh, 
 -- even though it is correct in intranet-biz-objects.sql (intranet-core)
 
-create or replace function im_biz_object__new (integer,varchar,timestamptz,integer,varchar,integer)
-returns integer as '
+create or replace function im_biz_object__new (
+    p_object_id     integer,
+    p_object_type   varchar,
+    p_creation_date timestamptz,
+    p_creation_user integer,
+    p_creation_ip   varchar,
+    p_context_id    integer
+) returns integer as 
+$$
 declare
-        p_object_id     alias for $1;
-        p_object_type   alias for $2;
-        p_creation_date alias for $3;
-        p_creation_user alias for $4;
-        p_creation_ip   alias for $5;
-        p_context_id    alias for $6;
-
         v_object_id     integer;
 begin
         v_object_id := acs_object__new (
@@ -68,14 +68,15 @@ begin
         insert into im_biz_objects (object_id) values (v_object_id);
         return v_object_id;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
 
 -- auxiliary function for drop scripts
-create or replace function flyhh__drop_type(varchar) returns boolean as '
-declare
-    p_object_type alias for $1;
+create or replace function flyhh__drop_type(p_object_type varchar) 
+returns boolean as 
+$$
 begin
 
     delete from im_biz_objects where object_id in (select object_id from acs_objects where object_type=p_object_type);
@@ -86,6 +87,7 @@ begin
 
     return true;
 
-end;' language 'plpgsql';
+end;
+$$ language 'plpgsql';
 
 
