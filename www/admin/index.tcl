@@ -17,6 +17,9 @@ template::list::create \
             label "Event Name"
             link_url_eval {[export_vars -base event-one {event_id}]}
         }
+        cost_center {
+            label "Cost Center"
+        }
         enabled_p {
             label "Enabled?"
             display_template {
@@ -38,7 +41,7 @@ template::list::create \
     }
 
 
-set sql "select * from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
+set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
 db_multirow events $multirow $sql
 
 

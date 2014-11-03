@@ -40,6 +40,10 @@ create table flyhh_event_participants (
                         constraint flyhh_event_participants_person_id_fk
                         references persons(person_id),
 
+    company_id          integer not null
+                        constraint flyhh_event_participants_company_id_fk
+                        references im_companies(company_id),
+
     -- one project per event 
     
 	project_id			integer not null
@@ -272,6 +276,8 @@ $$ language 'plpgsql';
 
 
 create or replace function flyhh_event_participant__new (
+    p_person_id             integer,
+    p_company_id            integer,
     p_participant_id        integer,
     p_email                 varchar,
     p_first_names           varchar,
@@ -294,34 +300,9 @@ $$
 declare
 
     v_partner_participant_id    integer;
-    v_person_id                 integer;
     v_person_name               varchar;
 
 begin
-
-    select party_id into v_person_id
-    from parties where email=p_email;
-
-    if v_person_id is null then
-
-        select nextval('t_acs_object_id_seq') into v_person_id; 
-
-        perform person__new(
-            v_person_id,
-            'person',             -- object_type
-            CURRENT_TIMESTAMP,      -- creation_date
-            null,                   -- creation_user
-            p_creation_ip,
-            p_email,
-            null,
-            p_first_names,
-            p_last_name,
-            null                    -- context_id
-        );
-
-        -- TODO: create user account
-
-    end if;
 
     perform im_biz_object__new (
         p_participant_id,
@@ -344,6 +325,8 @@ begin
         participant_id,
 
         person_id, 
+        company_id,
+
         project_id,
         event_participant_status_id,
         event_participant_type_id,
@@ -370,7 +353,9 @@ begin
 
         p_participant_id,
 
-        v_person_id, 
+        p_person_id, 
+        p_company_id,
+
         p_project_id,
         82500,              -- Waiting List / event_participant_status_id
         102,                -- Castle Camp / event_participant_type_id
@@ -385,7 +370,7 @@ begin
         case when exists (
             select 1 from flyhh_event_participants 
             where participant_id=v_partner_participant_id 
-            and ((partner_email = p_email) or (partner_name = person__name(v_person_id)))
+            and ((partner_email = p_email) or (partner_name = person__name(p_person_id)))
         ) then true else false end,
         p_accepted_terms_p,
 
@@ -406,10 +391,10 @@ begin
     -- not fill-in the info when the person registers for another event
     -- and, ditto for partner_participant_id.
 
-    v_person_name := person__name(v_person_id);
+    v_person_name := person__name(p_person_id);
 
     update flyhh_event_roommates set
-        roommate_person_id = v_person_id,
+        roommate_person_id = p_person_id,
         roommate_id = p_participant_id
     where
         (roommate_email = p_email or roommate_name = v_person_name)
@@ -419,36 +404,14 @@ begin
 
     update flyhh_event_participants set
         partner_participant_id = p_participant_id,
-        partner_person_id = v_person_id,
+        partner_person_id = p_person_id,
         partner_mutual_p = case when participant_id=v_partner_participant_id then true else false end
     where
         ((partner_email = p_email) or (partner_name = v_person_name))
         and project_id = p_project_id
         and partner_participant_id is null;
 
-
-    -- mark partners named multiple times
-
-    -- select case when count(1)>1 then true else false end into v_partner_double_p
-    -- from flyhh_event_participants
-    -- where 
-    --    project_id=p_project_id
-    -- and (partner_participant_id = v_participant_id 
-    --        OR partner_email = p_email 
-    --        OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
-
-    -- if v_partner_double_p then
-    --    update flyhh_event_participants set
-    --        partner_double_p = true
-    --    where
-    --        project_id=p_project_id
-    --    and (partner_participant_id = v_participant_id 
-    --            OR partner_email = p_email 
-    --            OR (partner_name is not null and partner_name = p_first_names || '' '' || p_last_name));
-    -- end if;
-
-    
-    return v_person_id;
+    return p_participant_id;
 
 end;
 $$ language 'plpgsql';
@@ -684,15 +647,16 @@ end;
 $$ language 'plpgsql';
 
 
+-- OLD COMMENT
 -- We use the task_type_id referencing the project_type_id from the project which we create for the event.
 -- We have one project type called „Castle Camp“ with two sub categories „SCC“ and „BCC“. 
 -- When we create the event, we will have a project which then has the project type of either „SCC“ or „BCC“. 
 -- Materials which can be used for both (e.g. the accommodation materials) will then have a the task_type_id 
 -- of the „Castle Camp“ category, whereas the other ones have the one specific to them. 
 
-SELECT im_category_new (102, 'Castle Camp', 'Intranet Project Type');
-SELECT im_category_new (103, 'SCC', 'Intranet Project Type');
-SELECT im_category_new (104, 'BCC', 'Intranet Project Type');
+SELECT im_category_new (102, 'Castle Camp', 'Flyhh - Event Project Type');
+SELECT im_category_new (103, 'SCC', 'Flyhh - Event Project Type');
+SELECT im_category_new (104, 'BCC', 'Flyhh - Event Project Type');
 
 SELECT im_category_hierarchy_new (103, 102);
 SELECT im_category_hierarchy_new (104, 102);

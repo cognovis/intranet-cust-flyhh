@@ -19,5 +19,26 @@ ad_page_contract {
 
 }
 
+set sql "
+    select category_id 
+    from im_categories 
+    where category_type='Flyhh - Event Registration Status'
+    and category='Pending Payment'
+"
+set pending_payment_status_id [db_string pending_payment_status_id $sql]
+
+set sql "
+    select category_id 
+    from im_categories 
+    where category_type='Flyhh - Event Registration Status'
+    and category='Confirmed'
+"
+set confirmed_status_id [db_string confirmed_status_id $sql]
+
+set sql "
+    update flyhh_event_participants set event_participant_status_id=:pending_payment_status_id 
+    where participant_id=:participant_id and event_participant_status_id=:confirmed_status_id"
+db_dml update_status $sql
+
 # NOT IMPLEMENTED YET
 ns_return 200 text/plain "not implemented yet"

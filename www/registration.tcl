@@ -175,7 +175,11 @@ ad_form -extend -name $form_id -form {
 
         db_transaction {
 
+            set person_id [::flyhh::create_user_if $email $first_names $last_name company_id]
             db_exec_plsql insert_participant "select flyhh_event_participant__new(
+
+                :person_id,
+                :company_id,
 
                 :participant_id,
 

@@ -26,7 +26,7 @@ if { [exists_and_not_null event_id] } {
 } else {
     set mode edit
 }
-
+# TODO: disable cost_center_id when editing form
 ad_form \
     -name $form_id \
     -action $action_url \
@@ -38,9 +38,10 @@ ad_form \
         {event_name:text
             {label "Name"}}
 
-        {project_type_id:text(im_category_tree),optional 
-            {label {[lang::message::lookup {} intranet-cust-flyhh.Project_Type "Project Type"]}}
-            {custom {category_type "Intranet Project Type" translate_p 1 package_key "intranet-cust-flyhh"}} }
+        {project_cost_center_id:text(generic_sql)
+            {label {[lang::message::lookup {} intranet-cust-flyhh.Project_Cost_Center "Project Cost Center"]}}
+            {html {}}
+            {custom {sql {select cost_center_id,cost_center_code || ' - ' || cost_center_name from im_cost_centers}}}}
         
         {enabled_p:boolean(select)
             {label "Enable?"}
@@ -60,12 +61,14 @@ im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
 ad_form -extend -name $form_id -select_query {
 
-    select * from flyhh_events evt inner join im_projects p on (p.project_id = evt.project_id) where event_id=:event_id
+    select * 
+    from flyhh_events evt 
+    inner join im_projects p on (p.project_id = evt.project_id) 
+    where event_id=:event_id
 
 } -new_data {
 
-    # TODO: consider using the company_id that is associated with the connecting user
-    set company_id 8720  ;# Flying Hamburger
+    set provider_company_id 8720  ;# Flying Hamburger
 
     set project_nr [im_next_project_nr]
 
@@ -73,9 +76,9 @@ ad_form -extend -name $form_id -select_query {
         select flyhh_event__new(
             :event_id,
             :event_name,
-            :company_id,
+            :provider_company_id,
             :project_nr,
-            :project_type_id,
+            :project_cost_center_id,
             :enabled_p
         );
     "
@@ -83,12 +86,12 @@ ad_form -extend -name $form_id -select_query {
     db_exec_plsql insert_event $sql
 
 } -edit_data {
-
+    
     set sql "
         select flyhh_event__update(
             :event_id,
             :event_name,
-            :project_type_id,
+            :project_cost_center_id,
             :enabled_p
         );
     "

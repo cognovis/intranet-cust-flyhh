@@ -54,7 +54,7 @@ create or replace function flyhh_event__new(
     p_event_name        varchar,
     p_company_id        integer,
     p_project_nr        varchar,
-    p_project_type_id   integer,
+    p_cost_center_id    integer,
     p_enabled_p         boolean
 ) returns boolean as 
 $$
@@ -74,9 +74,13 @@ begin
         p_project_nr,       -- project_path
         null,               -- parent_id
         p_company_id,       -- company_id
-        p_project_type_id,  -- project_type_id,
+        '102',              -- project_type_id (=Castle Camp)
         76                  -- project_status_id (=Open)
       ) into v_project_id;
+
+    update im_projects 
+    set project_cost_center_id=p_cost_center_id 
+    where project_id=v_project_id;
 
     insert into flyhh_events (
         event_id,
@@ -135,4 +139,5 @@ begin
     return event_name from flyhh_events where project_id=p_project_id;
 end;
 $$ language 'plpgsql';
+
 
