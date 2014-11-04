@@ -242,7 +242,8 @@ set sql "
         person__name(partner_person_id) as partner_person_name, 
         party__email(person_id) as email
         $extra_select 
-    from flyhh_event_participants 
+    from flyhh_event_participants ep 
+    $extra_from
     $where_clause
     $order_by_clause
 "

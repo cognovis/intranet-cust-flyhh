@@ -103,7 +103,14 @@ db_transaction {
             :note                       -- note
          )"]
 
-     db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
+     db_dml update_invoice "
+        update im_costs set 
+            cost_center_id = :cost_center_id, 
+            project_id = :project_id,
+            payment_term_id = 80107, 
+            vat_type_id = 42021 
+        where cost_id = :invoice_id
+     "
 
      # TODO: Add line items for each of the materials
 

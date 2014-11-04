@@ -27,7 +27,7 @@ drop function flyhh_event_participant__update(
     integer, integer
 );
 drop function flyhh_event_participant__new(
-    integer, varchar, varchar, varchar, varchar,
+    integer,integer, integer, varchar, varchar, varchar, varchar,
 	integer,
     boolean, varchar, varchar, varchar, boolean,
     integer, integer, integer, integer,

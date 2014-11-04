@@ -206,7 +206,7 @@ proc ::flyhh::create_user_if {email first_names last_name {company_idVar ""}} {
 
         set existing_user_p true
 
-        set sql "update persons set first_names = :first_name, last_name = :last_name where person_id = :user_id"
+        set sql "update persons set first_names = :first_names, last_name = :last_name where person_id = :user_id"
         db_dml update_names $sql
 
     }

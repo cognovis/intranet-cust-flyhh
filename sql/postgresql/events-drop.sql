@@ -3,6 +3,8 @@
 drop function flyhh_event__update(integer,varchar,integer,boolean);
 drop function flyhh_event__new(integer,varchar,integer,varchar,integer,boolean);
 
+select im_invoice__delete(cost_id) from im_costs where project_id in (select project_id from flyhh_events);
+
 -- on delete cascade will make sure all flyhh_events rows are deleted
 -- when the corresponding project row is deleted
 select im_project__delete(project_id) from flyhh_events;
