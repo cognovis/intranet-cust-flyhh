@@ -70,6 +70,11 @@ create table flyhh_event_participants (
     validation_mask             integer not null,
 
 
+
+    course              integer
+                        constraint flyhh_event_participants__course_fk
+                        references im_materials(material_id),
+
     accommodation       integer
                         constraint flyhh_event_participants__accommodation_fk
                         references im_materials(material_id),
@@ -293,6 +298,7 @@ create or replace function flyhh_event_participant__new (
     p_partner_name          varchar,
     p_partner_email         varchar,
     p_accepted_terms_p      boolean,
+    p_course                integer,
     p_accommodation         integer,
     p_food_choice           integer,
     p_bus_option            integer,
@@ -345,6 +351,7 @@ begin
         partner_mutual_p,
         accepted_terms_p,
 
+        course,
         accommodation,
         food_choice,
         bus_option,
@@ -378,6 +385,7 @@ begin
         ) then true else false end,
         p_accepted_terms_p,
 
+        p_course,
         p_accommodation,
         p_food_choice,
         p_bus_option,
@@ -433,6 +441,7 @@ create or replace function flyhh_event_participant__update (
     p_partner_name          varchar,
     p_partner_email         varchar,
     p_accepted_terms_p      boolean,
+    p_course                integer,
     p_accommodation         integer,
     p_food_choice           integer,
     p_bus_option            integer,
@@ -464,6 +473,7 @@ begin
         partner_name        = p_partner_name,
         partner_email       = p_partner_email,
         accepted_terms_p    = p_accepted_terms_p,
+        course              = p_course,
         accommodation       = p_accommodation,
         food_choice         = p_food_choice,
         bus_option          = p_bus_option,
@@ -700,6 +710,27 @@ SELECT im_dynfield_widget__new (
         null,                                   -- creation_ip
         null,                                   -- context_id
 
+        'flyhh_event_participant_course',       -- widget_name
+        '#intranet-cust-flyhh.Course#',         -- pretty_name
+        '#intranet-cust-flyhh.Course#',         -- pretty_plural
+        10007,                                  -- storage_type_id
+        'integer',                              -- acs_datatype
+        'generic_sql',                          -- widget
+        'integer',                              -- sql_datatype
+
+        --- category 9002 was mispelled as "Accomodation" when it was created in the im_material_types table
+        '{custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=''Course Income'')}}}'
+);
+
+
+SELECT im_dynfield_widget__new (
+        null,                                   -- widget_id
+        'im_dynfield_widget',                   -- object_type
+        now(),                                  -- creation_date
+        null,                                   -- creation_user
+        null,                                   -- creation_ip
+        null,                                   -- context_id
+
         'flyhh_event_participant_accommodation',      -- widget_name
         '#intranet-cust-flyhh.Accommodation#',  -- pretty_name
         '#intranet-cust-flyhh.Accommodation#',  -- pretty_plural
@@ -771,6 +802,7 @@ SELECT im_dynfield_widget__new (
 
 
 
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'course', 'Course', 'flyhh_event_participant_course', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'accommodation', 'Accommodation', 'flyhh_event_participant_accommodation', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'food_choice', 'Food Choice', 'flyhh_event_participant_food_choice', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'bus_option', 'Bus Option', 'flyhh_event_participant_bus_options', 'integer', 'f');

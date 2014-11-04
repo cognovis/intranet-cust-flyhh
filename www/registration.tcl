@@ -195,7 +195,7 @@ ad_form -extend -name $form_id -form {
     set restrict_edit_list [parameter::get -package_id $package_id -parameter "restrict_edit_list"]
     if { -1 != [lsearch -exact -integer $restrict_edit_list $event_participant_status_id] } {
         foreach element {
-            email accommodation food_choice bus_option level 
+            email course accommodation food_choice bus_option level 
             payment_type payment_term lead_p
             accepted_terms_p
         } {
@@ -252,6 +252,7 @@ ad_form -extend -name $form_id -form {
                 :partner_email,
                 :accepted_terms_p,
 
+                :course,
                 :accommodation,
                 :food_choice,
                 :bus_option,
@@ -304,6 +305,7 @@ ad_form -extend -name $form_id -form {
                 :partner_email,
                 :accepted_terms_p,
 
+                :course,
                 :accommodation,
                 :food_choice,
                 :bus_option,
