@@ -18,7 +18,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="restrict_edit_list"  default="82503 82504 82505 82506" description="do not allow the editing of any fields but the name, address, dance partner and room mates for any status_id in this list, see &quot;Flyhh - Event Registration Status&quot;"/>
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="restrict_edit_list"  default="82503 82504 82505 82506" description="does not allow editing of fields other than the name, address, dance partner and room mates when the registration status id is found in this list, see also &quot;Flyhh - Event Registration Status&quot;"/>
         </parameters>
 
     </version>

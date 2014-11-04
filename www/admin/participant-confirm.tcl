@@ -48,7 +48,6 @@ db_1row participant_info $sql
 set payment_days [ad_decode "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
 
 set provider_id 8720          ;# Company that provides this service - Us
-set invoice_date ""
 set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
 set invoice_type_id "3700"    ;# Intranet Cost Type (3700 = Customer Invoice, 3702 = Quote)
 
@@ -91,7 +90,7 @@ db_transaction {
             :company_id,                -- company_id
             :provider_id,               -- provider_id -- us
             :person_id,                 -- company_contact_id
-            :invoice_date,              -- invoice_date
+            now(),                      -- invoice_date
             'EUR',                      -- currency
             null,                       -- invoice_template_id
             :invoice_status_id,         -- invoice_status_id
@@ -104,7 +103,7 @@ db_transaction {
             :note                       -- note
          )"]
 
-     # db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
+     db_dml update_invoice "update im_costs set cost_center_id = :cost_center_id , payment_term_id = 80107, vat_type_id = 42021 where cost_id = :invoice_id"
 
      # TODO: Add line items for each of the materials
 
