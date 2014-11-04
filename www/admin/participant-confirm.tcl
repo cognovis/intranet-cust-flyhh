@@ -27,7 +27,7 @@ db_transaction {
     foreach id $participant_id {
 
         ::flyhh::set_participant_status \
-            -participant_id $participant_id \
+            -participant_id $id \
             -from_status "Waiting List" \
             -to_status "Confirmed"
 
