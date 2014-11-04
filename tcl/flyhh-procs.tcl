@@ -271,6 +271,7 @@ ad_proc ::flyhh::create_invoice {
 
     set provider_id 8720          ;# Company that provides this service - Us
     set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
+    set invoice_template_id "900" ;# Intranet Cost Template (900 = template.en.adp)
 
     set sql "select project_cost_center_id from im_projects where project_id=:project_id"
     set cost_center_id [db_string cost_center_id $sql]
@@ -294,7 +295,7 @@ ad_proc ::flyhh::create_invoice {
             :company_contact_id,        -- company_contact_id
             now(),                      -- invoice_date
             'EUR',                      -- currency
-            null,                       -- invoice_template_id
+            :invoice_template_id,       -- invoice_template_id
             :invoice_status_id,         -- invoice_status_id
             :invoice_type_id,           -- invoice_type_id
             :payment_method_id,         -- payment_method_id
@@ -315,5 +316,39 @@ ad_proc ::flyhh::create_invoice {
      "
 
     return $invoice_id
+
+}
+
+
+ad_proc ::flyhh::set_participant_status { 
+    -participant_id 
+    -from_status 
+    -to_status
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-04
+    @last-modified 2014-11-04
+} {
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status'
+        and category=:to_status
+    "
+    set to_status_id [db_string pending_payment_status_id $sql]
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status'
+        and category=:from_status
+    "
+    set from_status_id [db_string confirmed_status_id $sql]
+
+    set sql "
+        update flyhh_event_participants set event_participant_status_id=:to_status_id 
+        where participant_id=:participant_id and event_participant_status_id=:from_status_id"
+    db_dml update_event_participant_status $sql
 
 }

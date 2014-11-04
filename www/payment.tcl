@@ -19,26 +19,30 @@ ad_page_contract {
 
 }
 
-set sql "
-    select category_id 
-    from im_categories 
-    where category_type='Flyhh - Event Registration Status'
-    and category='Pending Payment'
-"
-set pending_payment_status_id [db_string pending_payment_status_id $sql]
+db_transaction {
 
-set sql "
-    select category_id 
-    from im_categories 
-    where category_type='Flyhh - Event Registration Status'
-    and category='Confirmed'
-"
-set confirmed_status_id [db_string confirmed_status_id $sql]
+    ::flyhh::set_participant_status \
+        -participant_id ${participant_id} \
+        -from_status "Confirmed" \
+        -to_status "Pending Payment"
 
-set sql "
-    update flyhh_event_participants set event_participant_status_id=:pending_payment_status_id 
-    where participant_id=:participant_id and event_participant_status_id=:confirmed_status_id"
-db_dml update_status $sql
+    # When the customer confirms he wants to participate in the event,
+    # we create an invoice from the purchase order
+
+    set sql "select order_id as purchase_order_id from flyhh_event_participants where participant_id=:participant_id"
+    db_1row participant_info $sql
+
+    # Intranet Cost Type
+    # (3700 = Customer Invoice)
+    set target_cost_type_id "3700"
+    set new_invoice_id [im_invoice_copy_new -source_invoice_ids $purchase_order_id -target_cost_type_id $target_cost_type_id]
+    
+    # Intranet Cost Status
+    # (3804 = Outstanding)
+    set new_status_id "3804"
+    db_dml update_cost_status "update im_costs set cost_status_id = :new_status_id where cost_id = :purchase_order_id"
+
+}
 
 # NOT IMPLEMENTED YET
 ns_return 200 text/plain "not implemented yet"
