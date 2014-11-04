@@ -312,7 +312,7 @@ set bgcolor(1) " class=rowodd "
 set ctr 0
 
 if { $bulk_actions ne {} } {
-    append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"\" method=\"post\">"
+    append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"participants-bulk\" method=\"post\">"
     append table_body_html "<input type=hidden name=\"return_url\" value=\"${return_url}\">"
 }
 
@@ -346,7 +346,8 @@ No users        </b></ul></td></tr>"
 
 if { $bulk_actions ne {} } {
     foreach {label url title} $bulk_actions {
-        set row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
+        # set row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
+        set row_html "<tr><td colspan=$colspan><input type=\"submit\" title=\"${title}\" name=\"bulk_action\" value=\"${label}\"></td></tr>"
         append table_body_html $row_html
     }
     append table_body_html "</form>"
