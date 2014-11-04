@@ -1,6 +1,6 @@
 -- @author Neophytos Demetriou
 -- @creation-date 2014-10-30
--- @last-modified 2014-10-30
+-- @last-modified 2014-11-04
 
 select acs_object_type__create_type (
         'flyhh_event_participant',      -- object_type

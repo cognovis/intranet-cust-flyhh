@@ -2,7 +2,7 @@ ad_page_contract {
 
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-02
-    @last-modified 2014-11-03
+    @last-modified 2014-11-04
 
     Confirmed & Confirmation E-Mail:
 

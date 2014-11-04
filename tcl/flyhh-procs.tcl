@@ -168,6 +168,9 @@ ad_proc ::flyhh::set_user_contact_info {
     {-ha_postal_code ""}
     {-ha_country_code ""}
 } {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-04
+    @last-modified 2014-11-04
 } {
 
     if { $user_id eq {} && $email ne {} } {
@@ -230,6 +233,9 @@ ad_proc ::flyhh::create_user_if {
     company_idVar 
     person_idVar
 } {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-04
+    @last-modified 2014-11-04
 } {
 
     if { $company_idVar ne {} } {

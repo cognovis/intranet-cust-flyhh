@@ -4,7 +4,7 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-10-30
+    @last-modified 2014-11-04
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
