@@ -157,10 +157,87 @@ proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} 
     return $company_id
 }
 
-proc ::flyhh::create_user_if {email first_names last_name {company_idVar ""}} {
+ad_proc ::flyhh::set_user_contact_info {
+    {-user_id ""}
+    {-email ""}
+    {-cell_phone ""}
+    {-ha_line1 ""}
+    {-ha_line2 ""}
+    {-ha_city ""}
+    {-ha_state ""}
+    {-ha_postal_code ""}
+    {-ha_country_code ""}
+} {
+} {
+
+    if { $user_id eq {} && $email ne {} } {
+        set sql "select party_id from parties where email=:email"
+        set user_id [db_string user_id $sql]
+    }
+
+    set sql "select true from users_contact where user_id=:user_id"
+    set found_p [db_string found_user_contact_info $sql -default "false"]
+
+    if { !$found_p } {
+
+        set sql "
+            insert into users_contact (
+                user_id,
+                cell_phone,
+                ha_line1,
+                ha_line2,
+                ha_city,
+                ha_state,
+                ha_postal_code,
+                ha_country_code
+            ) values ( 
+                :user_id,
+                :cell_phone,
+                :ha_line1,
+                :ha_line2,
+                :ha_city,
+                :ha_state,
+                :ha_postal_code,
+                lower(:ha_country_code)
+            )
+        "
+        db_dml insert_user_contact_info $sql
+
+    } else {
+
+        set sql "
+            update users_contact set
+                cell_phone=:cell_phone,
+                ha_line1=:ha_line1,
+                ha_line2=:ha_line2,
+                ha_city=:ha_city,
+                ha_state=:ha_state,
+                ha_postal_code=:ha_postal_code,
+                ha_country_code=lower(:ha_country_code)
+            where user_id=:user_id
+        "
+        db_dml update_user_contact_info $sql
+
+    }
+
+}
+
+
+ad_proc ::flyhh::create_user_if {
+    email 
+    first_names 
+    last_name 
+    company_idVar 
+    person_idVar
+} {
+} {
 
     if { $company_idVar ne {} } {
         upvar $company_idVar company_id
+    }
+
+    if { $person_idVar ne {} } {
+        upvar $person_idVar user_id
     }
 
     set user_id [db_string user_id "select user_id from cc_users where email=:email" -default ""]
@@ -217,7 +294,9 @@ proc ::flyhh::create_user_if {email first_names last_name {company_idVar ""}} {
     set company_name "$user_id - $first_names $last_name"
     set company_id [::flyhh::create_company_if $user_id $company_name $existing_user_p]
 
-    return $user_id
+    set new_user_p [expr { !$existing_user_p }]
+
+    return $new_user_p
 
 }
 

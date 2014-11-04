@@ -58,6 +58,9 @@ ad_form \
 
         participant_id:key(acs_object_id_seq)
 
+        {-section basic_info
+            {legendtext "Basic Info"}}
+
         {email:text
             {label "Email"}}
 
@@ -69,6 +72,9 @@ ad_form \
             {label "Last Name"}
         }
 
+        {-section event_preferences
+            {legendtext "Preferences"}}
+        
     }
 
 im_dynfield::append_attributes_to_form \
@@ -97,6 +103,40 @@ ad_form -extend -name $form_id -form {
         {html "rows 4 cols 30"}
         {help_text "comma-separated list of email addresses, names, or both"}}
 
+    {-section contact_details
+        {legendtext "Contact Details"}}
+        
+    {cell_phone:text,optional
+        {label "Phone"}}
+
+    {ha_line1:text,optional
+        {label "Address Line 1"}
+        {html {size 30}}}
+
+    {ha_line2:text,optional
+        {label "Address Line 2"}
+        {html {size 30}}}
+
+    {ha_city:text,optional
+        {label "City"}
+        {html {size 15}}}
+
+    {ha_state:text,optional
+        {label "State"}
+        {html {size 2}}}
+
+    {ha_postal_code:text,optional
+        {label "Postal Code"}
+        {html {size 5}}}
+
+    {ha_country_code:text(generic_sql),optional
+        {label "Country"}
+        {html {}}
+        {custom {sql {select iso,default_name from countries}}}}
+
+    # Unset the section. subsequent elements will not be in any section.
+    {-section ""}
+
     {accepted_terms_p:boolean(checkbox)
         {label "Terms & Conditions"}
         {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
@@ -114,7 +154,12 @@ ad_form -extend -name $form_id -form {
         }
 
         # If a registered user who already has information in the system registers for a new event, pre fill the known information.
-        set sql "select first_names, last_name, email from parties pa inner join persons p on (p.person_id=pa.party_id) where person_id=:user_id"
+        set sql "
+            select first_names, last_name, email 
+            from parties pa 
+            inner join persons p on (p.person_id=pa.party_id) 
+            left outer join users_contact uc on (uc.user_id=pa.party_id)
+            where person_id=:user_id"
         db_1row user_info $sql
 
 
@@ -127,6 +172,7 @@ ad_form -extend -name $form_id -form {
              from flyhh_event_participants ep 
              inner join parties pa on (pa.party_id=ep.person_id) 
              inner join persons p on (p.person_id=ep.person_id) 
+             inner join users_contact uc on (uc.user_id=ep.person_id)
              where participant_id=:participant_id"
 
     db_1row event_participant $sql
@@ -175,7 +221,17 @@ ad_form -extend -name $form_id -form {
 
         db_transaction {
 
-            set person_id [::flyhh::create_user_if $email $first_names $last_name company_id]
+            set new_user_p [::flyhh::create_user_if $email $first_names $last_name company_id person_id]
+
+            ::flyhh::set_user_contact_info \
+                -user_id $person_id \
+                -ha_line1 $ha_line1 \
+                -ha_line2 $ha_line2 \
+                -ha_city  $ha_city \
+                -ha_state $ha_state \
+                -ha_postal_code $ha_postal_code \
+                -ha_country_code $ha_country_code
+
             db_exec_plsql insert_participant "select flyhh_event_participant__new(
 
                 :person_id,
@@ -257,6 +313,15 @@ ad_form -extend -name $form_id -form {
                 :payment_term
 
             )"
+
+            ::flyhh::set_user_contact_info \
+                -email $email \
+                -ha_line1 $ha_line1 \
+                -ha_line2 $ha_line2 \
+                -ha_city  $ha_city \
+                -ha_state $ha_state \
+                -ha_postal_code $ha_postal_code \
+                -ha_country_code $ha_country_code
 
             set roommates_list [lsearch -all -inline -not [split $roommates ",|\t\n\r"] {}]
 
