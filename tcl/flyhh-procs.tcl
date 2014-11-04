@@ -222,3 +222,98 @@ proc ::flyhh::create_user_if {email first_names last_name {company_idVar ""}} {
 }
 
 
+ad_proc ::flyhh::create_purchase_order {
+    -company_id
+    -company_contact_id 
+    -participant_id
+    -project_id
+    -payment_method_id 
+    -payment_term_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-04
+    @last-modified 2014-11-04
+} {
+
+    # Intranet Cost Type
+    # (3706 = Purchase Order)
+    set invoice_type_id "3706"
+
+    return [::flyhh::create_invoice \
+                -company_id $company_id \
+                -company_contact_id $company_contact_id \
+                -participant_id $participant_id \
+                -project_id $project_id \
+                -payment_method_id $payment_method_id \
+                -payment_term_id $payment_term_id \
+                -invoice_type_id $invoice_type_id]
+
+}
+
+
+ad_proc ::flyhh::create_invoice {
+    -company_id 
+    -company_contact_id 
+    -participant_id
+    -project_id
+    -payment_method_id 
+    -payment_term_id
+    -invoice_type_id
+} {
+    @param invoice_type_id Intranet Cost Type (3700 = Customer Invoice, 3702 = Quote, 3706 = Purchase Order)
+
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-04
+    @last-modified 2014-11-04
+} {
+
+    set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
+
+    set provider_id 8720          ;# Company that provides this service - Us
+    set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
+
+    set sql "select project_cost_center_id from im_projects where project_id=:project_id"
+    set cost_center_id [db_string cost_center_id $sql]
+    set sql "select cost_center_code from im_cost_centers where cost_center_id = :cost_center_id"
+    set cost_center_code [db_string cost_center_code $sql]
+    set note "$cost_center_code $participant_id"
+    set user_id [ad_conn user_id]
+    set peeraddr [ad_conn peeraddr]
+    set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
+    set invoice_id [db_exec_plsql create_invoice "
+        select im_invoice__new (
+            null,                       -- invoice_id
+            'im_invoice',               -- object_type
+            now(),                      -- creation_date 
+            :user_id,                   -- creation_user
+            :peeraddr,                  -- creation_ip
+            null,                       -- context_id
+            :invoice_nr,                -- invoice_nr
+            :company_id,                -- company_id
+            :provider_id,               -- provider_id -- us
+            :company_contact_id,        -- company_contact_id
+            now(),                      -- invoice_date
+            'EUR',                      -- currency
+            null,                       -- invoice_template_id
+            :invoice_status_id,         -- invoice_status_id
+            :invoice_type_id,           -- invoice_type_id
+            :payment_method_id,         -- payment_method_id
+            :payment_days,              -- payment_days
+            0,                          -- amount
+            0,                          -- vat
+            0,                          -- tax
+            :note                       -- note
+         )"]
+
+     db_dml update_invoice "
+        update im_costs set 
+            cost_center_id = :cost_center_id, 
+            project_id = :project_id,
+            payment_term_id = :payment_term_id, 
+            vat_type_id = 42021 
+        where cost_id = :invoice_id
+     "
+
+    return $invoice_id
+
+}
