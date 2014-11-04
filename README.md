@@ -10,5 +10,5 @@ Parameter Name: restrict_edit_list
 Description: does not allow editing of fields other than the name, address, dance partner and room mates when the registration status id is found in this list, see also "Flyhh - Event Registration Status"
 Default: 82503 82504 82505 82506
 
-sudo mkdir /var/lib/aolserver/flyhh
-sudo chown projop /var/lib/aolserver/flyhh
+cd /var/lib/aolserver/
+sudo ln -sf projop flyhh
