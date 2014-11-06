@@ -98,7 +98,7 @@ ad_form -extend -name $form_id -form {
         {help_text "email address, name, or both"}
         {html {style "width:300px;"}}}
 
-    {roommates:text(textarea)
+    {roommates_text:text(textarea)
         {label "Roommates"}
         {html "rows 4 cols 30"}
         {help_text "comma-separated list of email addresses, names, or both"}}
@@ -250,6 +250,7 @@ ad_form -extend -name $form_id -form {
                 :partner_text,
                 :partner_name,
                 :partner_email,
+                :roommates_text,
                 :accepted_terms_p,
 
                 :course,
@@ -263,7 +264,7 @@ ad_form -extend -name $form_id -form {
 
             )"
 
-            set roommates_list [lsearch -all -inline -not [split $roommates ",|\t\n\r"] {}]
+            set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
 
             foreach roommate_text $roommates_list {
 
@@ -303,6 +304,7 @@ ad_form -extend -name $form_id -form {
                 :partner_text,
                 :partner_name,
                 :partner_email,
+                :roommates_text,
                 :accepted_terms_p,
 
                 :course,
@@ -325,7 +327,7 @@ ad_form -extend -name $form_id -form {
                 -ha_postal_code $ha_postal_code \
                 -ha_country_code $ha_country_code
 
-            set roommates_list [lsearch -all -inline -not [split $roommates ",|\t\n\r"] {}]
+            set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
 
             foreach roommate_text $roommates_list {
 

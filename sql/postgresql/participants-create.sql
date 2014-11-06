@@ -128,6 +128,8 @@ create table flyhh_event_participants (
     -- in order to mark the value as such in the user interface
     partner_mutual_p    boolean default 'f',
 
+    roommates_text      varchar(1000),
+
     accepted_terms_p    boolean not null default 'f',
 
     invalid_partner_p   boolean not null default 'f',
@@ -297,6 +299,7 @@ create or replace function flyhh_event_participant__new (
     p_partner_text          varchar,
     p_partner_name          varchar,
     p_partner_email         varchar,
+    p_roommates_text        varchar,
     p_accepted_terms_p      boolean,
     p_course                integer,
     p_accommodation         integer,
@@ -325,7 +328,7 @@ begin
 
     select participant_id into v_partner_participant_id 
     from parties pa inner join flyhh_event_participants ep on (ep.person_id=pa.party_id)
-    where (email=p_partner_email or person__name(ep.person_id) = p_partner_name)
+    where (email=p_partner_email or lower(person__name(ep.person_id)) = lower(p_partner_name))
     and project_id=p_project_id
     order by participant_id
     limit 1;
@@ -349,6 +352,7 @@ begin
         partner_participant_id,
         partner_person_id,
         partner_mutual_p,
+        roommates_text,
         accepted_terms_p,
 
         course,
@@ -381,8 +385,9 @@ begin
         case when exists (
             select 1 from flyhh_event_participants 
             where participant_id=v_partner_participant_id 
-            and ((partner_email = p_email) or (partner_name = person__name(p_person_id)))
+            and ((partner_email = p_email) or (lower(partner_name) = lower(person__name(p_person_id))))
         ) then true else false end,
+        p_roommates_text,
         p_accepted_terms_p,
 
         p_course,
@@ -409,7 +414,7 @@ begin
         roommate_person_id = p_person_id,
         roommate_id = p_participant_id
     where
-        (roommate_email = p_email or roommate_name = v_person_name)
+        (roommate_email = p_email or lower(roommate_name) = lower(v_person_name))
         and project_id = p_project_id;
 
     -- update partner_participant_id using email or name
@@ -440,6 +445,7 @@ create or replace function flyhh_event_participant__update (
     p_partner_text          varchar,
     p_partner_name          varchar,
     p_partner_email         varchar,
+    p_roommates_text        varchar,
     p_accepted_terms_p      boolean,
     p_course                integer,
     p_accommodation         integer,
@@ -472,6 +478,7 @@ begin
         partner_text        = p_partner_text,
         partner_name        = p_partner_name,
         partner_email       = p_partner_email,
+        roommates_text      = p_roommates_text,
         accepted_terms_p    = p_accepted_terms_p,
         course              = p_course,
         accommodation       = p_accommodation,
@@ -539,7 +546,7 @@ begin
     return (select ep.person_id
             from flyhh_event_participants ep inner join persons p on (p.person_id=ep.person_id)
             inner join parties pa on (pa.party_id=ep.person_id)
-            where project_id=p_project_id and (email=p_email or person__name(ep.person_id)=p_name));
+            where project_id=p_project_id and (email=p_email or lower(person__name(ep.person_id))=lower(p_name)));
 
 end;
 $$ language 'plpgsql';

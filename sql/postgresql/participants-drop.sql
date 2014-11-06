@@ -22,16 +22,16 @@ drop function flyhh_event_participant__name(integer);
 drop function flyhh_event_participant__update(
     integer, varchar, varchar, varchar, varchar,
 	integer,
-    boolean, varchar, varchar, varchar, boolean,
+    boolean, varchar, varchar, varchar, varchar, boolean,
     integer, integer, integer, integer,
-    integer, integer
+    integer, integer, integer
 );
 drop function flyhh_event_participant__new(
     integer,integer, integer, varchar, varchar, varchar, varchar,
 	integer,
-    boolean, varchar, varchar, varchar, boolean,
+    boolean, varchar, varchar, varchar, varchar, boolean,
     integer, integer, integer, integer,
-    integer, integer
+    integer, integer, integer
 );
 
 drop function flyhh_person_id_from_email_or_name(integer,varchar,varchar);
