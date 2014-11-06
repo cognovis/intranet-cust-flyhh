@@ -6,6 +6,9 @@ ad_page_contract {
 
     check_user_is_same -requires {participant_id:integer} {
 
+# DISABLE FOR DEBUGGING/DEVELOPMENT PURPOSES
+return
+
         set user_id [ad_conn user_id]
 
         set sql "select person_id from flyhh_event_participants where participant_id=:participant_id"
@@ -41,6 +44,11 @@ db_transaction {
     # (3804 = Outstanding)
     set new_status_id "3804"
     db_dml update_cost_status "update im_costs set cost_status_id = :new_status_id where cost_id = :purchase_order_id"
+
+    # The PDF of the new invoice is generated and attached to the financial document.
+    # An E-Mail is send to the participant with the PDF attached and the payment 
+    # information similar to what is displayed on the Web site.
+    im_invoice_send_invoice_mail -invoice_id $new_invoice_id
 
 }
 

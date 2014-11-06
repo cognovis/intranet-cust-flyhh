@@ -104,19 +104,23 @@ proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} 
         set company_path [regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]
 
         set sql "select company_id from im_companies where company_path = :company_path" 
-        set company_id [db_string company $sql -default ""]
+        set company_id [db_string company_id_by_path $sql -default ""]
 
         if { $company_id eq {} } {
 
             set sql "select company_id from im_companies where company_name = :company_name" 
-            set company_id [db_string company_id $sql -default ""]
+            set company_id [db_string company_id_by_name $sql -default ""]
 
-            set sql "update im_companies set company_path = :company_path where company_id = :company_id"
-            db_dml update $sql
+            if { $company_id ne {} } {
+                set sql "update im_companies set company_path = :company_path where company_id = :company_id"
+                db_dml update $sql
+            }
 
         }
 
-    } else {
+    } 
+    
+    if { $company_id eq {} } {
 
         set company_id [im_new_object_id]
         set office_id [im_new_object_id]
