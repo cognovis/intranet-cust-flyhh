@@ -1,0 +1,32 @@
+set path_info [ad_conn path_info]
+foreach {_dummy_ participant_id invoice_id invoice_revision_id} [split $path_info {_.}] break
+
+rp_form_put participant_id $participant_id
+rp_form_put invoice_id $invoice_id
+rp_form_put invoice_revision_id $invoice_revision_id
+
+unset participant_id
+unset invoice_id
+unset invoice_revision_id
+
+ad_page_contract {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+    participant_id:integer
+    invoice_id:integer
+    invoice_revision_id:integer
+} -validate {
+    check_user_is_same -requires {participant_id:integer} {
+        ::flyhh::check_user_is_same -participant_id $participant_id
+    }
+}
+
+set sql "
+    select r.mime_type,r.title, r.content as filename
+    from cr_revisions r
+    where r.revision_id = :invoice_revision_id
+"
+db_1row file_info $sql
+
+ns_returnfile 200 application/pdf [cr_fs_path]/$filename
+return

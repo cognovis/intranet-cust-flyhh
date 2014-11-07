@@ -99,6 +99,7 @@ ${link_to_payment_page}
 
 proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} {
 
+    set company_id ""
     if { $existing_user_p } {
 
         set company_path [regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]
@@ -441,3 +442,147 @@ ad_proc ::flyhh::set_participant_status {
     db_dml update_event_participant_status $sql
 
 }
+
+
+ad_proc ::flyhh::check_user_is_same {
+    -participant_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-07
+    @last-modified 2014-11-07
+} {
+
+    # DISABLE FOR DEBUGGING/DEVELOPMENT PURPOSES
+    return
+
+    set user_id [ad_conn user_id]
+
+    set sql "select person_id from flyhh_event_participants where participant_id=:participant_id"
+    set participant_person_id [db_string participant_person_id $sql -default ""]
+    
+    if { ${user_id} ne ${participant_person_id} } { 
+        ad_complain "logged in user and participant must be the same"
+    }
+
+}
+
+ad_proc ::flyhh::send_invoice_mail {
+    -invoice_id
+    {-recipient_id ""}
+    {-from_addr ""}
+    {-cc_addr ""}
+} {
+
+    Copied im_invoice_send_invoice_mail and modified it in two ways:
+    a) queue the message as opposed to sending it immediately
+    b) check if the invoice pdf exists before generating a new one
+
+} {
+
+    set invoice_revision_id [::flyhh::invoice_pdf -invoice_id $invoice_id]
+
+    set user_id [ad_conn user_id]
+    if {"" == $recipient_id} {
+    set recipient_id [db_string company_contact_id "select company_contact_id from im_invoices where invoice_id = :invoice_id" -default $user_id]
+    } 
+
+    db_1row get_recipient_info "select first_names, last_name, email as to_addr from cc_users where user_id = :recipient_id"
+
+    if {"" == $from_addr} {
+    set from_addr [party::email -party_id $user_id]
+    }
+    
+    # Get the type information so we can get the strings
+    set invoice_type_id [db_string type "select cost_type_id from im_costs where cost_id = :invoice_id"]
+    
+    set recipient_locale [lang::user::locale -user_id $recipient_id]
+    set subject [lang::util::localize "#intranet-invoices.invoice_email_subject_${invoice_type_id}#" $recipient_locale]
+    set body [lang::util::localize "#intranet-invoices.invoice_email_body_${invoice_type_id}#" $recipient_locale]
+
+    acs_mail_lite::send -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender
+
+}
+
+ad_proc -private ::flyhh::html2pdf {
+    infile
+    outfile
+} {
+
+    converts a file from html to pdf
+    just an interim solution until we figure out
+    what to do with intranet-invoices/view
+
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+
+    set tmpfile [ns_tmpnam]
+
+    set cmd "/usr/bin/html2ps -o $tmpfile $infile"
+    exec -- /bin/sh -c "$cmd || exit 0" 2> /dev/null
+
+    set cmd "/usr/bin/ps2pdf $tmpfile $outfile"
+    exec -- /bin/sh -c "$cmd || exit 0" 2> /dev/null
+
+    file delete $tmpfile
+
+}
+
+ad_proc -public ::flyhh::invoice_pdf {
+    {-invoice_id:required}
+} {
+    Generate a PDF for an invoice and saves it as a CR Item
+
+    Copied ::intranet-openoffice::invoice_pdf and modified to handle the fact that
+    intranet-invoices/www/view.tcl does not really generate and neither does it 
+    return a pdf file, it just returns html.
+
+} {
+
+    # first fetches the invoice through an http request to intranet-invoices/view
+    set user_id [im_sysadmin_user_default]
+    set expiry_date [db_string current_date "select to_char(sysdate, 'YYYY-MM-DD') from dual"]
+    set auto_login [im_generate_auto_login -expiry_date $expiry_date -user_id $user_id]
+    # pdf_p does not seem to have any effect on the response, disabled it so that this proc
+    # will continue to work regardless of whether intranet-invoices/view is fixed
+    set invoice_url [export_vars -base "[ad_url]/intranet-invoices/view" -url {invoice_id user_id expiry_date auto_login {pdf_p 0} {render_template_id 1}}]
+    set mime_type "application/pdf"
+    set invoice_nr [db_string name "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
+
+    set tmp_htmlfile [ns_tmpnam]
+    set tmp_pdffile [ns_tmpnam]
+
+    apm_transfer_file -url $invoice_url -output_file_name $tmp_htmlfile
+
+    # converts html to pdf
+    ::flyhh::html2pdf $tmp_htmlfile $tmp_pdffile
+    file delete $tmp_htmlfile
+
+    set item_id [content::item::get_id_by_name -name ${invoice_nr}.pdf -parent_id $invoice_id]
+    if {$item_id ne ""} {
+        set file_revision_id \
+            [cr_import_content \
+                -item_id $item_id \
+                -creation_user $user_id \
+                -title "${invoice_nr}.pdf" \
+                $invoice_id \
+                $tmp_pdffile \
+                [file size $tmp_pdffile] \
+                "application/pdf" \
+                "${invoice_nr}.pdf"]
+    } else {
+        set file_revision_id \
+            [cr_import_content \
+                -creation_user $user_id \
+                -title "${invoice_nr}.pdf" \
+                $invoice_id \
+                $tmp_pdffile \
+                [file size $tmp_pdffile] \
+                "application/pdf" \
+                "${invoice_nr}.pdf"]
+    }	
+    
+    content::item::set_live_revision -revision_id $file_revision_id
+    return $file_revision_id
+}
+
+

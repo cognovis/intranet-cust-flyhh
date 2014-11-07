@@ -12,3 +12,5 @@ Default: 82503 82504 82505 82506
 
 cd /var/lib/aolserver/
 sudo ln -sf projop flyhh
+
+sudo apt-get install html2ps
