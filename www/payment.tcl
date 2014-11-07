@@ -38,7 +38,7 @@ db_transaction {
 }
 
 # The PDF of the new invoice is generated and attached to the financial document.
-set invoice_revision_id [intranet_openoffice::invoice_pdf -invoice_id $new_invoice_id]
+set invoice_revision_id [::flyhh::invoice_pdf -invoice_id $new_invoice_id]
 
 # An E-Mail is send to the participant with the PDF attached and the payment 
 # information similar to what is displayed on the Web site.

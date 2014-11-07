@@ -29,4 +29,3 @@ set sql "
 db_1row file_info $sql
 
 ns_returnfile 200 application/pdf [cr_fs_path]/$filename
-return
