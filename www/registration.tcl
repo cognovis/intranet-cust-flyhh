@@ -192,7 +192,23 @@ ad_form -extend -name $form_id -form {
     }
 
     set package_id [ad_conn package_id]
-    set restrict_edit_list [parameter::get -package_id $package_id -parameter "restrict_edit_list"]
+
+    # If the status of the event registration is no longer pending, 
+    # do not allow the editing of any fields but the name,
+    # address, dance partner and room mates.
+    #
+    # Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
+    # set restrict_edit_list [parameter::get -package_id $package_id -parameter "restrict_edit_list"]
+    # set restrict_edit_list [list 82503 82504 82505 82506]
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category in ('Partially Paid', 'Registered', 'Refused', 'Cancelled')
+    "
+    set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
+
     if { -1 != [lsearch -exact -integer $restrict_edit_list $event_participant_status_id] } {
         foreach element {
             email course accommodation food_choice bus_option level 

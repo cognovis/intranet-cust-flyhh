@@ -405,7 +405,109 @@ ad_proc ::flyhh::create_invoice {
         where cost_id = :invoice_id
      "
 
+    ::flyhh::create_invoice_items \
+        -invoice_id $invoice_id \
+        -participant_id $participant_id
+
     return $invoice_id
+
+}
+
+
+ad_proc ::flyhh::create_invoice_items {
+    -invoice_id
+    -participant_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+
+    # TODO: turn provider_company_id into a package parameter
+    set provider_company_id "8720"
+
+    set sql "select * from flyhh_event_participants where participant_id=:participant_id"
+    db_1row participant_info $sql
+
+    set sort_order 1
+    foreach varname {course accommodation food_choice bus_option} {
+        set material_id [set $varname]
+
+        if { $material_id eq {} } { continue }
+
+        set sql "
+            select material_name, material_uom_id, price 
+            from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
+            where im.material_id=:material_id
+            and company_id = :provider_company_id
+            limit 1
+        "
+
+        db_1row class_material $sql
+
+        set item_id [db_nextval "im_invoice_items_seq"]
+        set sql "
+        insert into im_invoice_items (
+            item_id, 
+            item_name,
+            project_id,
+            invoice_id,
+            item_units,
+            item_uom_id,
+            price_per_unit,
+            currency,
+            sort_order,
+            item_type_id,
+            item_material_id,
+            item_status_id, 
+            description,
+            task_id,
+            item_source_invoice_id
+        ) values (
+            :item_id,
+            :material_name,
+            null,
+            :invoice_id,
+            1,
+            :material_uom_id,
+            :price,
+            'EUR',
+            :sort_order,
+            null,
+            :material_id,
+            null,
+            '',
+            null,
+            null
+        )" 
+
+        db_dml insert_invoice_items $sql
+
+        incr sort_order
+
+    }
+
+    # Update the total amount
+    set sql "
+        select 
+            sum( round(item_units*price_per_unit,2) + round(item_units*price_per_unit*cb.aux_int1/100,2) )
+        from 
+            im_invoice_items ii,
+            im_categories ca,
+            im_categories cb,
+            im_materials im 
+        where invoice_id = :invoice_id
+        and ca.category_id = material_type_id
+        and ii.item_material_id = im.material_id
+        and ca.aux_int2 = cb.category_id
+    "
+    set total_amount [db_string total_amount $sql]
+    
+    set sql "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"
+    set total_net_amount [db_string total $sql]
+        
+    set sql "update im_costs set amount = :total_net_amount where cost_id = :invoice_id"
+    db_dml update_invoice $sql
+
+    # intranet_collmex::update_customer_invoice -invoice_id $invoice_id  
 
 }
 
