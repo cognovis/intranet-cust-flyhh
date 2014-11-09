@@ -513,9 +513,9 @@ ad_proc ::flyhh::create_invoice_items {
 
 
 ad_proc ::flyhh::set_participant_status { 
-    -participant_id 
-    -from_status 
-    -to_status
+    {-participant_id:required ""}
+    {-to_status:required ""}
+    {-from_status ""}
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
@@ -530,18 +530,35 @@ ad_proc ::flyhh::set_participant_status {
     "
     set to_status_id [db_string pending_payment_status_id $sql]
 
-    set sql "
-        select category_id 
-        from im_categories 
-        where category_type='Flyhh - Event Registration Status'
-        and category=:from_status
-    "
-    set from_status_id [db_string confirmed_status_id $sql]
+    if { $from_status ne {} } {
+        set sql "
+            select category_id 
+            from im_categories 
+            where category_type='Flyhh - Event Registration Status'
+            and category=:from_status
+        "
+        set from_status_id [db_string confirmed_status_id $sql]
 
-    set sql "
-        update flyhh_event_participants set event_participant_status_id=:to_status_id 
-        where participant_id=:participant_id and event_participant_status_id=:from_status_id"
-    db_dml update_event_participant_status $sql
+        set sql "
+            update flyhh_event_participants 
+            set event_participant_status_id=:to_status_id 
+            where participant_id=:participant_id 
+            and event_participant_status_id=:from_status_id
+        "
+
+        db_dml update_event_participant_status_if $sql
+
+    } else {
+
+        set sql "
+            update flyhh_event_participants 
+            set event_participant_status_id=:to_status_id 
+            where participant_id=:participant_id
+        "
+
+        db_dml update_event_participant_status $sql
+
+    }
 
 }
 
@@ -687,4 +704,51 @@ ad_proc -public ::flyhh::invoice_pdf {
     return $file_revision_id
 }
 
+ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
+    {-payment_id:required ""}
+    {-payment_method_id ""}
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+
+    set sql "
+        select 
+            cst.cost_id,
+            cst.cost_status_id,
+            participant_id
+        from im_costs cst 
+        inner join im_payments pay on (pay.cost_id=cst.cost_id)
+        inner join flyhh_event_participants reg on (reg.company_id = cst.customer_id and reg.project_id = cst.project_id)
+        where payment_id=:payment_id
+    "
+
+    set exists_p [db_0or1row check_payment_event $sql]
+
+    if { $exists_p } {
+
+        set cost_status_paid [im_cost_status_paid]
+
+        set cost_status_partially_paid [im_cost_status_partially_paid]
+
+        if { $cost_status_id eq $cost_status_paid } {
+
+            ::flyhh::set_participant_status \
+                -participant_id $participant_id \
+                -to_status "Registered"
+                
+        } elseif { $cost_status_id eq $cost_status_partially_paid } {
+
+            ::flyhh::set_participant_status \
+                -participant_id $participant_id \
+                -to_status "Partially Paid"
+
+        } else {
+
+            ns_log error "expected cost_status_id to be $cost_status_paid or $cost_status_partially_paid but got $cost_status_id"
+
+        }
+
+    }
+
+}
 
