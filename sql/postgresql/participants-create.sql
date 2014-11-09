@@ -118,6 +118,13 @@ create table flyhh_event_participants (
     partner_participant_id integer
                         constraint flyhh_event_participants__partner_participant_id_fk
                         references flyhh_event_participants(participant_id),
+
+    -- When you submit the registration and the dance partner did not register, 
+    -- send the dance partner an E-Mail (text does not matter now) with a link 
+    -- to the registration for the event and the partner who asked them to join, 
+    -- so this is already pre-filled 
+
+    partner_reminder_sent timestamp,
     
     partner_person_id   integer
                         constraint flyhh_event_participants__partner_person_id_fk

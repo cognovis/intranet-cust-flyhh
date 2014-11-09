@@ -10,6 +10,7 @@ ad_page_contract {
     participant_id:integer,optional,notnull
     project_id:integer,notnull
     token:optional,notnull
+    {inviter_text:trim,notnull ""}
 } -properties {
 } -validate {
 
@@ -95,6 +96,7 @@ ad_form -extend -name $form_id -form {
 
     {partner_text:text
         {label "Partner"}
+        {value "${inviter_text}"}
         {help_text "email address, name, or both"}
         {html {style "width:300px;"}}}
 

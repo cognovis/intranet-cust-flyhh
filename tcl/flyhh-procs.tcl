@@ -752,3 +752,68 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
 
 }
 
+ad_proc ::flyhh::mail_notification_system {} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+
+    # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
+    # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
+    # is already pre-filled 
+
+    set sql "
+        select 
+            participant_id,
+            person__name(person_id) as participant_person_name,
+            party__email(person_id) as participant_email,
+            reg.project_id,
+            event_name,
+            partner_email
+        from flyhh_event_participants reg
+        inner join flyhh_events evt on (evt.project_id=reg.project_id)
+        inner join acs_objects obj on (obj.object_id=reg.participant_id)
+        where partner_email is not null
+        and partner_participant_id is null
+        and partner_reminder_sent is null
+        and creation_date > current_timestamp - '1 day'::interval
+    "
+
+    db_foreach unregistered_partner $sql {
+
+        set inviter_text "$participant_person_name $participant_email"
+        set event_registration_link [export_vars -base [ad_url]/flyhh/registration {project_id inviter_text}]
+        set from_addr "noreply-${participant_id}-[ns_sha1 $partner_email]@flying-hamburger.de"
+        set to_addr $partner_email
+        set default_text "
+@participant_person_name@ (@participant_email@) has registered for the \"@event_name@\"
+and would like to have you as his/her partner.
+
+You can register by followining the link below:
+@event_registration_link;noquote@
+"
+        set msg [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Body $default_text]
+        set body [eval [template::adp_compile -string $msg]]
+        set mime_type text/plain
+        set subject [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Subject "Invitation to register for $event_name"]
+
+        acs_mail_lite::send \
+            -from_addr $from_addr \
+            -to_addr $to_addr \
+            -subject $subject \
+            -body $body \
+            -mime_type $mime_type \
+            -object_id $participant_id
+
+
+        set sql "
+            update flyhh_event_participants
+            set partner_reminder_sent=now()
+            where participant_id = :participant_id
+        "
+
+        db_dml partner_reminder_sent $sql
+
+    }
+
+}
+
+ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
