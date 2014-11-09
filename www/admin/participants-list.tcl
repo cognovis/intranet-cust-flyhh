@@ -222,9 +222,9 @@ if {$view_order_by_clause != ""} {
     set order_by_clause "order by participant_id"
 }
 
-set where_clause [join [concat $criteria $extra_wheres] " and "]
-if { $where_clause ne {} } {
-    set where_clause "where $where_clause"
+set extra_where_clause [join [concat $criteria $extra_wheres] " and "]
+if { $extra_where_clause ne {} } {
+    set extra_where_clause "and $extra_where_clause"
 }
 
 set extra_select [join $extra_selects ","]
@@ -244,7 +244,8 @@ set sql "
         $extra_select 
     from flyhh_event_participants ep 
     $extra_from
-    $where_clause
+    where project_id=:project_id
+    $extra_where_clause
     $order_by_clause
 "
 

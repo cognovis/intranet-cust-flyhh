@@ -35,6 +35,9 @@ ad_form \
 
         event_id:key(acs_object_id_seq)
 
+        {-section event_info 
+            {legendtext "Event Info"}}
+
         {event_name:text
             {label "Name"}}
 
@@ -46,6 +49,8 @@ ad_form \
         {enabled_p:boolean(select)
             {label "Enable?"}
             {options {{Yes "t"} {No "f"}}}}
+
+        {-section ""}
 
     }
 
@@ -59,44 +64,164 @@ im_dynfield::append_attributes_to_form \
 im_dynfield::set_form_values_from_http -form_id $form_id
 im_dynfield::set_local_form_vars_from_http -form_id $form_id
 
-ad_form -extend -name $form_id -select_query {
 
-    select * 
-    from flyhh_events evt 
-    inner join im_projects p on (p.project_id = evt.project_id) 
-    where event_id=:event_id
+set sql "
+    select *, im_name_from_id(uom_id) as uom_name 
+    from im_timesheet_prices itp 
+    inner join im_materials m on (m.material_id=itp.material_id) 
+    inner join im_material_types mt on (m.material_type_id=mt.material_type_id) 
+    where material_type in ('Accomodation', 'Course Income', 'Bus Options', 'Food Choice')
+"
+
+set section ""
+
+db_foreach material_id $sql {
+
+    if { $section ne $material_type_id } {
+
+        set section $material_type_id
+
+        set legendtext "Capacity for \"$material_type\" materials"
+
+        lappend elements [list -section $material_type_id [list legendtext $legendtext]]
+
+    }
+
+    set varname "capacity.${material_id}"
+
+    lappend elements \
+        [list ${varname}:text,optional \
+            [list label "${material_name}"] \
+            [list html "size 15"] \
+            [list help_text "[format "%.2f" ${price}] $currency / ${uom_name}"]]
+
+}
+
+
+ad_form -extend -name $form_id -form $elements
+
+ad_form -extend -name $form_id -edit_request {
+
+    set sql "
+        select *
+        from flyhh_event_materials
+        where event_id=:event_id
+    "
+
+    db_foreach material_capacity $sql {
+        set varname capacity.$material_id
+        set $varname $capacity
+    }
+
+    set sql "
+        select *
+        from flyhh_events evt
+        inner join im_projects p on (p.project_id = evt.project_id)
+        where event_id = :event_id
+    "
+
+    db_1row event_info $sql
 
 } -new_data {
 
-    set provider_company_id 8720  ;# Flying Hamburger
+    db_transaction {
 
-    set project_nr [im_next_project_nr]
+        set provider_company_id 8720  ;# Flying Hamburger
 
-    set sql "
-        select flyhh_event__new(
-            :event_id,
-            :event_name,
-            :provider_company_id,
-            :project_nr,
-            :project_cost_center_id,
-            :enabled_p
-        );
-    "
+        set project_nr [im_next_project_nr]
 
-    db_exec_plsql insert_event $sql
+        set sql "
+            select flyhh_event__new(
+                :event_id,
+                :event_name,
+                :provider_company_id,
+                :project_nr,
+                :project_cost_center_id,
+                :enabled_p
+            );
+        "
+
+        db_exec_plsql insert_event $sql
+
+        # The form has an input field (named capacity.material_id) 
+        # for each material of the following types: Course Income,
+        # Accomodation, Food Choice, Bus Options.
+
+        foreach varname [info vars capacity.*] {
+
+            set capacity [set $varname]
+
+            set material_id [lindex [split $varname {.}] 1]
+
+            set sql "
+                insert into flyhh_event_materials (
+                    event_id,
+                    material_id,
+                    capacity
+                ) values (
+                    :event_id,
+                    :material_id,
+                    coalesce(:capacity,0)
+                )
+            "
+
+            db_dml insert_material_capacity $sql
+
+        }
+
+    }
 
 } -edit_data {
-    
-    set sql "
-        select flyhh_event__update(
-            :event_id,
-            :event_name,
-            :project_cost_center_id,
-            :enabled_p
-        );
-    "
 
-    db_exec_plsql update_event $sql
+    db_transaction {
+        
+        set sql "
+            select flyhh_event__update(
+                :event_id,
+                :event_name,
+                :project_cost_center_id,
+                :enabled_p
+            );
+        "
+
+        db_exec_plsql update_event $sql
+
+        # Note that we have to preserve the number of occupied slots while
+        # updating the capacity of each material for the given event, or
+        # disallow updating the capacity once we start accepting regisrations
+        # for the event.
+        
+        set sql "delete from flyhh_event_materials where event_id=:event_id"
+
+        db_dml delete_old_capacity_rows $sql
+
+        # The form has an input field (named capacity.material_id) 
+        # for each material of the following types: Course Income,
+        # Accomodation, Food Choice, Bus Options.
+
+        foreach varname [info vars capacity.*] {
+
+            set capacity [set $varname]
+
+            set material_id [lindex [split $varname {.}] 1]
+
+            set sql "
+                insert into flyhh_event_materials (
+                    event_id,
+                    material_id,
+                    capacity
+                ) values (
+                    :event_id,
+                    :material_id,
+                    coalesce(:capacity,0)
+                )
+            "
+
+            db_dml insert_material_capacity $sql
+
+        }
+
+    }
 
 } -after_submit {
 

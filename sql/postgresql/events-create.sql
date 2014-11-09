@@ -49,6 +49,21 @@ create table flyhh_events (
 -- we query for the event_name using project_id
 create index flyhh_events__project_id__idx on flyhh_events(project_id);
 
+create table flyhh_event_materials (
+    event_id            integer
+                        constraint flyhh_event_materials__event_id_fk
+                        references flyhh_events(event_id) on delete cascade,
+
+    material_id         integer
+                        constraint flyhh_event_materials__material_id_fk
+                        references im_materials(material_id),
+
+    capacity            integer not null default 0,
+
+    num_used            integer not null default 0
+
+);
+
 create or replace function flyhh_event__new(
     p_event_id          integer,
     p_event_name        varchar,

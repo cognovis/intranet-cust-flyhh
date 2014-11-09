@@ -3,7 +3,8 @@
 <property name="context">@context;noquote@</property>
 
 @context_bar;noquote@
-<p>
-<formtemplate id="@form_id@"></formtemplate>
 
+<div style="width:620px;">
+    <formtemplate id="@form_id@"></formtemplate>
+</div>
 
