@@ -27,6 +27,8 @@ ad_page_contract {
 } -errors {
 }
 
+# ad_maybe_redirect_for_registration
+
 # TODO: token parameter is not meant to be optional
 # it is going to be a signed key that helps us extract
 # the project_id and it prevents sequential access
@@ -97,7 +99,7 @@ ad_form -extend -name $form_id -form {
     {partner_text:text
         {label "Partner"}
         {value "${inviter_text}"}
-        {help_text "email address, name, or both"}
+        {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
         {html {style "width:300px;"}}}
 
     {roommates_text:text(textarea)
