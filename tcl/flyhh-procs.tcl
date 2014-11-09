@@ -512,6 +512,28 @@ ad_proc ::flyhh::create_invoice_items {
 }
 
 
+ad_proc ::flyhh::status_id_from_name {
+    status
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-09
+    @last-modified 2014-11-09
+} {
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status'
+        and category=:status
+    "
+
+    set status_id [db_string status_id $sql]
+
+    return $status_id
+
+}
+
+
 ad_proc ::flyhh::set_participant_status { 
     {-participant_id:required ""}
     {-to_status:required ""}
@@ -519,25 +541,14 @@ ad_proc ::flyhh::set_participant_status {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-04
+    @last-modified 2014-11-09
 } {
 
-    set sql "
-        select category_id 
-        from im_categories 
-        where category_type='Flyhh - Event Registration Status'
-        and category=:to_status
-    "
-    set to_status_id [db_string pending_payment_status_id $sql]
+    set to_status_id [::flyhh::status_id_from_name $to_status]
 
     if { $from_status ne {} } {
-        set sql "
-            select category_id 
-            from im_categories 
-            where category_type='Flyhh - Event Registration Status'
-            and category=:from_status
-        "
-        set from_status_id [db_string confirmed_status_id $sql]
+
+        set from_status_id [::flyhh::status_id_from_name $from_status]
 
         set sql "
             update flyhh_event_participants 
@@ -752,8 +763,63 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
 
 }
 
-ad_proc ::flyhh::mail_notification_system {} {
+ad_proc ::flyhh::send_invite_partner_mail {
+    -participant_id
+    -participant_person_name
+    -participant_email
+    -project_id
+    -event_name
+    -partner_email
+} {
+
+    Invites partner to join an event.
+
     @author Neophytos Demetriou (neophytos@azet.sk)
+
+} {
+
+    set inviter_text "$participant_person_name $participant_email"
+    set event_registration_link [export_vars -base [ad_url]/flyhh/registration {project_id inviter_text}]
+    set from_addr "noreply-${participant_id}-[ns_sha1 $partner_email]@flying-hamburger.de"
+    set to_addr $partner_email
+    set default_text "
+@participant_person_name@ (@participant_email@) has registered for the \"@event_name@\"
+and would like to have you as his/her partner.
+
+You can register by followining the link below:
+@event_registration_link;noquote@
+"
+    set msg [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Body $default_text]
+    set body [eval [template::adp_compile -string $msg]]
+    set mime_type text/plain
+    set subject [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Subject "Invitation to register for $event_name"]
+
+    acs_mail_lite::send \
+        -from_addr $from_addr \
+        -to_addr $to_addr \
+        -subject $subject \
+        -body $body \
+        -mime_type $mime_type \
+        -object_id $participant_id
+
+
+    set sql "
+        update flyhh_event_participants
+        set partner_reminder_sent=now()
+        where participant_id = :participant_id
+    "
+
+    db_dml partner_reminder_sent $sql
+
+}
+
+
+ad_proc ::flyhh::mail_notification_system {} {
+
+    Scheduled proc that sends customer payment reminders and asks partners to join an event.
+
+    @author Neophytos Demetriou (neophytos@azet.sk)
+
 } {
 
     # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
@@ -779,38 +845,107 @@ ad_proc ::flyhh::mail_notification_system {} {
 
     db_foreach unregistered_partner $sql {
 
-        set inviter_text "$participant_person_name $participant_email"
-        set event_registration_link [export_vars -base [ad_url]/flyhh/registration {project_id inviter_text}]
-        set from_addr "noreply-${participant_id}-[ns_sha1 $partner_email]@flying-hamburger.de"
-        set to_addr $partner_email
-        set default_text "
-@participant_person_name@ (@participant_email@) has registered for the \"@event_name@\"
-and would like to have you as his/her partner.
+        ::flyhh::send_invite_partner_mail \
+            -participant_id $participant_id \
+            -participant_person_name $participant_person_name \
+            -participant_email $participant_email \
+            -project_id $project_id \
+            -event_name $event_name \
+            -partner_email $partner_email
 
-You can register by followining the link below:
-@event_registration_link;noquote@
-"
-        set msg [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Body $default_text]
-        set body [eval [template::adp_compile -string $msg]]
-        set mime_type text/plain
-        set subject [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Subject "Invitation to register for $event_name"]
+    }
 
-        acs_mail_lite::send \
-            -from_addr $from_addr \
-            -to_addr $to_addr \
-            -subject $subject \
-            -body $body \
-            -mime_type $mime_type \
-            -object_id $participant_id
+    # WORK IN PROGRESS - RETURN FOR NOW
+    return
 
+    # Seven days after due date: Send a reminder E-Mail to the customer. Text of the reminder is something we configure
+    # using language keys, so ideally you would have only a lang key for the subject and the body of the E-Mail. We will
+    # need to be able to include the invoice date, invoice number, full amount, due date in the E-Mail as well as the
+    # name and a link to the registration.
+    #
+    # 17 days after due date: Send a second reminder. Same info as above, yet a different E-Mail body and subject will
+    # be used
+    #
+    # 27 days after due date: 
+    # (a) In case we have a partial payment, send an E-Mail to the Project Manager to have a chat with the customer
+    # (b) In case we have no payment, create a correction invoice. This is basically an invoice copy with type invoice
+    # correction and the same amounts in negative values. Mark the registration as cancelled.
 
-        set sql "
-            update flyhh_event_participants
-            set partner_reminder_sent=now()
-            where participant_id = :participant_id
-        "
+    set cancelled_status_id [::flyhh::status_id_from_name "Cancelled"]
 
-        db_dml partner_reminder_sent $sql
+    set cost_status_past_due [im_cost_status_past_due]
+
+    set sql "
+        select
+            reg.participant_id,
+            reg.project_id
+            person__name(reg.person_id) as participant_person_name,
+            party__email(reg.person_id) as participant_email,
+            cst.cost_id as invoice_id,
+            cst.effective_date as invoice_date,
+            cst.effective_date::date + payment_days as due_date,
+            inv.amount
+        from flyhh_event_participants reg
+        inner join im_costs cst on (cst.cost_id = reg.invoice_id)
+        where reg.invoice_id is not null
+        and reg.event_participant_status_id != :cancelled_status_id
+        and inv.due_date < current_timestamp
+    "
+
+    db_foreach unpaid_invoice $sql {
+
+        if { $first_reminder_p eq {} } {
+
+            set column_name "first_reminder_sent"
+
+        } elseif { $second_reminder_p eq {} } {
+
+            set column_name "second_reminder_sent"
+
+        } else {
+
+            if { $event_participant_status_id eq $partially_paid_status_id } {
+                set column_name "third_reminder_sent"
+            } else {
+
+                ## Create correction invoice
+
+                # Intranet Cost Type
+                # (3725 = Customer Invoice Correction)
+                set target_cost_type_id [im_cost_type_correction_invoice] 
+
+                set new_invoice_id \
+                    [im_invoice_copy_new \
+                        -source_invoice_ids $invoice_id \
+                        -target_cost_type_id $target_cost_type_id]
+
+                # new_invoice_id must be set to the same amount in negative values
+
+                set sql "
+                    update im_costs
+                    set amount=-(:amount)
+                    where cost_id=:new_invoice_id
+                "
+
+                db_dml update_new_invoice_amount $sql
+
+                ## Mark the registration as cancelled
+
+                ::flyhh::set_participant_status \
+                    -participant_id $participant_id \
+                    -to_status "Cancelled"
+
+            }
+
+        }
+
+        ::flyhh::send_invoice_reminder \
+            -column_name $column_name \
+            -invoice_date $invoice_date \
+            -invoice_id $invoice_id \
+            -amount $amount \
+            -due_date $due_date \
+            -event_registration_link $event_registration_link
 
     }
 
