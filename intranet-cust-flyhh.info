@@ -9,16 +9,18 @@
     <implements-subsite-p>f</implements-subsite-p>
     <inherit-templates-p>f</inherit-templates-p>
     
-    <version name="4.1.0.0.0" url="http://openacs.org/repository/download/apm/intranet-cust-flyhh-4.1.0.0.0.apm">
+    <version name="0.1d1" url="http://openacs.org/repository/download/apm/intranet-cust-flyhh-0.1d1.apm">
         <owner url="mailto:malte@flying-hamburger.de">Malte Sussdorff</owner>
         <maturity>0</maturity>
 
-        <provides url="intranet-cust-flyhh" version="4.1.0.0.0"/>
+        <provides url="intranet-cust-flyhh" version="0.1d1"/>
 
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="restrict_edit_list"  default="82503 82504 82505 82506" description="does not allow editing of fields other than the name, address, dance partner and room mates when the registration status id is found in this list, see also &quot;Flyhh - Event Registration Status&quot;"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="first_reminder_interval"  default="7 days" description="days after invoice is due to send the first reminder"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="second_reminder_interval"  default="17 days" description="days after invoice is due to send the second reminder"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="third_reminder_interval"  default="27 days" description="days after invoice is due to send the third reminder, if we have a partial payment the reminder goes to the project manager to have a chat with the customer, if we have no payment we create a correction invoice and mark the registration as cancelled"/>
         </parameters>
 
     </version>

@@ -949,6 +949,10 @@ ad_proc ::flyhh::mail_notification_system {} {
     set cost_status_partially_paid [im_cost_status_partially_paid]
     set cost_status_paid [im_cost_status_paid]
 
+    set first_reminder_interval [parameter::get -parameter first_reminder_interval -default "7 days"]
+    set second_reminder_interval [parameter::get -parameter second_reminder_interval -default "17 days"]
+    set third_reminder_interval [parameter::get -parameter third_reminder_interval -default "27 days"]
+
     set sql "
         select
             reg.participant_id,
@@ -962,9 +966,9 @@ ad_proc ::flyhh::mail_notification_system {} {
             cst.effective_date as invoice_date,
             cst.effective_date::date + payment_days as due_date,
             cst.amount,
-            (inv_first_reminder_sent is null and effective_date < current_timestamp - '7 days'::interval) as first_reminder_p,
-            (inv_second_reminder_sent is null and effective_date < current_timestamp - '17 days'::interval) as second_reminder_p,
-            (inv_third_reminder_sent is null and effective_date < current_timestamp - '27 days'::interval) as third_reminder_p
+            (inv_first_reminder_sent is null and effective_date < current_timestamp - '${first_reminder_interval}'::interval) as first_reminder_p,
+            (inv_second_reminder_sent is null and effective_date < current_timestamp - '${second_reminder_interval}'::interval) as second_reminder_p,
+            (inv_third_reminder_sent is null and effective_date < current_timestamp - '${third_reminder_interval}'::interval) as third_reminder_p
         from flyhh_event_participants reg
         inner join flyhh_events evt on (evt.project_id = reg.project_id)
         inner join im_projects prj on (prj.project_id = reg.project_id)
