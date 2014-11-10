@@ -11,7 +11,7 @@ proc ::flyhh::match_name_email {text nameVar emailVar} {
 #
 # @creation-user Neophytos Demetriou (neophytos@azet.sk)
 # @creation-date 2014-10-30
-# @last-modified 2014-11-02
+# @last-modified 2014-11-10
 #
 
     upvar $nameVar name
@@ -44,7 +44,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
 #
 # @creation-user Neophytos Demetriou (neophytos@azet.sk)
 # @creation-date 2014-11-02
-# @last-modified 2014-11-02
+# @last-modified 2014-11-10
 #
 
     set sql "
@@ -88,6 +88,7 @@ ${link_to_payment_page}
     acs_mail_lite::send \
         -from_addr $from_addr \
         -to_addr $to_addr \
+        -subject $subject \
         -body $body \
         -mime_type $mime_type \
         -object_id $participant_id
@@ -830,27 +831,62 @@ You can register by followining the link below:
 }
 
 ad_proc ::flyhh::send_invoice_reminder {
+    -key 
     -to_addr
     -participant_id
     -participant_person_name
-    -participant_email
-    -column_name 
     -invoice_date
     -invoice_id
     -amount
     -due_date
+    -event_name
     -event_registration_link
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-10
+    @last-modified 2014-11-10
 } {
-    ns_log notice "--->>> not implemented yet: $column_name for $participant_person_name sent to $to_addr"
 
-    set sql "
-        update flyhh_event_participants
-        set $column_name = now()
-        where participant_id = :participant_id
+    ns_log notice "--->>> Flyhh Reminder System: $key for $participant_person_name sent to $to_addr"
+
+    set column_name ${key}_sent
+
+    # column_name is one of first_reminder_sent, second_reminder_sent, third_reminder_sent
+    set subject [eval [template::adp_compile -string [::flyhh::mc ${key}_subject "${key} subject"]]]
+    set msg_text "
+Hi @participant_person_name@,
+
+This is a reminder that your invoice for @event_name@ is due:
+Event Registration Link: @event_registration_link@
+Invoice ID: @invoice_id@
+Invoice Date: @invoice_date@
+Due Date: @due_date@
+Amount: @amount@
     "
-    db_dml update_participant_reminder_info $sql
+    set body [eval [template::adp_compile -string [::flyhh::mc ${key}_body ${msg_text}]]]
+    set from_addr "noreply-${participant_id}@flying-hamburder.de"
+    set mime_type text/plain
+
+    db_transaction {
+
+        acs_mail_lite::send \
+            -from_addr $from_addr \
+            -to_addr $to_addr \
+            -subject $subject \
+            -body $body \
+            -mime_type $mime_type \
+            -object_id $participant_id
+
+
+        set sql "
+            update flyhh_event_participants
+            set $column_name = now()
+            where participant_id = :participant_id
+        "
+
+        db_dml update_participant_reminder_info $sql
+
+    }
 
 }
 
@@ -859,6 +895,8 @@ ad_proc ::flyhh::mail_notification_system {} {
     Scheduled proc that sends customer payment reminders and asks partners to join an event.
 
     @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-10
+    @last-modified 2014-11-10
 
 } {
 
@@ -914,9 +952,11 @@ ad_proc ::flyhh::mail_notification_system {} {
     set sql "
         select
             reg.participant_id,
-            reg.project_id,
             person__name(reg.person_id) as participant_person_name,
             party__email(reg.person_id) as participant_email,
+            evt.event_name,
+            prj.project_id,
+            coalesce(party__email(prj.project_lead_id),'prjmgr@examle.com') as project_lead_email,
             cst.cost_id as invoice_id,
             cst.cost_status_id,
             cst.effective_date as invoice_date,
@@ -926,6 +966,8 @@ ad_proc ::flyhh::mail_notification_system {} {
             (inv_second_reminder_sent is null and effective_date < current_timestamp - '17 days'::interval) as second_reminder_p,
             (inv_third_reminder_sent is null and effective_date < current_timestamp - '27 days'::interval) as third_reminder_p
         from flyhh_event_participants reg
+        inner join flyhh_events evt on (evt.project_id = reg.project_id)
+        inner join im_projects prj on (prj.project_id = reg.project_id)
         inner join im_costs cst on (cst.cost_id = reg.invoice_id)
         where reg.invoice_id is not null
         and cst.cost_status_id != :cost_status_paid
@@ -940,15 +982,15 @@ ad_proc ::flyhh::mail_notification_system {} {
 
         if { $first_reminder_p } {
 
-            set column_name "inv_first_reminder_sent"
+            set msg_key "inv_first_reminder"
 
         } elseif { $second_reminder_p } {
 
-            set column_name "inv_second_reminder_sent"
+            set msg_key "inv_second_reminder"
 
         } else {
 
-            set column_name "inv_third_reminder_sent"
+            set msg_key "inv_third_reminder"
 
             if { $cost_status_id ne $cost_status_partially_paid } {
 
@@ -987,23 +1029,22 @@ ad_proc ::flyhh::mail_notification_system {} {
                     -participant_id $participant_id \
                     -to_status "Cancelled"
 
-                # TODO: use project manager email address
-                set to_addr "prjmgr@example.com"
+                set to_addr ${project_lead_email}
 
             }
 
         }
 
         ::flyhh::send_invoice_reminder \
+            -key $msg_key \
             -to_addr $to_addr \
             -participant_id $participant_id \
             -participant_person_name $participant_person_name \
-            -participant_email $participant_email \
-            -column_name $column_name \
             -invoice_date $invoice_date \
             -invoice_id $invoice_id \
             -amount $amount \
             -due_date $due_date \
+            -event_name $event_name \
             -event_registration_link $event_registration_link
 
     }

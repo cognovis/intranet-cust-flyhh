@@ -93,8 +93,9 @@ begin
         76                  -- project_status_id (=Open)
       ) into v_project_id;
 
-    update im_projects 
-    set project_cost_center_id=p_cost_center_id 
+    update im_projects set
+        project_cost_center_id=p_cost_center_id,
+        project_lead_id = (select company_contact_id from im_companies where company_id=p_company_id)
     where project_id=v_project_id;
 
     insert into flyhh_events (
