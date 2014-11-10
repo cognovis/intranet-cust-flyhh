@@ -432,7 +432,15 @@ ad_proc ::flyhh::create_invoice_items {
     # TODO: turn provider_company_id into a package parameter
     set provider_company_id "8720"
 
-    set sql "select * from flyhh_event_participants where participant_id=:participant_id"
+    set sql "
+        select
+            course,
+            accommodation,
+            food_choice,
+            bus_option
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
     db_1row participant_info $sql
 
     set sort_order 1
@@ -958,12 +966,20 @@ ad_proc ::flyhh::mail_notification_system {} {
                 # new_invoice_id must be set to the same amount in negative values
 
                 set sql "
-                    update im_costs
-                    set amount = 0.0 - :amount
-                    where cost_id=:new_invoice_id
+                    update im_invoice_items 
+                    set price_per_unit = 0.0 - price_per_unit 
+                    where invoice_id=:new_invoice_id
                 "
 
                 db_dml update_new_invoice_amount $sql
+                            
+                # Update the total amount
+                
+                set sql "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"
+                set total_net_amount [db_string total $sql]
+                    
+                set sql "update im_costs set amount = :total_net_amount where cost_id = :invoice_id"
+                db_dml update_invoice $sql
 
                 ## Mark the registration as cancelled
 
