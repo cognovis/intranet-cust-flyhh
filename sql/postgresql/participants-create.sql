@@ -48,6 +48,16 @@ create table flyhh_event_participants (
                         constraint flyhh_event_participants_order_id_fk
                         references im_invoices(invoice_id),
 
+    invoice_id          integer
+                        constraint flyhh_event_participants_invoice_id_fk
+                        references im_invoices(invoice_id),
+
+    inv_first_reminder_sent     timestamp,
+
+    inv_second_reminder_sent    timestamp,
+
+    inv_third_reminder_sent     timestamp,
+
     -- one project per event 
     
 	project_id			integer not null
@@ -1210,8 +1220,8 @@ begin
         NULL,
         'Status',
         'event_participant_status_id',
-        E'[append _out_status_$participant_id <b>$status</b> "<p><a href=\\"/intranet/companies/view?company_id=$company_id\\">company info</a>" "<br>$purchase_order_html" "<br>$latest_invoice_html"]',
-        E'im_name_from_id(event_participant_status_id) as status, (select ''<a href="/intranet-invoices/view?invoice_id='' || cost_id || ''" title="'' || cost_name || ''">latest invoice</a>'' from im_costs where customer_id=company_id and cost_id!=order_id order by cost_id desc limit 1) as latest_invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\\">purchase order</a>'' as purchase_order_html',
+        E'[append _out_status_$participant_id <b>$status</b> "<p><a href=\\"/intranet/companies/view?company_id=$company_id\\">company info</a>" "<br>$purchase_order_html" "<br>$invoice_html"]',
+        E'im_name_from_id(event_participant_status_id) as status, (select ''<a href="/intranet-invoices/view?invoice_id='' || invoice_id || ''" title="'' || cost_name || ''">customer invoice</a>'' from im_costs where customer_id=company_id and cost_id=invoice_id order by cost_id desc limit 1) as invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\\">purchase order</a>'' as purchase_order_html',
         '',
         14,
         '',

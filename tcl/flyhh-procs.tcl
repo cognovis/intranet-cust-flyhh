@@ -821,6 +821,30 @@ You can register by followining the link below:
 
 }
 
+ad_proc ::flyhh::send_invoice_reminder {
+    -to_addr
+    -participant_id
+    -participant_person_name
+    -participant_email
+    -column_name 
+    -invoice_date
+    -invoice_id
+    -amount
+    -due_date
+    -event_registration_link
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+} {
+    ns_log notice "--->>> not implemented yet: $column_name for $participant_person_name sent to $to_addr"
+
+    set sql "
+        update flyhh_event_participants
+        set $column_name = now()
+        where participant_id = :participant_id
+    "
+    db_dml update_participant_reminder_info $sql
+
+}
 
 ad_proc ::flyhh::mail_notification_system {} {
 
@@ -863,9 +887,6 @@ ad_proc ::flyhh::mail_notification_system {} {
 
     }
 
-    # WORK IN PROGRESS - RETURN FOR NOW
-    return
-
     # Seven days after due date: Send a reminder E-Mail to the customer. Text of the reminder is something we configure
     # using language keys, so ideally you would have only a lang key for the subject and the body of the E-Mail. We will
     # need to be able to include the invoice date, invoice number, full amount, due date in the E-Mail as well as the
@@ -879,42 +900,49 @@ ad_proc ::flyhh::mail_notification_system {} {
     # (b) In case we have no payment, create a correction invoice. This is basically an invoice copy with type invoice
     # correction and the same amounts in negative values. Mark the registration as cancelled.
 
-    set cancelled_status_id [::flyhh::status_id_from_name "Cancelled"]
-
-    set cost_status_past_due [im_cost_status_past_due]
+    set cost_status_partially_paid [im_cost_status_partially_paid]
+    set cost_status_paid [im_cost_status_paid]
 
     set sql "
         select
             reg.participant_id,
-            reg.project_id
+            reg.project_id,
             person__name(reg.person_id) as participant_person_name,
             party__email(reg.person_id) as participant_email,
             cst.cost_id as invoice_id,
+            cst.cost_status_id,
             cst.effective_date as invoice_date,
             cst.effective_date::date + payment_days as due_date,
-            inv.amount
+            cst.amount,
+            (inv_first_reminder_sent is null and effective_date < current_timestamp - '7 days'::interval) as first_reminder_p,
+            (inv_second_reminder_sent is null and effective_date < current_timestamp - '17 days'::interval) as second_reminder_p,
+            (inv_third_reminder_sent is null and effective_date < current_timestamp - '27 days'::interval) as third_reminder_p
         from flyhh_event_participants reg
         inner join im_costs cst on (cst.cost_id = reg.invoice_id)
         where reg.invoice_id is not null
-        and reg.event_participant_status_id != :cancelled_status_id
-        and inv.due_date < current_timestamp
+        and cst.cost_status_id != :cost_status_paid
+        and cst.effective_date < current_timestamp - '7 days'::interval
     "
 
     db_foreach unpaid_invoice $sql {
 
-        if { $first_reminder_p eq {} } {
+        set to_addr $participant_email
 
-            set column_name "first_reminder_sent"
+        set event_registration_link [export_vars -base "[ad_url]/flyhh/registration" {project_id participant_id}]
 
-        } elseif { $second_reminder_p eq {} } {
+        if { $first_reminder_p } {
 
-            set column_name "second_reminder_sent"
+            set column_name "inv_first_reminder_sent"
+
+        } elseif { $second_reminder_p } {
+
+            set column_name "inv_second_reminder_sent"
 
         } else {
 
-            if { $event_participant_status_id eq $partially_paid_status_id } {
-                set column_name "third_reminder_sent"
-            } else {
+            set column_name "inv_third_reminder_sent"
+
+            if { $cost_status_id ne $cost_status_partially_paid } {
 
                 ## Create correction invoice
 
@@ -931,7 +959,7 @@ ad_proc ::flyhh::mail_notification_system {} {
 
                 set sql "
                     update im_costs
-                    set amount=-(:amount)
+                    set amount = 0.0 - :amount
                     where cost_id=:new_invoice_id
                 "
 
@@ -943,11 +971,18 @@ ad_proc ::flyhh::mail_notification_system {} {
                     -participant_id $participant_id \
                     -to_status "Cancelled"
 
+                # TODO: use project manager email address
+                set to_addr "prjmgr@example.com"
+
             }
 
         }
 
         ::flyhh::send_invoice_reminder \
+            -to_addr $to_addr \
+            -participant_id $participant_id \
+            -participant_person_name $participant_person_name \
+            -participant_email $participant_email \
             -column_name $column_name \
             -invoice_date $invoice_date \
             -invoice_id $invoice_id \
