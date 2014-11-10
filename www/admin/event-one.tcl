@@ -36,18 +36,18 @@ ad_form \
         event_id:key(acs_object_id_seq)
 
         {-section event_info 
-            {legendtext "Event Info"}}
+            {legendtext {[::flyhh::mc Event_Info "Event Info"]}}}
 
         {event_name:text
-            {label "Name"}}
+            {label {[::flyhh::mc Event_Name "Name"]}}}
 
         {project_cost_center_id:text(generic_sql)
-            {label {[lang::message::lookup {} intranet-cust-flyhh.Project_Cost_Center "Project Cost Center"]}}
+            {label {[::flyhh::mc Project_Cost_Center "Project Cost Center"]}}
             {html {}}
             {custom {sql {select cost_center_id,cost_center_code || ' - ' || cost_center_name from im_cost_centers}}}}
         
         {enabled_p:boolean(select)
-            {label "Enable?"}
+            {label {[::flyhh::mc Enable_Event "Enable?"]}}
             {options {{Yes "t"} {No "f"}}}}
 
         {-section ""}
@@ -91,7 +91,7 @@ db_foreach material_id $sql {
 
     lappend elements \
         [list ${varname}:text,optional \
-            [list label "${material_name}"] \
+            [list label [::flyhh::mc material_${material_id} ${material_name}]] \
             [list html "size 15"] \
             [list help_text "[format "%.2f" ${price}] $currency / ${uom_name}"]]
 
@@ -102,7 +102,7 @@ ad_form -extend -name $form_id -form $elements -validate {
 
     {event_name 
         {[db_string must_not_exist "select false from flyhh_events where event_name=:event_name" -default true]}
-        "event name already exists"}
+        {[::flyhh::mc event_name_exists "event name must be unique, given name already exists"]}}
 
 }
 

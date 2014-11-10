@@ -62,21 +62,19 @@ ad_form \
         participant_id:key(acs_object_id_seq)
 
         {-section basic_info
-            {legendtext "Basic Info"}}
+            {legendtext {[::flyhh::mc Basic_Info_Section "Basic Info"]}}}
 
         {email:text
-            {label "Email"}}
+            {label {[::flyhh::mc Participant_Email "Email"]}}}
 
         {first_names:text
-            {label "First Name"}
-        }
+            {label {[::flyhh::mc Participant_First_Name "First Name"]}}}
         
         {last_name:text
-            {label "Last Name"}
-        }
+            {label {[::flyhh::mc Participant_Last_Name "Last Name"]}}}
 
         {-section event_preferences
-            {legendtext "Preferences"}}
+            {legendtext {[::flyhh::mc Preferences_Section "Preferences"]}}}
         
     }
 
@@ -93,48 +91,48 @@ im_dynfield::set_local_form_vars_from_http -form_id $form_id
 ad_form -extend -name $form_id -form {
 
     {lead_p:text(select)
-        {label "Lead/Follow"}
+        {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
         {options {{Lead t} {Follow f}}}}
 
     {partner_text:text
-        {label "Partner"}
+        {label {[::flyhh::mc Partner "Partner"]}}
         {value "${inviter_text}"}
         {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
         {html {style "width:300px;"}}}
 
     {roommates_text:text(textarea)
-        {label "Roommates"}
+        {label {[::flyhh::mc Roommates "Roommates"]}}
         {html "rows 4 cols 30"}
         {help_text "comma-separated list of email addresses, names, or both"}}
 
     {-section contact_details
-        {legendtext "Contact Details"}}
+        {legendtext {[::flyhh::mc Contact_Details_Section "Contact Details"]}}}
         
     {cell_phone:text,optional
-        {label "Phone"}}
+        {label {[::flyhh::mc Phone "Phone"]}}}
 
     {ha_line1:text,optional
-        {label "Address Line 1"}
+        {label {[::flyhh::mc Address_Line_1 "Address Line 1"]}}
         {html {size 30}}}
 
     {ha_line2:text,optional
-        {label "Address Line 2"}
+        {label {[::flyhh::mc Address_Line_2 "Address Line 2"]}}
         {html {size 30}}}
 
     {ha_city:text,optional
-        {label "City"}
+        {label {[::flyhh::mc City "City"]}}
         {html {size 15}}}
 
     {ha_state:text,optional
-        {label "State"}
+        {label {[::flyhh::mc State "State"]}}
         {html {size 2}}}
 
     {ha_postal_code:text,optional
-        {label "Postal Code"}
+        {label {[::flyhh::mc Postal_code "Postal Code"]}}
         {html {size 5}}}
 
     {ha_country_code:text(generic_sql),optional
-        {label "Country"}
+        {label {[::flyhh::mc Country "Country"]}}
         {html {}}
         {custom {sql {select iso,default_name from countries}}}}
 
@@ -142,8 +140,8 @@ ad_form -extend -name $form_id -form {
     {-section ""}
 
     {accepted_terms_p:boolean(checkbox)
-        {label "Terms & Conditions"}
-        {options {{{<a href="https://www.startpage.com/">some text</a>} t}}}}
+        {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
+        {options {{{<a href="https://www.startpage.com/">I have read and accept the terms and conditions for this event</a>} t}}}}
 
 } -new_request {
 
@@ -226,10 +224,8 @@ ad_form -extend -name $form_id -form {
 } -validate {
 
     {partner_text
-
         {[::flyhh::match_name_email $partner_text partner_name partner_email]}
-
-        "partner text must be an email address, full name, or both"}
+        {[::flyhh::mc partner_text_validation_error "partner text must be an email address, full name, or both"]}}
 
 } -on_submit {
     

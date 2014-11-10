@@ -230,6 +230,14 @@ ad_proc ::flyhh::set_user_contact_info {
 
 }
 
+ad_proc ::flyhh::mc { key default_text } {
+    @author Neophytos Demetriou
+    @creation-date 2014-11-10
+    @last-modified 2014-11-10
+} {
+    return [::lang::message::lookup "" intranet-cust-flyhh.${key} ${default_text}]
+}
+
 
 ad_proc ::flyhh::create_user_if {
     email 
@@ -240,7 +248,7 @@ ad_proc ::flyhh::create_user_if {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-04
+    @last-modified 2014-11-10
 } {
 
     if { $company_idVar ne {} } {
@@ -274,8 +282,8 @@ ad_proc ::flyhh::create_user_if {
         }
 
         if { "ok" != [string tolower $creation_status] } {
-            error "[lang::message::lookup "" intranet-contacts.Error_creating_user "Error creating new user"]:
-            [lang::message::lookup "" intranet-contacts.Error_creating_user_status "Status"]: $creation_status
+            error "[::flyhh::mc Error_creating_user "Error creating new user"]:
+            [:flyhh::mc Error_creating_user_status "Status"]: $creation_status
             \n$creation_info(creation_message)\n$creation_info(element_messages)
             "
         }
@@ -789,10 +797,10 @@ and would like to have you as his/her partner.
 You can register by followining the link below:
 @event_registration_link;noquote@
 "
-    set msg [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Body $default_text]
+    set msg [::flyhh::mc Partner_Mail_Body $default_text]
     set body [eval [template::adp_compile -string $msg]]
     set mime_type text/plain
-    set subject [lang::message::lookup "" intranet-cust-flyhh.Partner_Mail_Subject "Invitation to register for $event_name"]
+    set subject [:flyhh::mc Partner_Mail_Subject "Invitation to register for $event_name"]
 
     acs_mail_lite::send \
         -from_addr $from_addr \

@@ -150,15 +150,15 @@ ad_form \
     -form {
 
         {lead_p:text(select),optional
-            {label "[_ intranet-cust-flyhh.Lead_or_follow]"}
+            {label {[::flyhh::mc Lead_or_follow "Lead/Follow"]}}
             {options {{"" ""} {Lead t} {Follow f}}}}
 
         {level:text(im_category_tree),optional
-            {label "[_ intranet-cust-flyhh.Level]"} 
+            {label {[::flyhh::mc Level "Level"]}} 
             {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
         {validation_mask:text(multiselect),optional,multiple
-            {label "[_ intranet-cust-flyhh.Validation]"} 
+            {label {[::flyhh::mc Validation "Validation"]}} 
             {options {
                 {"" ""} 
                 {"Invalid Partner" 1} 
@@ -169,7 +169,7 @@ ad_form \
             }}} 
 
         {event_participant_status_id:text(im_category_tree),optional
-            {label "[_ intranet-cust-flyhh.Status]"} 
+            {label {[::flyhh::mc Status "Status"]}} 
             {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
     } -on_submit {
@@ -261,7 +261,6 @@ set sql "
 # ----------------------------------------------------------
 # Do we have to show administration links?
 
-ns_log Notice "/intranet-cust-flyhh/admin/participants-list: Before admin links"
 set admin_html "<ul>"
 
 # Append user-defined menus
@@ -292,7 +291,7 @@ set ctr 0
 foreach col $column_headers {
     set wrench_html [lindex $column_headers_admin $ctr]
     regsub -all " " $col "_" col_txt
-    set col_txt [lang::message::lookup "" intranet-cust-flyhh.$col_txt $col]
+    set col_txt [::flyhh::mc $col_txt $col]
     if {[info exists order_by_p($col)]} {
         append table_header_html "<td class=rowtitle><a href=\"${url}order_by=[ns_urlencode $col]\">$col_txt</a>$wrench_html</td>\n"
     } else {
