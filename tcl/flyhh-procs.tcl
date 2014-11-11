@@ -589,10 +589,13 @@ ad_proc ::flyhh::create_invoice {
 } {
 
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
+    set invoice_template [parameter::get -parameter invoice_template -default "RechnungCognovis.en.odt"]
 
     set provider_id 8720          ;# Company that provides this service - Us
     set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
-    set invoice_template_id "900" ;# Intranet Cost Template (900 = template.en.adp)
+
+    set sql "select category_id from im_categories where category = :invoice_template and category_type = 'Intranet Cost Template'"
+    set invoice_template_id [db_string invoice_template_id $sql] ;# Intranet Cost Template
 
     set sql "select project_cost_center_id from im_projects where project_id=:project_id"
     set cost_center_id [db_string cost_center_id $sql]
@@ -935,58 +938,12 @@ ad_proc -public ::flyhh::invoice_pdf {
 } {
     Generate a PDF for an invoice and saves it as a CR Item
 
-    Copied ::intranet-openoffice::invoice_pdf and modified to handle the fact that
-    intranet-invoices/www/view.tcl does not really generate and neither does it 
-    return a pdf file, it just returns html.
-
 } {
 
-    # first fetches the invoice through an http request to intranet-invoices/view
-    set user_id [im_sysadmin_user_default]
-    set expiry_date [db_string current_date "select to_char(sysdate, 'YYYY-MM-DD') from dual"]
-    set auto_login [im_generate_auto_login -expiry_date $expiry_date -user_id $user_id]
-    # pdf_p does not seem to have any effect on the response, disabled it so that this proc
-    # will continue to work regardless of whether intranet-invoices/view is fixed
-    set invoice_url [export_vars -base "[ad_url]/intranet-invoices/view" -url {invoice_id user_id expiry_date auto_login {pdf_p 0} {render_template_id 1}}]
-    set mime_type "application/pdf"
-    set invoice_nr [db_string name "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
+    return [::intranet_openoffice::invoice_pdf -invoice_id $invoice_id]
 
-    set tmp_htmlfile [ns_tmpnam]
-    set tmp_pdffile [ns_tmpnam]
-
-    apm_transfer_file -url $invoice_url -output_file_name $tmp_htmlfile
-
-    # converts html to pdf
-    ::flyhh::html2pdf $tmp_htmlfile $tmp_pdffile
-    file delete $tmp_htmlfile
-
-    set item_id [content::item::get_id_by_name -name ${invoice_nr}.pdf -parent_id $invoice_id]
-    if {$item_id ne ""} {
-        set file_revision_id \
-            [cr_import_content \
-                -item_id $item_id \
-                -creation_user $user_id \
-                -title "${invoice_nr}.pdf" \
-                $invoice_id \
-                $tmp_pdffile \
-                [file size $tmp_pdffile] \
-                "application/pdf" \
-                "${invoice_nr}.pdf"]
-    } else {
-        set file_revision_id \
-            [cr_import_content \
-                -creation_user $user_id \
-                -title "${invoice_nr}.pdf" \
-                $invoice_id \
-                $tmp_pdffile \
-                [file size $tmp_pdffile] \
-                "application/pdf" \
-                "${invoice_nr}.pdf"]
-    }	
-    
-    content::item::set_live_revision -revision_id $file_revision_id
-    return $file_revision_id
 }
+
 
 ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
     {-payment_id:required ""}
@@ -1313,7 +1270,48 @@ ad_proc ::flyhh::mail_notification_system {} {
 
 }
 
-ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
+ad_proc ::flyhh::import_template_file {
+    template_file
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-11
+    @last-modified 2014-11-11
+} {
+
+    set template_name [file tail $template_file]
+
+    set sql "select count(1) from im_categories where category = :template_name and category_type = 'Intranet Cost Template'"
+    set cat_exists_p [db_string ex $sql]
+    if {!$cat_exists_p} {
+
+        set template_path [im_filestorage_template_path]
+        ns_cp $template_file "$template_path/$template_name"
+
+        set cat_id [db_nextval "im_categories_seq"]
+        set cat_id_exists_p [db_string cat_ex "select count(1) from im_categories where category_id = :cat_id"]
+        while {$cat_id_exists_p} {
+            set cat_id [db_nextval "im_categories_seq"]
+            set cat_id_exists_p [db_string cat_ex "select count(1) from im_categories where category_id = :cat_id"]
+        }
+
+        db_dml new_cat "
+            insert into im_categories (
+                    category_id,
+                    category,
+                    category_type,
+                    enabled_p
+            ) values (
+                    nextval('im_categories_seq'),
+                    :template_name,
+                    'Intranet Cost Template',
+                    't'
+            )
+        "
+    }
+
+}
+
+
 
 # ---------------------------------------------------------------
 # Callbacks

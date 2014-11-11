@@ -28,4 +28,8 @@ set sql "
 "
 db_1row file_info $sql
 
+set invoice_nr [db_string name "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
+
+set outputheaders [ns_conn outputheaders]
+ns_set cput $outputheaders "Content-Disposition" "attachment; filename=${invoice_nr}.pdf"
 ns_returnfile 200 application/pdf [cr_fs_path]/$filename
