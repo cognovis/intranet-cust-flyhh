@@ -826,7 +826,7 @@ SELECT im_dynfield_widget__new (
 
 
 
-SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'course', 'Course', 'flyhh_event_participant_course', 'integer', 'f');
+SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'course', 'Course', 'flyhh_event_participant_course', 'integer', 't');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'accommodation', 'Accommodation', 'flyhh_event_participant_accommodation', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'food_choice', 'Food Choice', 'flyhh_event_participant_food_choice', 'integer', 'f');
 SELECT im_dynfield_attribute_new ('flyhh_event_participant', 'bus_option', 'Bus Option', 'flyhh_event_participant_bus_options', 'integer', 'f');

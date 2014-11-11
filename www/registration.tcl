@@ -4,7 +4,7 @@ ad_page_contract {
     
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-10-15
-    @last-modified 2014-11-04
+    @last-modified 2014-11-11
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
@@ -14,13 +14,9 @@ ad_page_contract {
 } -properties {
 } -validate {
 
-    event_exists_ck -requires {project_id:integer} {
+    check_event_exists -requires {project_id:integer} {
 
-        set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
-        set is_event_proj_p [db_string check_event_project $sql -default 0]
-        if { !$is_event_proj_p } {
-            ad_complain "no event found for the given project_id (=$project_id)"
-        }
+        ::flyhh::check_event_exists -project_id $project_id
 
     }
 
@@ -74,7 +70,7 @@ ad_form \
             {label {[::flyhh::mc Participant_Last_Name "Last Name"]}}}
 
         {-section event_preferences
-            {legendtext {[::flyhh::mc Preferences_Section "Preferences"]}}}
+            {legendtext {[::flyhh::mc Event_Registration_Section "Event Registration"]}}}
         
     }
 
@@ -100,7 +96,7 @@ ad_form -extend -name $form_id -form {
         {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
         {html {style "width:300px;"}}}
 
-    {roommates_text:text(textarea)
+    {roommates_text:text(textarea),optional
         {label {[::flyhh::mc Roommates "Roommates"]}}
         {html "rows 4 cols 30"}
         {help_text "comma-separated list of email addresses, names, or both"}}
@@ -199,15 +195,13 @@ ad_form -extend -name $form_id -form {
     # do not allow the editing of any fields but the name,
     # address, dance partner and room mates.
     #
-    # Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
-    # set restrict_edit_list [parameter::get -package_id $package_id -parameter "restrict_edit_list"]
-    # set restrict_edit_list [list 82503 82504 82505 82506]
+    # Pending Payment (=82502), Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
 
     set sql "
         select category_id 
         from im_categories 
         where category_type='Flyhh - Event Registration Status' 
-        and category in ('Partially Paid', 'Registered', 'Refused', 'Cancelled')
+        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused', 'Cancelled')
     "
     set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
 
@@ -231,138 +225,56 @@ ad_form -extend -name $form_id -form {
     
     if { [ad_form_new_p -key participant_id] } {
      
-        set creation_ip [ad_conn peeraddr]
-
-        ::flyhh::match_name_email $partner_text partner_name partner_email
-
-        db_transaction {
-
-            set new_user_p [::flyhh::create_user_if $email $first_names $last_name company_id person_id]
-
-            ::flyhh::set_user_contact_info \
-                -user_id $person_id \
-                -ha_line1 $ha_line1 \
-                -ha_line2 $ha_line2 \
-                -ha_city  $ha_city \
-                -ha_state $ha_state \
-                -ha_postal_code $ha_postal_code \
-                -ha_country_code $ha_country_code
-
-            db_exec_plsql insert_participant "select flyhh_event_participant__new(
-
-                :person_id,
-                :company_id,
-
-                :participant_id,
-
-                :email,
-                :first_names,
-                :last_name,
-                :creation_ip,
-
-                :project_id,
-
-                :lead_p,
-                :partner_text,
-                :partner_name,
-                :partner_email,
-                :roommates_text,
-                :accepted_terms_p,
-
-                :course,
-                :accommodation,
-                :food_choice,
-                :bus_option,
-                :level,
-                
-                :payment_type,
-                :payment_term
-
-            )"
-
-            set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
-
-            foreach roommate_text $roommates_list {
-
-                ::flyhh::match_name_email $roommate_text roommate_name roommate_email
-
-                db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
-                    :participant_id,
-                    :project_id,
-                    :roommate_email,
-                    :roommate_name
-                )"
-
-            }
-
-            db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
-
-        }
+        ::flyhh::create_participant \
+            -participant_id $participant_id \
+            -project_id $project_id \
+            -email $email \
+            -first_names $first_names \
+            -last_name $last_name \
+            -accepted_terms_p $accepted_terms_p \
+            -course $course \
+            -accommodation $accommodation \
+            -food_choice $food_choice \
+            -bus_option $bus_option \
+            -level $level \
+            -lead_p $lead_p \
+            -payment_type $payment_type \
+            -payment_term $payment_term \
+            -partner_text $partner_text \
+            -roommates_text $roommates_text \
+            -ha_line1 $ha_line1 \
+            -ha_line2 $ha_line2 \
+            -ha_city $ha_city \
+            -ha_state $ha_state \
+            -ha_postal_code $ha_postal_code \
+            -ha_country_code $ha_country_code
 
     } else {
 
-        set creation_ip [ad_conn peeraddr]
-
-        db_transaction {
-
-            db_exec_plsql insert_participant "select flyhh_event_participant__update(
-
-                :participant_id,
-
-                :email,
-                :first_names,
-                :last_name,
-                :creation_ip,
-
-                :project_id,
-
-                :lead_p,
-                :partner_text,
-                :partner_name,
-                :partner_email,
-                :roommates_text,
-                :accepted_terms_p,
-
-                :course,
-                :accommodation,
-                :food_choice,
-                :bus_option,
-                :level,
-                
-                :payment_type,
-                :payment_term
-
-            )"
-
-            ::flyhh::set_user_contact_info \
-                -email $email \
-                -ha_line1 $ha_line1 \
-                -ha_line2 $ha_line2 \
-                -ha_city  $ha_city \
-                -ha_state $ha_state \
-                -ha_postal_code $ha_postal_code \
-                -ha_country_code $ha_country_code
-
-            set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
-
-            foreach roommate_text $roommates_list {
-
-                ::flyhh::match_name_email $roommate_text roommate_name roommate_email
-
-                # TODO: updating roommates is not done yet
-
-                db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
-                    :participant_id,
-                    :project_id,
-                    :roommate_email,
-                    :roommate_name
-                )"
-
-            }
-
-            db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
-
-        }
+        ::flyhh::update_participant \
+            -participant_id $participant_id \
+            -project_id $project_id \
+            -email $email \
+            -first_names $first_names \
+            -last_name $last_name \
+            -accepted_terms_p $accepted_terms_p \
+            -course $course \
+            -accommodation $accommodation \
+            -food_choice $food_choice \
+            -bus_option $bus_option \
+            -level $level \
+            -lead_p $lead_p \
+            -payment_type $payment_type \
+            -payment_term $payment_term \
+            -partner_text $partner_text \
+            -roommates_text $roommates_text \
+            -ha_line1 $ha_line1 \
+            -ha_line2 $ha_line2 \
+            -ha_city $ha_city \
+            -ha_state $ha_state \
+            -ha_postal_code $ha_postal_code \
+            -ha_country_code $ha_country_code
+        
     }
 
 } -after_submit {

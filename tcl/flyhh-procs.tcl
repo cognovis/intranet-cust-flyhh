@@ -320,6 +320,202 @@ ad_proc ::flyhh::create_user_if {
 
 }
 
+ad_proc ::flyhh::create_participant {
+    -participant_id:required
+    -project_id:required
+    -email:required
+    -first_names:required
+    -last_name:required
+    -accepted_terms_p:required
+    -course:required
+    -accommodation:required
+    -food_choice:required
+    -bus_option:required
+    -level:required
+    -lead_p:required 
+    -payment_type:required
+    -payment_term:required
+    -partner_text:required
+    -roommates_text:required
+    -ha_line1:required
+    -ha_line2:required
+    -ha_city:required
+    -ha_state:required
+    -ha_postal_code:required
+    -ha_country_code:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-11
+    @last-modified 2014-11-11
+} {
+
+    set creation_ip [ad_conn peeraddr]
+
+    ::flyhh::match_name_email $partner_text partner_name partner_email
+
+    db_transaction {
+
+        set new_user_p [::flyhh::create_user_if $email $first_names $last_name company_id person_id]
+
+        ::flyhh::set_user_contact_info \
+            -user_id $person_id \
+            -ha_line1 $ha_line1 \
+            -ha_line2 $ha_line2 \
+            -ha_city  $ha_city \
+            -ha_state $ha_state \
+            -ha_postal_code $ha_postal_code \
+            -ha_country_code $ha_country_code
+
+        db_exec_plsql insert_participant "select flyhh_event_participant__new(
+
+            :person_id,
+            :company_id,
+
+            :participant_id,
+
+            :email,
+            :first_names,
+            :last_name,
+            :creation_ip,
+
+            :project_id,
+
+            :lead_p,
+            :partner_text,
+            :partner_name,
+            :partner_email,
+            :roommates_text,
+            :accepted_terms_p,
+
+            :course,
+            :accommodation,
+            :food_choice,
+            :bus_option,
+            :level,
+            
+            :payment_type,
+            :payment_term
+
+        )"
+
+        set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
+
+        foreach roommate_text $roommates_list {
+
+            ::flyhh::match_name_email $roommate_text roommate_name roommate_email
+
+            db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
+                :participant_id,
+                :project_id,
+                :roommate_email,
+                :roommate_name
+            )"
+
+        }
+
+        db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+
+    }
+
+}
+
+
+ad_proc ::flyhh::update_participant {
+    -participant_id:required
+    -project_id:required
+    -email:required
+    -first_names:required
+    -last_name:required
+    -accepted_terms_p:required
+    -course:required
+    -accommodation:required
+    -food_choice:required
+    -bus_option:required
+    -level:required
+    -lead_p:required 
+    -payment_type:required
+    -payment_term:required
+    -partner_text:required
+    -roommates_text:required
+    -ha_line1:required
+    -ha_line2:required
+    -ha_city:required
+    -ha_state:required
+    -ha_postal_code:required
+    -ha_country_code:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-11
+    @last-modified 2014-11-11
+} {
+
+    set creation_ip [ad_conn peeraddr]
+
+    ::flyhh::match_name_email $partner_text partner_name partner_email
+
+    db_transaction {
+
+        db_exec_plsql insert_participant "select flyhh_event_participant__update(
+
+            :participant_id,
+
+            :email,
+            :first_names,
+            :last_name,
+            :creation_ip,
+
+            :project_id,
+
+            :lead_p,
+            :partner_text,
+            :partner_name,
+            :partner_email,
+            :roommates_text,
+            :accepted_terms_p,
+
+            :course,
+            :accommodation,
+            :food_choice,
+            :bus_option,
+            :level,
+            
+            :payment_type,
+            :payment_term
+
+        )"
+
+        ::flyhh::set_user_contact_info \
+            -email $email \
+            -ha_line1 $ha_line1 \
+            -ha_line2 $ha_line2 \
+            -ha_city  $ha_city \
+            -ha_state $ha_state \
+            -ha_postal_code $ha_postal_code \
+            -ha_country_code $ha_country_code
+
+        set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
+
+        foreach roommate_text $roommates_list {
+
+            ::flyhh::match_name_email $roommate_text roommate_name roommate_email
+
+            # TODO: updating roommates is not done yet
+            continue
+            db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
+                :participant_id,
+                :project_id,
+                :roommate_email,
+                :roommate_name
+            )"
+
+        }
+
+        db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+
+    }
+
+}
+
 
 ad_proc ::flyhh::create_purchase_order {
     -company_id
@@ -612,6 +808,21 @@ ad_proc ::flyhh::check_user_is_same {
     }
 
 }
+
+ad_proc ::flyhh::check_event_exists {
+    -project_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-11
+    @last-modified 2014-11-11
+} {
+    set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
+    set is_event_proj_p [db_string check_event_project $sql -default 0]
+    if { !$is_event_proj_p } {
+        ad_complain "no event found for the given project_id (=$project_id)"
+    }
+}
+
 
 ad_proc ::flyhh::send_invoice_mail {
     -invoice_id
