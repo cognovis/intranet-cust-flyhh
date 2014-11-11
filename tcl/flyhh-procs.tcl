@@ -1267,3 +1267,53 @@ ad_proc ::flyhh::mail_notification_system {} {
 }
 
 ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
+
+ad_proc -public -callback flyhh_event_form_fill {
+    -form_id:required
+    -object_id:required
+    { -object_type "" }
+    { -type_id ""}
+    { -page_url "default" }
+    { -advanced_filter_p 0 }
+    { -include_also_hard_coded_p 0 }
+} {
+    This callback tracks acess to the object's main page.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+} -
+
+
+    ad_proc -public -callback flyhh_event_participant_form_fill {
+        -form_id:required
+        -object_id:required
+        { -object_type "" }
+        { -type_id ""}
+        { -page_url "default" }
+        { -advanced_filter_p 0 }
+        { -include_also_hard_coded_p 0 }
+    } {
+	This callback tracks acess to the object's main page.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+
