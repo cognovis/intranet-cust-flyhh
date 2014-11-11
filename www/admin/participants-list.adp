@@ -9,7 +9,7 @@
 
     @context_bar;noquote@
     <p>
-    <a class="button" href="../registration?project_id=@project_id@">add participant</a>
+    <a class="button" href="registration?project_id=@project_id@">add participant</a>
     <p>
 	<table class="table_list_page">
             @table_header_html;noquote@
