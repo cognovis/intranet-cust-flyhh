@@ -95,7 +95,7 @@ returns trigger as
 $$
 declare
     v_record        record;
-    v_total_amount  numeric(12,2);
+    v_vat_amount  numeric(12,2);
     v_status_id     integer;
 begin
 
@@ -106,26 +106,21 @@ begin
     where payment_id = new.payment_id;
 
     if found then
-        
-        select 
-            sum( round(item_units*price_per_unit,2) + round(item_units*price_per_unit*cb.aux_int1/100,2) )
-        into v_total_amount
-        from 
-            im_invoice_items ii,
-            im_categories ca,
-            im_categories cb,
-            im_materials im 
+
+       select sum(round(item_units*price_per_unit*cb.aux_int1/100,2))
+         into v_vat_amount
+         from im_invoice_items ii, im_categories ca, im_categories cb, im_materials im 
         where invoice_id = v_record.cost_id
-        and ca.category_id = material_type_id
-        and ii.item_material_id = im.material_id
-        and ca.aux_int2 = cb.category_id;
+          and ca.category_id = material_type_id
+          and ii.item_material_id = im.material_id
+          and ca.aux_int2 = cb.category_id; 
 
         -- cost status: paid (=3810)
         -- cost status: partially paid (=3808)
         -- event registration status: registered (=82504)
         -- event registration status: partially paid (=82503)
 
-        if v_total_amount = v_record.paid_amount + new.amount then
+        if v_record.amount + v_vat_amount = v_record.paid_amount + new.amount then
             v_status_id = 82504;
         else
             v_status_id = 82503;

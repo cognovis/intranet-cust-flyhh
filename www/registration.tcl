@@ -242,6 +242,7 @@ ad_form -extend -name $form_id -form {
             -payment_term $payment_term \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city $ha_city \
@@ -268,6 +269,7 @@ ad_form -extend -name $form_id -form {
             -payment_term $payment_term \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city $ha_city \

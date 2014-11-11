@@ -346,6 +346,7 @@ ad_proc ::flyhh::create_participant {
     -payment_term:required
     -partner_text:required
     -roommates_text:required
+    -cell_phone:required
     -ha_line1:required
     -ha_line2:required
     -ha_city:required
@@ -368,12 +369,26 @@ ad_proc ::flyhh::create_participant {
 
         ::flyhh::set_user_contact_info \
             -user_id $person_id \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \
             -ha_country_code $ha_country_code
+
+        set sql "
+            update im_offices set
+                phone=:cell_phone,
+                address_line1=:ha_line1,
+                address_line2=:ha_line2, 
+                address_city=:ha_city,
+                address_state=:ha_state,
+                address_postal_code=:ha_postal_code,
+                address_country_code=lower(:ha_country_code)
+            where office_id=(select main_office_id from im_companies where company_id=:company_id)
+        "
+        db_dml update_company_contact_info $sql
 
         db_exec_plsql insert_participant "select flyhh_event_participant__new(
 
@@ -446,6 +461,7 @@ ad_proc ::flyhh::update_participant {
     -payment_term:required
     -partner_text:required
     -roommates_text:required
+    -cell_phone:required
     -ha_line1:required
     -ha_line2:required
     -ha_city:required
@@ -495,6 +511,7 @@ ad_proc ::flyhh::update_participant {
 
         ::flyhh::set_user_contact_info \
             -email $email \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
