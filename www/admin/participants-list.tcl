@@ -146,7 +146,7 @@ ad_form \
     -action $action_url \
     -mode $form_mode \
     -method GET \
-    -export {order_by}\
+    -export {project_id order_by}\
     -form {
 
         {lead_p:text(select),optional
