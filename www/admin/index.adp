@@ -10,4 +10,7 @@
 <br>
 <br>
 <listtemplate name="@list_id@"></listtemplate>
+<br>
+<br>
+Provider Company: <a href="@provider_company_link@">@provider_company_name@</a>
 

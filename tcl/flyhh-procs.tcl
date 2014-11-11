@@ -44,7 +44,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
 #
 # @creation-user Neophytos Demetriou (neophytos@azet.sk)
 # @creation-date 2014-11-02
-# @last-modified 2014-11-10
+# @last-modified 2014-11-11
 #
 
     set sql "
@@ -53,6 +53,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
             party__email(person_id) as email, 
             person__name(person_id) as name,
             flyhh_event__name_from_project_id(project_id) as event_name,
+            im_name_from_id(course) as course,
             im_name_from_id(accommodation) as accommodation,
             im_name_from_id(food_choice) as food_choice,
             im_name_from_id(bus_option) as bus_option
@@ -77,9 +78,10 @@ Hi ${name},
 We have reserved a spot for you for \"${event_name}\".
 
 Here's what you have signed up for:
-Accommodation: ${accommodation}
-Food Choice: ${food_choice}
-Bus Option: ${bus_option}
+Course: ${course}
+<if @accommodation@ not nil>Accommodation: ${accommodation}</if>
+<if @food_choice@ not nil>Food Choice: ${food_choice}</if>
+<if @bus_option@ not nil>Bus Option: ${bus_option}</if>
 
 To complete the registration, please proceed with payment at the following page:
 ${link_to_payment_page}
@@ -98,12 +100,20 @@ ${link_to_payment_page}
 
 }
 
-proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} {
+ad_proc ::flyhh::create_company_if { 
+    user_id
+    company_name
+    {existing_user_p false}
+} {
+    @creation-user Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-10-30
+    @last-modified 2014-11-11
+} {
+
+    set company_path "${user_id}_[regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]"
 
     set company_id ""
     if { $existing_user_p } {
-
-        set company_path [regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]
 
         set sql "select company_id from im_companies where company_path = :company_path" 
         set company_id [db_string company_id_by_path $sql -default ""]
@@ -130,7 +140,6 @@ proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} 
         set default_company_type_id [im_company_type_customer]
         set company_type_id $default_company_type_id
         set company_status_id [im_company_status_active]
-        regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_" company_path
         set office_path "${company_path}_home"
         
         set main_office_id [im_office::new \
@@ -311,7 +320,7 @@ ad_proc ::flyhh::create_user_if {
     # note that upload-contacts-2.tcl only used the participant's name
     # to generate the company name, we refrain from doing so here to
     # avoid any naming conflicts
-    set company_name "$user_id - $first_names $last_name"
+    set company_name "$first_names $last_name"
     set company_id [::flyhh::create_company_if $user_id $company_name $existing_user_p]
 
     set new_user_p [expr { !$existing_user_p }]
@@ -559,7 +568,7 @@ ad_proc ::flyhh::create_invoice {
 
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-04
+    @last-modified 2014-11-11
 } {
 
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
@@ -575,44 +584,61 @@ ad_proc ::flyhh::create_invoice {
     set note "$cost_center_code $participant_id"
     set user_id [ad_conn user_id]
     set peeraddr [ad_conn peeraddr]
-    set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
-    set invoice_id [db_exec_plsql create_invoice "
-        select im_invoice__new (
-            null,                       -- invoice_id
-            'im_invoice',               -- object_type
-            now(),                      -- creation_date 
-            :user_id,                   -- creation_user
-            :peeraddr,                  -- creation_ip
-            null,                       -- context_id
-            :invoice_nr,                -- invoice_nr
-            :company_id,                -- company_id
-            :provider_id,               -- provider_id -- us
-            :company_contact_id,        -- company_contact_id
-            now(),                      -- invoice_date
-            'EUR',                      -- currency
-            :invoice_template_id,       -- invoice_template_id
-            :invoice_status_id,         -- invoice_status_id
-            :invoice_type_id,           -- invoice_type_id
-            :payment_method_id,         -- payment_method_id
-            :payment_days,              -- payment_days
-            0,                          -- amount
-            0,                          -- vat
-            0,                          -- tax
-            :note                       -- note
-         )"]
 
-     db_dml update_invoice "
-        update im_costs set 
-            cost_center_id = :cost_center_id, 
-            project_id = :project_id,
-            payment_term_id = :payment_term_id, 
-            vat_type_id = 42021 
-        where cost_id = :invoice_id
-     "
+    db_transaction {
+        set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
+        set invoice_id [db_exec_plsql create_invoice "
+            select im_invoice__new (
+                null,                       -- invoice_id
+                'im_invoice',               -- object_type
+                now(),                      -- creation_date 
+                :user_id,                   -- creation_user
+                :peeraddr,                  -- creation_ip
+                :project_id,                -- context_id
+                :invoice_nr,                -- invoice_nr
+                :company_id,                -- company_id
+                :provider_id,               -- provider_id -- us
+                :company_contact_id,        -- company_contact_id
+                now(),                      -- invoice_date
+                'EUR',                      -- currency
+                :invoice_template_id,       -- invoice_template_id
+                :invoice_status_id,         -- invoice_status_id
+                :invoice_type_id,           -- invoice_type_id
+                :payment_method_id,         -- payment_method_id
+                :payment_days,              -- payment_days
+                0,                          -- amount
+                0,                          -- vat
+                0,                          -- tax
+                :note                       -- note
+             )"]
 
-    ::flyhh::create_invoice_items \
-        -invoice_id $invoice_id \
-        -participant_id $participant_id
+         db_dml update_invoice "
+            update im_costs set 
+                cost_center_id = :cost_center_id, 
+                project_id = :project_id,
+                payment_term_id = :payment_term_id, 
+                vat_type_id = 42021 
+            where cost_id = :invoice_id
+         "
+
+        ::flyhh::create_invoice_items \
+            -invoice_id $invoice_id \
+            -participant_id $participant_id \
+            -project_id $project_id
+
+        set rel_id [db_exec_plsql create_rel "
+            select acs_rel__new (
+                 null,             -- rel_id
+                 'relationship',   -- rel_type
+                 :project_id,      -- object_id_one
+                 :invoice_id,      -- object_id_two
+                 null,             -- context_id
+                 null,             -- creation_user
+                 null             -- creation_ip
+            )"]
+
+    }
+
 
     return $invoice_id
 
@@ -622,12 +648,14 @@ ad_proc ::flyhh::create_invoice {
 ad_proc ::flyhh::create_invoice_items {
     -invoice_id
     -participant_id
+    -project_id
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-09
+    @last-modified 2014-11-11
 } {
 
-    # TODO: turn provider_company_id into a package parameter
-    set provider_company_id "8720"
+    set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
 
     set sql "
         select
@@ -677,7 +705,7 @@ ad_proc ::flyhh::create_invoice_items {
         ) values (
             :item_id,
             :material_name,
-            null,
+            :project_id,
             :invoice_id,
             1,
             :material_uom_id,
@@ -1055,7 +1083,7 @@ ad_proc ::flyhh::send_invoice_reminder {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-10
-    @last-modified 2014-11-10
+    @last-modified 2014-11-11
 } {
 
     ns_log notice "--->>> Flyhh Reminder System: $key for $participant_person_name sent to $to_addr"
@@ -1068,11 +1096,13 @@ ad_proc ::flyhh::send_invoice_reminder {
 Hi @participant_person_name@,
 
 This is a reminder that your invoice for @event_name@ is due:
-Event Registration Link: @event_registration_link@
+Event Registration Link: @event_registration_link;noquote@
 Invoice ID: @invoice_id@
 Invoice Date: @invoice_date@
 Due Date: @due_date@
 Amount: @amount@
+
+(@msg_key@)
     "
     set body [eval [template::adp_compile -string [::flyhh::mc ${key}_body ${msg_text}]]]
     set from_addr "noreply-${participant_id}@flying-hamburder.de"
