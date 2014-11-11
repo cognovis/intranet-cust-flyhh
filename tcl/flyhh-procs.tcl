@@ -72,20 +72,26 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     set to_addr ${email}
     set mime_type "text/plain"
     set subject "Event Registration Confirmation for ${name}"
-    set body "
-Hi ${name},
+    set body [eval [template::adp_compile -string {
+Hi @name@,
 
-We have reserved a spot for you for \"${event_name}\".
+We have reserved a spot for you for \"@event_name@\".
 
 Here's what you have signed up for:
-Course: ${course}
-<if @accommodation@ not nil>Accommodation: ${accommodation}</if>
-<if @food_choice@ not nil>Food Choice: ${food_choice}</if>
-<if @bus_option@ not nil>Bus Option: ${bus_option}</if>
+Course: @course@
+<if @accommodation@ not nil>
+Accommodation: @accommodation@
+</if>
+<if @food_choice@ not nil>
+Food Choice: @food_choice@
+</if>
+<if @bus_option@ not nil>
+Bus Option: @bus_option@
+</if>
 
 To complete the registration, please proceed with payment at the following page:
-${link_to_payment_page}
-"
+@link_to_payment_page;noquote@
+}]]
 
     acs_mail_lite::send \
         -from_addr $from_addr \
