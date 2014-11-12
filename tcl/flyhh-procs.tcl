@@ -586,13 +586,22 @@ ad_proc ::flyhh::create_invoice {
     -payment_method_id 
     -payment_term_id
     -invoice_type_id
+    {-delta_items ""}
 } {
-    @param invoice_type_id Intranet Cost Type (3700 = Customer Invoice, 3702 = Quote, 3706 = Purchase Order)
+    @param invoice_type_id Intranet Cost Type 
+    3700 = Customer Invoice 
+    3702 = Quote 
+    3706 = Purchase Order 
+    3725 = Customer Invoice Correction
 
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-11
+    @last-modified 2014-11-12
 } {
+
+    if { $invoice_type_id eq {3725} && $delta_items eq {} } {
+        error "must provide delta items for customer invoice correction"
+    }
 
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
     set invoice_template [parameter::get -parameter invoice_template -default "RechnungCognovis.en.odt"]
@@ -647,10 +656,33 @@ ad_proc ::flyhh::create_invoice {
             where cost_id = :invoice_id
          "
 
+        if { $invoice_type_id ne {3725} && $delta_items eq {} } {
+
+            set sql "
+                select
+                    course,
+                    accommodation,
+                    food_choice,
+                    bus_option
+                from flyhh_event_participants
+                where participant_id=:participant_id
+            "
+            db_1row participant_info $sql
+
+            foreach varname {course accommodation food_choice bus_option} {
+                set material_id [set $varname]
+
+                if { $material_id eq {} } { continue }
+
+                lappend delta_items [list 1.0 1.0 $material_id]
+            }
+
+        }
+
         ::flyhh::create_invoice_items \
             -invoice_id $invoice_id \
-            -participant_id $participant_id \
-            -project_id $project_id
+            -project_id $project_id \
+            -delta_items $delta_items
 
         set rel_id [db_exec_plsql create_rel "
             select acs_rel__new (
@@ -673,8 +705,8 @@ ad_proc ::flyhh::create_invoice {
 
 ad_proc ::flyhh::create_invoice_items {
     -invoice_id
-    -participant_id
     -project_id
+    {-delta_items ""}
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-09
@@ -683,27 +715,15 @@ ad_proc ::flyhh::create_invoice_items {
 
     set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
 
-    set sql "
-        select
-            course,
-            accommodation,
-            food_choice,
-            bus_option
-        from flyhh_event_participants
-        where participant_id=:participant_id
-    "
-    db_1row participant_info $sql
 
     set sort_order 1
-    foreach varname {course accommodation food_choice bus_option} {
-        set material_id [set $varname]
-
-        if { $material_id eq {} } { continue }
+    foreach item $delta_items {
+        foreach {item_units percent_price item_material_id} $item break
 
         set sql "
-            select material_name, material_uom_id, price 
+            select material_name, material_uom_id, :percent_price * price  as price_per_unit
             from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
-            where im.material_id=:material_id
+            where im.material_id=:item_material_id
             and company_id = :provider_company_id
             limit 1
         "
@@ -733,13 +753,13 @@ ad_proc ::flyhh::create_invoice_items {
             :material_name,
             :project_id,
             :invoice_id,
-            1,
+            :item_units,
             :material_uom_id,
-            :price,
+            :price_per_unit,
             'EUR',
             :sort_order,
             null,
-            :material_id,
+            :item_material_id,
             null,
             '',
             null,
@@ -752,22 +772,8 @@ ad_proc ::flyhh::create_invoice_items {
 
     }
 
-    # Update the total amount
-    set sql "
-        select 
-            sum( round(item_units*price_per_unit,2) + round(item_units*price_per_unit*cb.aux_int1/100,2) )
-        from 
-            im_invoice_items ii,
-            im_categories ca,
-            im_categories cb,
-            im_materials im 
-        where invoice_id = :invoice_id
-        and ca.category_id = material_type_id
-        and ii.item_material_id = im.material_id
-        and ca.aux_int2 = cb.category_id
-    "
-    set total_amount [db_string total_amount $sql]
-    
+    # Update the total net amount
+
     set sql "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"
     set total_net_amount [db_string total $sql]
         
@@ -1232,9 +1238,11 @@ ad_proc ::flyhh::mail_notification_system {} {
 
                 # new_invoice_id must be set to the same amount in negative values
 
+                # set sql "update im_invoice_items set price_per_unit = 0.0 - price_per_unit where invoice_id=:new_invoice_id"
+
                 set sql "
                     update im_invoice_items 
-                    set price_per_unit = 0.0 - price_per_unit 
+                    set item_units = 0.0 - item_units
                     where invoice_id=:new_invoice_id
                 "
 
@@ -1317,6 +1325,167 @@ ad_proc ::flyhh::import_template_file {
 
 }
 
+
+ad_proc ::flyhh::after_confirmation_edit_p {
+    event_participant_status_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+    # If the status of the event registration is no longer pending, 
+    # do not allow the editing of any fields but the name,
+    # address, dance partner and room mates.
+    #
+    # Pending Payment (=82502), Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused', 'Cancelled')
+    "
+    set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
+
+    return [expr { -1 != [lsearch -exact -integer $restrict_edit_list $event_participant_status_id] }]
+
+}
+
+ad_proc ::flyhh::record_after_confirmation_edit {
+    -participant_id:required
+    oldVar
+    newVar
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+    upvar $oldVar old
+    upvar $newVar new
+
+    ns_log notice "record_after_confirmation_edit: old=[array get old] new=[array get new]"
+
+    set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
+
+    set sql "
+        select 
+            project_id,
+            person_id as company_contact_id,
+            payment_type as payment_method_id,
+            payment_term as payment_term_id,
+            company_id,
+            order_id,
+            invoice_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql
+
+    # each delta item consists of three numbers: 
+    # item_units, percent of price, and material_id
+    # e.g. -1.0 0.7 34832
+    set delta_items [list]
+
+    set before_refund_reduction_date_p true  ;# TODO
+
+    set before_refund_cutoff_date_p true     ;# TODO
+
+    foreach element {course accommodation food_choice bus_option} {
+
+        if { $old($element) ne $new($element) } {
+
+            set old_material_id $old($element)
+            set new_material_id $new($element)
+            set sql "
+                select 
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:old_material_id) as old_price,
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:new_material_id) as new_price
+            "
+            db_1row old_and_new_price $sql
+
+            ns_log notice "record_after_confirmation_edit: old_price=$old_price new_price=$new_price"
+
+            # in case the change is for the classes material
+            if { $element eq {course} } {
+
+                # If the price of the new material is lower then the old material, just change the registration
+                # information, do not change the invoice. We do not offer refunds on classes.
+
+                if { $new_price <= $old_price } {}
+
+                # If the price of the new material is higher then the old material, create a correction invoice with a credit line for
+                # the old material and a debit line for the new material. The resulting invoice should therefore show
+                # the difference between the two materials.
+
+                if { $new_price > $old_price } {
+                    lappend delta_items [list -1.0 1.0 $old(course)]
+                    lappend delta_items [list 1.0 1.0 $new(course)]
+                }
+
+            } else {
+
+                # In case the change is for anything else and the prices differ:
+
+                # If the change date is after the refund_cutoff_date do nothing with regards to the invoice.
+                if { !$before_refund_cutoff_date_p } {continue}
+
+                # If the change date is before the refund_reduction_date or the new price is HIGHER then the old price, create a new
+                # invoice with two line items, one is a FULL credit for the old material and one is new debit line
+                # for the new material. 
+
+                if { $before_refund_reduction_date_p || $new_price > $old_price } {
+                    lappend delta_items [list -1.0 1.0 $old($element)]
+                    lappend delta_items [list 1.0 1.0 $new($element)]
+                }
+
+                # If the change date is after the refund_reduction_date but before the refund_cutoff_date and the
+                # new price is LOWER then the old price, create a new invoice with two line items, one is a 70%
+                # credit for the old material and one is a new debit line for the new material. If there is no new
+                # material (e.g. because the customer does not want the bus anymore, you only have a credit line
+                # with 70%). 
+
+                if { !$before_refund_reduction_date_p && $before_refund_cutoff_date_p && $new_price < $old_price } {
+                    lappend delta_items [list -1.0 0.7 $old($element)]
+                    lappend delta_items [list 1.0 1.0 $new($element)]
+                }
+
+            }
+
+        }
+
+    }
+
+    set invoice_type_id 3725  ;# Intranet Cost Type (3725 = Customer Invoice Correction)
+
+    set new_invoice_id \
+        [::flyhh::create_invoice \
+            -company_id $company_id \
+            -company_contact_id $company_contact_id \
+            -participant_id $participant_id \
+            -project_id $project_id \
+            -payment_method_id $payment_method_id \
+            -payment_term_id $payment_term_id \
+            -invoice_type_id $invoice_type_id \
+            -delta_items $delta_items]
+
+    if { $invoice_id ne {} } {
+        # add relationship between original invoice and correction invoice 
+        set rel_id [db_exec_plsql create_rel "
+            select acs_rel__new (
+                 null,                      -- rel_id
+                 'im_invoice_invoice_rel',  -- rel_type
+                 :invoice_id,               -- object_id_one
+                 :new_invoice_id,           -- object_id_two
+                 null,                      -- context_id
+                 null,                      -- creation_user
+                 null                       -- creation_ip
+            )"]
+    }
+
+}
 
 
 # ---------------------------------------------------------------
