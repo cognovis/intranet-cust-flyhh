@@ -5,7 +5,7 @@
 \i participants-drop.sql
 \i events-drop.sql
 
-drop trigger flyhh__im_payment_after_insert_tr on im_payments;
+-- drop trigger flyhh__im_payment_after_insert_tr on im_payments;
 
 drop function flyhh__im_payment_after_insert_tr();
 

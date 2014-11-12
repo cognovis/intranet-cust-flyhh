@@ -137,8 +137,12 @@ begin
 end;
 $$ language 'plpgsql';
 
-
-create trigger flyhh__im_payment_after_insert_tr
-after insert on im_payments
-for each row
-execute procedure flyhh__im_payment_after_insert_tr();
+-- For a product like project-open, triggers make it really hard for developers 
+-- to understand why values change after submitting something on the page, 
+-- as you usually only check the source code and callbacks but not open PSQL and do 
+-- queries on the database table to find out which triggers are installed.
+--
+-- create trigger flyhh__im_payment_after_insert_tr
+-- after insert on im_payments
+-- for each row
+-- execute procedure flyhh__im_payment_after_insert_tr();
