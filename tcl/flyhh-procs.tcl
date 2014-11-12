@@ -968,6 +968,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         select 
             cst.cost_id,
             cst.cost_status_id,
+            cst.paid_amount,
             participant_id
         from im_costs cst 
         inner join im_payments pay on (pay.cost_id=cst.cost_id)
@@ -989,7 +990,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
                 -participant_id $participant_id \
                 -to_status "Registered"
                 
-        } elseif { $cost_status_id eq $cost_status_partially_paid } {
+        } elseif { $cost_status_id eq $cost_status_partially_paid || $paid_amount > 0 } {
 
             ::flyhh::set_participant_status \
                 -participant_id $participant_id \
