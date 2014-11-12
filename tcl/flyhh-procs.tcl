@@ -720,6 +720,10 @@ ad_proc ::flyhh::create_invoice_items {
     foreach item $delta_items {
         foreach {item_units percent_price item_material_id} $item break
 
+        # if item_material_id there is nothing to credit or debit
+        # and thus we continue with the rest of the items
+        if { $item_material_id eq {} } {continue}
+
         set sql "
             select material_name, material_uom_id, :percent_price * price  as price_per_unit
             from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
@@ -814,7 +818,7 @@ ad_proc ::flyhh::set_participant_status {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-09
+    @last-modified 2014-11-12
 } {
 
     set to_status_id [::flyhh::status_id_from_name $to_status]
@@ -830,7 +834,7 @@ ad_proc ::flyhh::set_participant_status {
             and event_participant_status_id=:from_status_id
         "
 
-        db_dml update_event_participant_status_if $sql
+        set statement_name "update_event_participant_status_if"
 
     } else {
 
@@ -840,7 +844,19 @@ ad_proc ::flyhh::set_participant_status {
             where participant_id=:participant_id
         "
 
-        db_dml update_event_participant_status $sql
+        set statement_name "update_event_participant_status"
+
+    }
+
+    db_transaction {
+
+        if { $to_status eq {Cancelled} } {
+
+            ::flyhh::set_to_cancelled_helper -participant_id $participant_id
+
+        }
+
+        db_dml $statement_name $sql
 
     }
 
@@ -1488,6 +1504,37 @@ ad_proc ::flyhh::record_after_confirmation_edit {
 
 }
 
+ad_proc -private ::flyhh::set_to_cancelled_helper {
+    -participant_id:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+
+    set sql "
+        select
+            course,
+            accommodation,
+            food_choice,
+            bus_option,
+            event_participant_status_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql -column_array old
+
+    if { [::flyhh::after_confirmation_edit_p $old(event_participant_status_id)] } {
+
+        array set new [list course "" accommodation "" food_choice "" bus_option ""]
+
+        ::flyhh::record_after_confirmation_edit -participant_id $participant_id old new
+
+    }
+
+}
 
 # ---------------------------------------------------------------
 # Callbacks

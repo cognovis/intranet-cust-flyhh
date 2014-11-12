@@ -35,7 +35,8 @@ ad_page_contract {
 set view_name "flyhh_event_participants_list"
 set key "participant_id"
 set bulk_actions {
-    "Confirm" "participant-confirm" "Confirm checked participants"
+    "Set to Confirmed" "participant-confirm" "Confirm checked participants"
+    "Set to Cancelled" "participant-cancel" "Cancel checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
@@ -345,12 +346,16 @@ No users        </b></ul></td></tr>"
 }
 
 if { $bulk_actions ne {} } {
+
+    set row_html "<tr><td colspan=$colspan><select name=\"bulk_action\">"
     foreach {label url title} $bulk_actions {
         # set row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
-        set row_html "<tr><td colspan=$colspan><input type=\"submit\" title=\"${title}\" name=\"bulk_action\" value=\"${label}\"></td></tr>"
-        append table_body_html $row_html
+        append row_html "<option title=\"${title}\" name=\"bulk_action\">${label}</option>"
     }
+    append row_html "</select>" "<button type=\"submit\">Update</button>" "</td></tr>"
+    append table_body_html $row_html
     append table_body_html "</form>"
+
 }
 
 # ---------------------------------------------------------------

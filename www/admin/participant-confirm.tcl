@@ -60,8 +60,6 @@ db_transaction {
         set sql "update flyhh_event_participants set order_id=:order_id where participant_id=:id"
         db_dml update_participant_info $sql
 
-        # TODO: Add line items for each of the materials
-
     }
 
 }
