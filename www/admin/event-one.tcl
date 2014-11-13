@@ -167,7 +167,7 @@ ad_form -extend -name $form_id -edit_request {
                 ) values (
                     :event_id,
                     :material_id,
-                    coalesce(:capacity,0)
+                    :capacity
                 )
             "
 
@@ -219,7 +219,7 @@ ad_form -extend -name $form_id -edit_request {
                 ) values (
                     :event_id,
                     :material_id,
-                    coalesce(:capacity,0)
+                    :capacity
                 )
             "
 

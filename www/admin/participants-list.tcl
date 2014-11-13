@@ -18,13 +18,9 @@ ad_page_contract {
 } -properties {
 } -validate {
 
-    event_exists_ck -requires {project_id:integer} {
+    check_event_exists -requires {project_id:integer} {
 
-        set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
-        set is_event_proj_p [db_string check_event_project $sql -default 0]
-        if { !$is_event_proj_p } {
-            ad_complain "no event found for the given project_id (=$project_id)"
-        }
+        ::flyhh::check_event_exists -project_id $project_id
 
     }
 

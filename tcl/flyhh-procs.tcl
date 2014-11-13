@@ -480,6 +480,28 @@ ad_proc ::flyhh::update_participant {
     @last-modified 2014-11-11
 } {
 
+    set sql "
+        select course,accommodation,food_choice,bus_option,event_participant_status_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql -column_array old
+
+    set from_status_id $event_participant_status_id
+
+    set to_status_id $event_participant_status_id
+
+    set delta_items [list \
+        [list $old(course)        $from_status_id ""] \
+        [list $old(accommodation) $from_status_id ""] \
+        [list $old(food_choice)   $from_status_id ""] \
+        [list $old(bus_option)    $from_status_id ""] \
+        [list $course        "" $to_status_id] \
+        [list $accommodation "" $to_status_id] \
+        [list $food_choice   "" $to_status_id] \
+        [list $bus_option    "" $to_status_id]]
+
     set creation_ip [ad_conn peeraddr]
 
     ::flyhh::match_name_email $partner_text partner_name partner_email
@@ -543,6 +565,8 @@ ad_proc ::flyhh::update_participant {
         }
 
         db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+
+        ::flyhh::update_event_stats -project_id $project_id -delta_items $delta_items
 
     }
 
@@ -810,6 +834,87 @@ ad_proc ::flyhh::status_id_from_name {
 
 }
 
+ad_proc ::flyhh::update_event_stats {
+    -project_id:required
+    -delta_items:required
+} {
+
+    @param delta_items is a list of {material_id from_status_id to_status_id} triplets
+
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-13
+    @last-modified 2014-11-13
+} {
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category in ('Confirmed','Pending Payment','Partially Paid')
+    "
+
+    set confirmed_list [db_list_of_lists confirmed_list $sql]
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category='Registered'
+    "
+
+    set registered_list [db_list_of_lists registered_list $sql]
+
+
+    set new_delta_items [list]
+
+    foreach item $delta_items {
+
+        foreach {material_id from_status_id to_status_id} $item break
+
+        if { -1 != [lsearch -exact -integer $confirmed_list $from_status_id] } {
+            lappend new_delta_items [list $material_id -1 0]
+        }
+
+        if { -1 != [lsearch -exact -integer $registered_list $from_status_id] } {
+            lappend new_delta_items [list $material_id 0 -1]
+        }
+
+        if { -1 != [lsearch -exact -integer $confirmed_list $to_status_id] } {
+            lappend new_delta_items [list $material_id 1 0]
+        }
+
+        if { -1 != [lsearch -exact -integer $registered_list $to_status_id] } {
+            lappend new_delta_items [list $material_id 0 1]
+        }
+
+    }
+
+    # there are only four materials in the participant record
+    # namely course, accommodation, food_choice, bus_option
+    # we will update the stats for at most eight materials here
+    # we could speed it up by creating a separate table for the
+    # stats of each event or by adding an hstore column in the 
+    # events table itself
+    foreach item $new_delta_items {
+
+        foreach {material_id delta_confirmed delta_registered} $item break
+
+        # update capacity stats
+        set sql "
+            update flyhh_event_materials set
+                num_confirmed  = num_confirmed + :delta_confirmed,
+                num_registered = num_registered + :delta_registered,
+                free_capacity  = capacity - (num_registered + :delta_registered),
+                free_confirmed_capacity = capacity - (num_confirmed + num_registered + :delta_confirmed + :delta_registered)
+            where material_id = :material_id
+        "
+
+        db_dml update_stats $sql
+
+    }
+
+}
+
 
 ad_proc ::flyhh::set_participant_status { 
     {-participant_id:required ""}
@@ -820,6 +925,12 @@ ad_proc ::flyhh::set_participant_status {
     @creation-date 2014-11-04
     @last-modified 2014-11-12
 } {
+
+    set sql "
+        select project_id, course, accommodation, food_choice, bus_option, event_participant_status_id
+        from flyhh_event_participants where participant_id=:participant_id
+    "
+    db_1row participant_info $sql
 
     set to_status_id [::flyhh::status_id_from_name $to_status]
 
@@ -838,6 +949,8 @@ ad_proc ::flyhh::set_participant_status {
 
     } else {
 
+        set from_status_id $event_participant_status_id
+
         set sql "
             update flyhh_event_participants 
             set event_participant_status_id=:to_status_id 
@@ -848,6 +961,17 @@ ad_proc ::flyhh::set_participant_status {
 
     }
 
+
+    if { $event_participant_status_id ne $from_status_id } {
+        error "set_participant_status: event_participant_status_id=$event_participant_status_id from_status_id=$from_status_id"
+    }
+
+    set delta_items [list \
+        [list $course        $from_status_id $to_status_id] \
+        [list $accommodation $from_status_id $to_status_id] \
+        [list $food_choice   $from_status_id $to_status_id] \
+        [list $bus_option    $from_status_id $to_status_id]]
+
     db_transaction {
 
         if { $to_status eq {Cancelled} } {
@@ -856,7 +980,10 @@ ad_proc ::flyhh::set_participant_status {
 
         }
 
+        # update event participant status
         db_dml $statement_name $sql
+
+        ::flyhh::update_event_stats -project_id $project_id -delta_items $delta_items
 
     }
 
