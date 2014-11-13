@@ -488,9 +488,8 @@ ad_proc ::flyhh::update_participant {
 
     db_1row participant_info $sql -column_array old
 
-    set from_status_id $event_participant_status_id
-
-    set to_status_id $event_participant_status_id
+    set from_status_id $old(event_participant_status_id)
+    set to_status_id $old(event_participant_status_id)
 
     set delta_items [list \
         [list $old(course)        $from_status_id ""] \
@@ -871,19 +870,21 @@ ad_proc ::flyhh::update_event_stats {
 
         foreach {material_id from_status_id to_status_id} $item break
 
-        if { -1 != [lsearch -exact -integer $confirmed_list $from_status_id] } {
+        if { $material_id eq {} } {continue}
+
+        if { -1 != [lsearch -exact $confirmed_list $from_status_id] } {
             lappend new_delta_items [list $material_id -1 0]
         }
 
-        if { -1 != [lsearch -exact -integer $registered_list $from_status_id] } {
+        if { -1 != [lsearch -exact $registered_list $from_status_id] } {
             lappend new_delta_items [list $material_id 0 -1]
         }
 
-        if { -1 != [lsearch -exact -integer $confirmed_list $to_status_id] } {
+        if { -1 != [lsearch -exact $confirmed_list $to_status_id] } {
             lappend new_delta_items [list $material_id 1 0]
         }
 
-        if { -1 != [lsearch -exact -integer $registered_list $to_status_id] } {
+        if { -1 != [lsearch -exact $registered_list $to_status_id] } {
             lappend new_delta_items [list $material_id 0 1]
         }
 

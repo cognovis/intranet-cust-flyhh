@@ -74,7 +74,7 @@ set sql "
     on (em.material_id = m.material_id)
     inner join im_material_types mt
     on (mt.material_type_id = m.material_type_id)
-    order by material_type
+    order by material_type,material_name
 "
 db_multirow stats $multirow $sql
 
