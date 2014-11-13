@@ -921,7 +921,7 @@ begin
         NULL,
         'Name',
         'full_name',
-        '"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"',
+        '"<a href=registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"',
         'person__name(person_id) as participant_person_name, participant_id',
         '',
         2,
