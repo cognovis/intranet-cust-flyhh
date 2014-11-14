@@ -1027,6 +1027,67 @@ ad_proc ::flyhh::check_event_exists {
     }
 }
 
+ad_proc ::flyhh::check_confirmed_free_capacity {
+    -project_id:required
+    -participant_id_list:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-14
+    @last-modified 2014-11-14
+} {
+
+    set sql_list [template::util::tcl_to_sql_list $participant_id_list]
+
+    set sql "
+        select course,accommodation,food_choice,bus_option
+        from flyhh_event_participants
+        where participant_id in (${sql_list})
+    "
+    array set delta [list]
+    db_foreach participant_registration $sql {
+
+        foreach var [list delta($course) delta($accommodation) delta($food_choice) delta($bus_option)] {
+            if { ![info exists $var] } { set $var 0 }
+        }
+
+        incr delta($course)
+        incr delta($accommodation)
+        incr delta($food_choice)
+        incr delta($bus_option)
+
+    }
+
+    if { [info exists delta("")] } {
+        unset delta("")
+    }
+
+    foreach {material_id delta_count} [array get delta] {
+
+        set sql "
+            select free_confirmed_capacity
+            from flyhh_event_materials em inner join flyhh_events evt on (evt.event_id=em.event_id)
+            where project_id=:project_id
+            and material_id=:material_id 
+            and free_confirmed_capacity < :delta_count
+        "
+
+        set exceeds_capacity_num [db_string exceeds_capacity_num $sql -default 0]
+
+        if { $exceeds_capacity_num } {
+            set sql "
+                select 
+                    material_name,
+                    material_type
+                from im_materials m inner join im_material_types mt on (mt.material_type_id=m.material_type_id)
+                where material_id=:material_id
+            "
+            db_1row material_info $sql
+            ad_complain "request for confirmation of $delta_count \"${material_name}\" (${material_type}) exceeds free confirmed capacity (=${exceeds_capacity_num})"
+        }
+
+    }
+
+}
 
 ad_proc ::flyhh::send_invoice_mail {
     -invoice_id

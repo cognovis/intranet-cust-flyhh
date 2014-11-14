@@ -310,6 +310,7 @@ set ctr 0
 
 if { $bulk_actions ne {} } {
     append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"participants-bulk\" method=\"post\">"
+    append table_body_html "<input type=hidden name=\"project_id\" value=\"${project_id}\">"
     append table_body_html "<input type=hidden name=\"return_url\" value=\"${return_url}\">"
 }
 

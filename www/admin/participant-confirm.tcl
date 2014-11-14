@@ -2,7 +2,7 @@ ad_page_contract {
 
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-02
-    @last-modified 2014-11-04
+    @last-modified 2014-11-14
 
     Confirmed & Confirmation E-Mail:
 
@@ -18,8 +18,13 @@ ad_page_contract {
       document. We can talk a little bit more about this in skype.
 
 } {
+    project_id:integer,notnull
     participant_id:integer,multiple,notnull
     return_url:trim,notnull
+} -validate {
+    check_confirmed_free_capacity -requires {project_id:integer participant_id:integer} {
+        ::flyhh::check_confirmed_free_capacity -project_id $project_id -participant_id_list $participant_id
+    }
 }
 
 db_transaction {
