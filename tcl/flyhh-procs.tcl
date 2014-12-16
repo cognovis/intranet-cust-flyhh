@@ -1266,7 +1266,7 @@ ad_proc ::flyhh::mail_notification_system {} {
 
 }
 
-ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
+#ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
 
 ad_proc -public -callback flyhh_event_form_fill {
     -form_id:required
