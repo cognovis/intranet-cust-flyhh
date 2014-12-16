@@ -921,7 +921,7 @@ begin
         NULL,
         'Name',
         'full_name',
-        '"<a href=../registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"',
+        '"<a href=registration?project_id=$project_id&participant_id=$participant_id>$participant_person_name</a><br>$email"',
         'person__name(person_id) as participant_person_name, participant_id',
         '',
         2,
@@ -982,9 +982,6 @@ begin
         'partner_person_name,partner_text'
     );
 
-
-
-
     insert into im_view_columns (
         column_id, 
         view_id, 
@@ -1001,10 +998,10 @@ begin
         300005,
         v_view_id,
         NULL,
-        'Accomm.',
-        'accommodation',
-        '[ad_decode $mismatch_accomm_p f $accommodation_text "<font color=red>$accommodation_text</font>"]',
-        'im_name_from_id(accommodation) as accommodation_text',
+        'Course',
+        'course',
+        '$course_text',
+        'im_name_from_id(course) as course_text',
         '',
         6,
         '',
@@ -1028,14 +1025,14 @@ begin
         300006,
         v_view_id,
         NULL,
-        'Food Choice',
-        'food_choice',
-        '$food_choice_text',
-        'im_name_from_id(food_choice) as food_choice_text',
+        'Accomm.',
+        'accommodation',
+        '[ad_decode $mismatch_accomm_p f $accommodation_text "<font color=red>$accommodation_text</font>"]',
+        'im_name_from_id(accommodation) as accommodation_text',
         '',
         7,
         '',
-        'food_choice_text'
+        'accommodation_text'
     );
 
 
@@ -1055,14 +1052,14 @@ begin
         300007,
         v_view_id,
         NULL,
-        'Bus Option',
-        'bus_option',
-        '$bus_option_text',
-        'im_name_from_id(bus_option) as bus_option_text',
+        'Food Choice',
+        'food_choice',
+        '$food_choice_text',
+        'im_name_from_id(food_choice) as food_choice_text',
         '',
         8,
         '',
-        'bus_option_text'
+        'food_choice_text'
     );
 
 
@@ -1082,12 +1079,39 @@ begin
         300008,
         v_view_id,
         NULL,
+        'Bus Option',
+        'bus_option',
+        '$bus_option_text',
+        'im_name_from_id(bus_option) as bus_option_text',
+        '',
+        9,
+        '',
+        'bus_option_text'
+    );
+
+
+    insert into im_view_columns (
+        column_id, 
+        view_id, 
+        group_id, 
+        column_name,
+        variable_name,
+        column_render_tcl, 
+        extra_select, 
+        extra_where, 
+        sort_order, 
+        visible_for,
+        order_by_clause
+    ) values (
+        300009,
+        v_view_id,
+        NULL,
         'Level',
         'level',
         '[ad_decode $mismatch_level_p f $level_text "<font color=red>$level_text</font>"]',
         'im_name_from_id(level) as level_text',
         '',
-        9,
+        10,
         '',
         'level_text'
     );
@@ -1107,7 +1131,7 @@ begin
         visible_for,
         order_by_clause
     ) values (
-        300009,
+        300010,
         v_view_id,
         NULL,
         'Payment Type',
@@ -1115,7 +1139,7 @@ begin
         '$payment_type_text',
         'im_name_from_id(payment_type) as payment_type_text',
         '',
-        10,
+        11,
         '',
         'payment_type_text'
     );
@@ -1134,7 +1158,7 @@ begin
         visible_for,
         order_by_clause
     ) values (
-        300010,
+        300011,
         v_view_id,
         NULL,
         'Payment Term',
@@ -1142,7 +1166,7 @@ begin
         '$payment_term_text',
         'im_name_from_id(payment_term) as payment_term_text',
         '',
-        11,
+        12,
         '',
         'payment_term_text'
     );
@@ -1161,7 +1185,7 @@ begin
         visible_for,
         datatype
     ) values (
-        300011,
+        300012,
         v_view_id,
         NULL,
         'Roommate(s)',
@@ -1169,7 +1193,7 @@ begin
         '$roommates_html',
         'flyhh_event_roommates__html(project_id,participant_id,''../registration'') as roommates_html',
         '',
-        12,
+        13,
         '',
         'category_pretty'
     );
@@ -1189,7 +1213,7 @@ begin
         visible_for,
         datatype
     ) values (
-        300012,
+        300013,
         v_view_id,
         NULL,
         'Validation',
@@ -1197,7 +1221,7 @@ begin
         '$validation_text',
         'flyhh_event_participant__validation_text(validation_mask) as validation_text',
         '',
-        13,
+        14,
         '',
         ''
     );
@@ -1215,7 +1239,7 @@ begin
         visible_for,
         datatype
     ) values (
-        300013,
+        300014,
         v_view_id,
         NULL,
         'Status',
@@ -1223,7 +1247,7 @@ begin
         E'[append _out_status_$participant_id <b>$status</b> "<p><a href=\\"/intranet/companies/view?company_id=$company_id\\">company info</a>" "<br>$purchase_order_html" "<br>$invoice_html"]',
         E'im_name_from_id(event_participant_status_id) as status, (select ''<a href="/intranet-invoices/view?invoice_id='' || invoice_id || ''" title="'' || cost_name || ''">customer invoice</a>'' from im_costs where customer_id=company_id and cost_id=invoice_id order by cost_id desc limit 1) as invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\\">purchase order</a>'' as purchase_order_html',
         '',
-        14,
+        15,
         '',
         'category_pretty'
     );

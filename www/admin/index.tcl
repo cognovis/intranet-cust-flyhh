@@ -1,4 +1,9 @@
 
+set company_id [parameter::get -parameter provider_company_id -default 8720]
+set sql "select company_name from im_companies where company_id=:company_id"
+set provider_company_name [db_string provider_company_name $sql -default ""]
+set provider_company_link [export_vars -base /intranet/companies/view {company_id}]
+
 set page_title "Flyhh Event Management - Administration Page"
 set context ""
 set context_bar [ad_context_bar $page_title]
@@ -10,8 +15,9 @@ template::list::create \
     -name $list_id \
     -multirow $multirow \
     -elements {
-        event_id {
-            label "Event ID"
+        project_id {
+            label "Project ID"
+            link_url_eval {[export_vars -base /intranet/projects/view {project_id}]}
         }
         event_name {
             label "Event Name"
@@ -34,8 +40,9 @@ template::list::create \
         actions {
             label "Actions"
             display_template {
+                <a class="button" href="stats?project_id=@events.project_id@">stats</a>
                 <a class="button" href="participants-list?project_id=@events.project_id@">see participants</a>
-                <a class="button" href="../registration?project_id=@events.project_id@">add participant</a>
+                <a class="button" href="registration?project_id=@events.project_id@">add participant</a>
             }
         }
     }

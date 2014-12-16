@@ -25,6 +25,10 @@ ad_page_contract {
 
 # ad_maybe_redirect_for_registration
 
+set package_id [ad_conn package_id]
+set user_id [ad_conn user_id]
+set admin_p [permission::permission_p -object_id $package_id -party_id $user_id -privilege admin]
+
 # TODO: token parameter is not meant to be optional
 # it is going to be a signed key that helps us extract
 # the project_id and it prevents sequential access
@@ -36,7 +40,7 @@ ad_page_contract {
 #set project_id [db_string some_project_id $sql]
 
 set page_title "Registration Form"
-set context [ad_context_bar $page_title]
+set context_bar [ad_context_bar $page_title]
 
 set form_id "registration_form"
 set action_url ""
@@ -191,28 +195,30 @@ ad_form -extend -name $form_id -form {
 
     set package_id [ad_conn package_id]
 
-    # If the status of the event registration is no longer pending, 
-    # do not allow the editing of any fields but the name,
-    # address, dance partner and room mates.
-    #
-    # Pending Payment (=82502), Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
+    if { [::flyhh::after_confirmation_edit_p $event_participant_status_id] } {
 
-    set sql "
-        select category_id 
-        from im_categories 
-        where category_type='Flyhh - Event Registration Status' 
-        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused', 'Cancelled')
-    "
-    set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
-
-    if { -1 != [lsearch -exact -integer $restrict_edit_list $event_participant_status_id] } {
+        set material_type_fields {course accommodation food_choice bus_option} 
+        
         foreach element {
             email course accommodation food_choice bus_option level 
             payment_type payment_term lead_p
-            accepted_terms_p
         } {
-            template::element::set_properties $form_id $element mode display
+
+            if { $admin_p && -1 != [lsearch -exact $material_type_fields $element] } {
+
+                set help_text "<font color=red><i>edit after confirmation, alters invoice</i></font>"
+                template::element::set_properties $form_id $element help_text $help_text
+
+            } elseif { $admin_p && -1 != [lsearch -exact {level payment_type payment_term lead_p} $element] } {
+                # admins can further edit these fields
+            } else {
+
+                template::element::set_properties $form_id $element mode display
+
+            }
+
         }
+
     }
 
 } -validate {
@@ -242,6 +248,7 @@ ad_form -extend -name $form_id -form {
             -payment_term $payment_term \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city $ha_city \
@@ -250,31 +257,56 @@ ad_form -extend -name $form_id -form {
             -ha_country_code $ha_country_code
 
     } else {
-
-        ::flyhh::update_participant \
-            -participant_id $participant_id \
-            -project_id $project_id \
-            -email $email \
-            -first_names $first_names \
-            -last_name $last_name \
-            -accepted_terms_p $accepted_terms_p \
-            -course $course \
-            -accommodation $accommodation \
-            -food_choice $food_choice \
-            -bus_option $bus_option \
-            -level $level \
-            -lead_p $lead_p \
-            -payment_type $payment_type \
-            -payment_term $payment_term \
-            -partner_text $partner_text \
-            -roommates_text $roommates_text \
-            -ha_line1 $ha_line1 \
-            -ha_line2 $ha_line2 \
-            -ha_city $ha_city \
-            -ha_state $ha_state \
-            -ha_postal_code $ha_postal_code \
-            -ha_country_code $ha_country_code
         
+        set sql "select course, accommodation, food_choice, bus_option, event_participant_status_id
+                 from flyhh_event_participants ep 
+                 inner join parties pa on (pa.party_id=ep.person_id) 
+                 inner join persons p on (p.person_id=ep.person_id) 
+                 inner join users_contact uc on (uc.user_id=ep.person_id)
+                 where participant_id=:participant_id"
+
+        db_1row event_participant $sql -column_array old
+
+        db_transaction {
+
+            if { [::flyhh::after_confirmation_edit_p $old(event_participant_status_id)] } {
+
+                array set new [list \
+                    course $course \
+                    accommodation $accommodation \
+                    food_choice $food_choice \
+                    bus_option $bus_option]
+
+                ::flyhh::record_after_confirmation_edit -participant_id $participant_id old new
+
+            }
+
+            ::flyhh::update_participant \
+                -participant_id $participant_id \
+                -project_id $project_id \
+                -email $email \
+                -first_names $first_names \
+                -last_name $last_name \
+                -accepted_terms_p $accepted_terms_p \
+                -course $course \
+                -accommodation $accommodation \
+                -food_choice $food_choice \
+                -bus_option $bus_option \
+                -level $level \
+                -lead_p $lead_p \
+                -payment_type $payment_type \
+                -payment_term $payment_term \
+                -partner_text $partner_text \
+                -roommates_text $roommates_text \
+                -cell_phone $cell_phone \
+                -ha_line1 $ha_line1 \
+                -ha_line2 $ha_line2 \
+                -ha_city $ha_city \
+                -ha_state $ha_state \
+                -ha_postal_code $ha_postal_code \
+                -ha_country_code $ha_country_code
+
+        }        
     }
 
 } -after_submit {

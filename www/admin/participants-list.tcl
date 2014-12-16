@@ -18,13 +18,9 @@ ad_page_contract {
 } -properties {
 } -validate {
 
-    event_exists_ck -requires {project_id:integer} {
+    check_event_exists -requires {project_id:integer} {
 
-        set sql "select 1 from flyhh_events where project_id=:project_id limit 1"
-        set is_event_proj_p [db_string check_event_project $sql -default 0]
-        if { !$is_event_proj_p } {
-            ad_complain "no event found for the given project_id (=$project_id)"
-        }
+        ::flyhh::check_event_exists -project_id $project_id
 
     }
 
@@ -35,7 +31,8 @@ ad_page_contract {
 set view_name "flyhh_event_participants_list"
 set key "participant_id"
 set bulk_actions {
-    "Confirm" "participant-confirm" "Confirm checked participants"
+    "Set to Confirmed" "participant-confirm" "Confirm checked participants"
+    "Set to Cancelled" "participant-cancel" "Cancel checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
@@ -146,7 +143,7 @@ ad_form \
     -action $action_url \
     -mode $form_mode \
     -method GET \
-    -export {order_by}\
+    -export {project_id order_by}\
     -form {
 
         {lead_p:text(select),optional
@@ -313,6 +310,7 @@ set ctr 0
 
 if { $bulk_actions ne {} } {
     append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"participants-bulk\" method=\"post\">"
+    append table_body_html "<input type=hidden name=\"project_id\" value=\"${project_id}\">"
     append table_body_html "<input type=hidden name=\"return_url\" value=\"${return_url}\">"
 }
 
@@ -345,12 +343,16 @@ No users        </b></ul></td></tr>"
 }
 
 if { $bulk_actions ne {} } {
+
+    set row_html "<tr><td colspan=$colspan><select name=\"bulk_action\">"
     foreach {label url title} $bulk_actions {
         # set row_html "<tr><td colspan=$colspan><button type=\"submit\" title=\"${title}\" onmousedown=\"document.getElementById('${bulk_actions_form_id}').action = '${url}';\">${label}</button></td></tr>"
-        set row_html "<tr><td colspan=$colspan><input type=\"submit\" title=\"${title}\" name=\"bulk_action\" value=\"${label}\"></td></tr>"
-        append table_body_html $row_html
+        append row_html "<option title=\"${title}\" name=\"bulk_action\">${label}</option>"
     }
+    append row_html "</select>" "<button type=\"submit\">Update</button>" "</td></tr>"
+    append table_body_html $row_html
     append table_body_html "</form>"
+
 }
 
 # ---------------------------------------------------------------

@@ -44,7 +44,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
 #
 # @creation-user Neophytos Demetriou (neophytos@azet.sk)
 # @creation-date 2014-11-02
-# @last-modified 2014-11-10
+# @last-modified 2014-11-11
 #
 
     set sql "
@@ -53,6 +53,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
             party__email(person_id) as email, 
             person__name(person_id) as name,
             flyhh_event__name_from_project_id(project_id) as event_name,
+            im_name_from_id(course) as course,
             im_name_from_id(accommodation) as accommodation,
             im_name_from_id(food_choice) as food_choice,
             im_name_from_id(bus_option) as bus_option
@@ -71,19 +72,26 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     set to_addr ${email}
     set mime_type "text/plain"
     set subject "Event Registration Confirmation for ${name}"
-    set body "
-Hi ${name},
+    set body [eval [template::adp_compile -string {
+Hi @name@,
 
-We have reserved a spot for you for \"${event_name}\".
+We have reserved a spot for you for \"@event_name@\".
 
 Here's what you have signed up for:
-Accommodation: ${accommodation}
-Food Choice: ${food_choice}
-Bus Option: ${bus_option}
+Course: @course@
+<if @accommodation@ not nil>
+Accommodation: @accommodation@
+</if>
+<if @food_choice@ not nil>
+Food Choice: @food_choice@
+</if>
+<if @bus_option@ not nil>
+Bus Option: @bus_option@
+</if>
 
 To complete the registration, please proceed with payment at the following page:
-${link_to_payment_page}
-"
+@link_to_payment_page;noquote@
+}]]
 
     acs_mail_lite::send \
         -from_addr $from_addr \
@@ -98,12 +106,20 @@ ${link_to_payment_page}
 
 }
 
-proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} {
+ad_proc ::flyhh::create_company_if { 
+    user_id
+    company_name
+    {existing_user_p false}
+} {
+    @creation-user Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-10-30
+    @last-modified 2014-11-11
+} {
+
+    set company_path "${user_id}_[regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]"
 
     set company_id ""
     if { $existing_user_p } {
-
-        set company_path [regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_"]
 
         set sql "select company_id from im_companies where company_path = :company_path" 
         set company_id [db_string company_id_by_path $sql -default ""]
@@ -130,7 +146,6 @@ proc ::flyhh::create_company_if { user_id company_name {existing_user_p false}} 
         set default_company_type_id [im_company_type_customer]
         set company_type_id $default_company_type_id
         set company_status_id [im_company_status_active]
-        regsub -all {[^a-zA-Z0-9]} [string trim [string tolower $company_name]] "_" company_path
         set office_path "${company_path}_home"
         
         set main_office_id [im_office::new \
@@ -311,7 +326,7 @@ ad_proc ::flyhh::create_user_if {
     # note that upload-contacts-2.tcl only used the participant's name
     # to generate the company name, we refrain from doing so here to
     # avoid any naming conflicts
-    set company_name "$user_id - $first_names $last_name"
+    set company_name "$first_names $last_name"
     set company_id [::flyhh::create_company_if $user_id $company_name $existing_user_p]
 
     set new_user_p [expr { !$existing_user_p }]
@@ -337,6 +352,7 @@ ad_proc ::flyhh::create_participant {
     -payment_term:required
     -partner_text:required
     -roommates_text:required
+    -cell_phone:required
     -ha_line1:required
     -ha_line2:required
     -ha_city:required
@@ -359,12 +375,26 @@ ad_proc ::flyhh::create_participant {
 
         ::flyhh::set_user_contact_info \
             -user_id $person_id \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \
             -ha_country_code $ha_country_code
+
+        set sql "
+            update im_offices set
+                phone=:cell_phone,
+                address_line1=:ha_line1,
+                address_line2=:ha_line2, 
+                address_city=:ha_city,
+                address_state=:ha_state,
+                address_postal_code=:ha_postal_code,
+                address_country_code=lower(:ha_country_code)
+            where office_id=(select main_office_id from im_companies where company_id=:company_id)
+        "
+        db_dml update_company_contact_info $sql
 
         db_exec_plsql insert_participant "select flyhh_event_participant__new(
 
@@ -437,6 +467,7 @@ ad_proc ::flyhh::update_participant {
     -payment_term:required
     -partner_text:required
     -roommates_text:required
+    -cell_phone:required
     -ha_line1:required
     -ha_line2:required
     -ha_city:required
@@ -448,6 +479,27 @@ ad_proc ::flyhh::update_participant {
     @creation-date 2014-11-11
     @last-modified 2014-11-11
 } {
+
+    set sql "
+        select course,accommodation,food_choice,bus_option,event_participant_status_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql -column_array old
+
+    set from_status_id $old(event_participant_status_id)
+    set to_status_id $old(event_participant_status_id)
+
+    set delta_items [list \
+        [list $old(course)        $from_status_id ""] \
+        [list $old(accommodation) $from_status_id ""] \
+        [list $old(food_choice)   $from_status_id ""] \
+        [list $old(bus_option)    $from_status_id ""] \
+        [list $course        "" $to_status_id] \
+        [list $accommodation "" $to_status_id] \
+        [list $food_choice   "" $to_status_id] \
+        [list $bus_option    "" $to_status_id]]
 
     set creation_ip [ad_conn peeraddr]
 
@@ -486,6 +538,7 @@ ad_proc ::flyhh::update_participant {
 
         ::flyhh::set_user_contact_info \
             -email $email \
+            -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
             -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
@@ -511,6 +564,8 @@ ad_proc ::flyhh::update_participant {
         }
 
         db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+
+        ::flyhh::update_event_stats -project_id $project_id -delta_items $delta_items
 
     }
 
@@ -554,19 +609,31 @@ ad_proc ::flyhh::create_invoice {
     -payment_method_id 
     -payment_term_id
     -invoice_type_id
+    {-delta_items ""}
 } {
-    @param invoice_type_id Intranet Cost Type (3700 = Customer Invoice, 3702 = Quote, 3706 = Purchase Order)
+    @param invoice_type_id Intranet Cost Type 
+    3700 = Customer Invoice 
+    3702 = Quote 
+    3706 = Purchase Order 
+    3725 = Customer Invoice Correction
 
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-04
+    @last-modified 2014-11-12
 } {
 
+    if { $invoice_type_id eq {3725} && $delta_items eq {} } {
+        error "must provide delta items for customer invoice correction"
+    }
+
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
+    set invoice_template [parameter::get -parameter invoice_template -default "RechnungCognovis.en.odt"]
 
     set provider_id 8720          ;# Company that provides this service - Us
     set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
-    set invoice_template_id "900" ;# Intranet Cost Template (900 = template.en.adp)
+
+    set sql "select category_id from im_categories where category = :invoice_template and category_type = 'Intranet Cost Template'"
+    set invoice_template_id [db_string invoice_template_id $sql] ;# Intranet Cost Template
 
     set sql "select project_cost_center_id from im_projects where project_id=:project_id"
     set cost_center_id [db_string cost_center_id $sql]
@@ -575,44 +642,84 @@ ad_proc ::flyhh::create_invoice {
     set note "$cost_center_code $participant_id"
     set user_id [ad_conn user_id]
     set peeraddr [ad_conn peeraddr]
-    set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
-    set invoice_id [db_exec_plsql create_invoice "
-        select im_invoice__new (
-            null,                       -- invoice_id
-            'im_invoice',               -- object_type
-            now(),                      -- creation_date 
-            :user_id,                   -- creation_user
-            :peeraddr,                  -- creation_ip
-            null,                       -- context_id
-            :invoice_nr,                -- invoice_nr
-            :company_id,                -- company_id
-            :provider_id,               -- provider_id -- us
-            :company_contact_id,        -- company_contact_id
-            now(),                      -- invoice_date
-            'EUR',                      -- currency
-            :invoice_template_id,       -- invoice_template_id
-            :invoice_status_id,         -- invoice_status_id
-            :invoice_type_id,           -- invoice_type_id
-            :payment_method_id,         -- payment_method_id
-            :payment_days,              -- payment_days
-            0,                          -- amount
-            0,                          -- vat
-            0,                          -- tax
-            :note                       -- note
-         )"]
 
-     db_dml update_invoice "
-        update im_costs set 
-            cost_center_id = :cost_center_id, 
-            project_id = :project_id,
-            payment_term_id = :payment_term_id, 
-            vat_type_id = 42021 
-        where cost_id = :invoice_id
-     "
+    db_transaction {
+        set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
+        set invoice_id [db_exec_plsql create_invoice "
+            select im_invoice__new (
+                null,                       -- invoice_id
+                'im_invoice',               -- object_type
+                now(),                      -- creation_date 
+                :user_id,                   -- creation_user
+                :peeraddr,                  -- creation_ip
+                :project_id,                -- context_id
+                :invoice_nr,                -- invoice_nr
+                :company_id,                -- company_id
+                :provider_id,               -- provider_id -- us
+                :company_contact_id,        -- company_contact_id
+                now(),                      -- invoice_date
+                'EUR',                      -- currency
+                :invoice_template_id,       -- invoice_template_id
+                :invoice_status_id,         -- invoice_status_id
+                :invoice_type_id,           -- invoice_type_id
+                :payment_method_id,         -- payment_method_id
+                :payment_days,              -- payment_days
+                0,                          -- amount
+                0,                          -- vat
+                0,                          -- tax
+                :note                       -- note
+             )"]
 
-    ::flyhh::create_invoice_items \
-        -invoice_id $invoice_id \
-        -participant_id $participant_id
+         db_dml update_invoice "
+            update im_costs set 
+                cost_center_id = :cost_center_id, 
+                project_id = :project_id,
+                payment_term_id = :payment_term_id, 
+                vat_type_id = 42021 
+            where cost_id = :invoice_id
+         "
+
+        if { $invoice_type_id ne {3725} && $delta_items eq {} } {
+
+            set sql "
+                select
+                    course,
+                    accommodation,
+                    food_choice,
+                    bus_option
+                from flyhh_event_participants
+                where participant_id=:participant_id
+            "
+            db_1row participant_info $sql
+
+            foreach varname {course accommodation food_choice bus_option} {
+                set material_id [set $varname]
+
+                if { $material_id eq {} } { continue }
+
+                lappend delta_items [list 1.0 1.0 $material_id]
+            }
+
+        }
+
+        ::flyhh::create_invoice_items \
+            -invoice_id $invoice_id \
+            -project_id $project_id \
+            -delta_items $delta_items
+
+        set rel_id [db_exec_plsql create_rel "
+            select acs_rel__new (
+                 null,             -- rel_id
+                 'relationship',   -- rel_type
+                 :project_id,      -- object_id_one
+                 :invoice_id,      -- object_id_two
+                 null,             -- context_id
+                 null,             -- creation_user
+                 null             -- creation_ip
+            )"]
+
+    }
+
 
     return $invoice_id
 
@@ -621,35 +728,29 @@ ad_proc ::flyhh::create_invoice {
 
 ad_proc ::flyhh::create_invoice_items {
     -invoice_id
-    -participant_id
+    -project_id
+    {-delta_items ""}
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-09
+    @last-modified 2014-11-11
 } {
 
-    # TODO: turn provider_company_id into a package parameter
-    set provider_company_id "8720"
+    set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
 
-    set sql "
-        select
-            course,
-            accommodation,
-            food_choice,
-            bus_option
-        from flyhh_event_participants
-        where participant_id=:participant_id
-    "
-    db_1row participant_info $sql
 
     set sort_order 1
-    foreach varname {course accommodation food_choice bus_option} {
-        set material_id [set $varname]
+    foreach item $delta_items {
+        foreach {item_units percent_price item_material_id} $item break
 
-        if { $material_id eq {} } { continue }
+        # if item_material_id there is nothing to credit or debit
+        # and thus we continue with the rest of the items
+        if { $item_material_id eq {} } {continue}
 
         set sql "
-            select material_name, material_uom_id, price 
+            select material_name, material_uom_id, :percent_price * price  as price_per_unit
             from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
-            where im.material_id=:material_id
+            where im.material_id=:item_material_id
             and company_id = :provider_company_id
             limit 1
         "
@@ -677,15 +778,15 @@ ad_proc ::flyhh::create_invoice_items {
         ) values (
             :item_id,
             :material_name,
-            null,
+            :project_id,
             :invoice_id,
-            1,
+            :item_units,
             :material_uom_id,
-            :price,
+            :price_per_unit,
             'EUR',
             :sort_order,
             null,
-            :material_id,
+            :item_material_id,
             null,
             '',
             null,
@@ -698,22 +799,8 @@ ad_proc ::flyhh::create_invoice_items {
 
     }
 
-    # Update the total amount
-    set sql "
-        select 
-            sum( round(item_units*price_per_unit,2) + round(item_units*price_per_unit*cb.aux_int1/100,2) )
-        from 
-            im_invoice_items ii,
-            im_categories ca,
-            im_categories cb,
-            im_materials im 
-        where invoice_id = :invoice_id
-        and ca.category_id = material_type_id
-        and ii.item_material_id = im.material_id
-        and ca.aux_int2 = cb.category_id
-    "
-    set total_amount [db_string total_amount $sql]
-    
+    # Update the total net amount
+
     set sql "select round(sum(item_units*price_per_unit),2) from im_invoice_items where invoice_id = :invoice_id"
     set total_net_amount [db_string total $sql]
         
@@ -746,6 +833,89 @@ ad_proc ::flyhh::status_id_from_name {
 
 }
 
+ad_proc ::flyhh::update_event_stats {
+    -project_id:required
+    -delta_items:required
+} {
+
+    @param delta_items is a list of {material_id from_status_id to_status_id} triplets
+
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-13
+    @last-modified 2014-11-13
+} {
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category in ('Confirmed','Pending Payment','Partially Paid')
+    "
+
+    set confirmed_list [db_list_of_lists confirmed_list $sql]
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category='Registered'
+    "
+
+    set registered_list [db_list_of_lists registered_list $sql]
+
+
+    set new_delta_items [list]
+
+    foreach item $delta_items {
+
+        foreach {material_id from_status_id to_status_id} $item break
+
+        if { $material_id eq {} } {continue}
+
+        if { -1 != [lsearch -exact $confirmed_list $from_status_id] } {
+            lappend new_delta_items [list $material_id -1 0]
+        }
+
+        if { -1 != [lsearch -exact $registered_list $from_status_id] } {
+            lappend new_delta_items [list $material_id 0 -1]
+        }
+
+        if { -1 != [lsearch -exact $confirmed_list $to_status_id] } {
+            lappend new_delta_items [list $material_id 1 0]
+        }
+
+        if { -1 != [lsearch -exact $registered_list $to_status_id] } {
+            lappend new_delta_items [list $material_id 0 1]
+        }
+
+    }
+
+    # there are only four materials in the participant record
+    # namely course, accommodation, food_choice, bus_option
+    # we will update the stats for at most eight materials here
+    # we could speed it up by creating a separate table for the
+    # stats of each event or by adding an hstore column in the 
+    # events table itself
+    foreach item $new_delta_items {
+
+        foreach {material_id delta_confirmed delta_registered} $item break
+
+        # update capacity stats
+        set sql "
+            update flyhh_event_materials set
+                num_confirmed  = num_confirmed + :delta_confirmed,
+                num_registered = num_registered + :delta_registered,
+                free_capacity  = capacity - (num_registered + :delta_registered),
+                free_confirmed_capacity = capacity - (num_confirmed + num_registered + :delta_confirmed + :delta_registered)
+            where material_id = :material_id
+        "
+
+        db_dml update_stats $sql
+
+    }
+
+}
+
 
 ad_proc ::flyhh::set_participant_status { 
     {-participant_id:required ""}
@@ -754,8 +924,14 @@ ad_proc ::flyhh::set_participant_status {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-04
-    @last-modified 2014-11-09
+    @last-modified 2014-11-12
 } {
+
+    set sql "
+        select project_id, course, accommodation, food_choice, bus_option, event_participant_status_id
+        from flyhh_event_participants where participant_id=:participant_id
+    "
+    db_1row participant_info $sql
 
     set to_status_id [::flyhh::status_id_from_name $to_status]
 
@@ -770,9 +946,11 @@ ad_proc ::flyhh::set_participant_status {
             and event_participant_status_id=:from_status_id
         "
 
-        db_dml update_event_participant_status_if $sql
+        set statement_name "update_event_participant_status_if"
 
     } else {
+
+        set from_status_id $event_participant_status_id
 
         set sql "
             update flyhh_event_participants 
@@ -780,7 +958,33 @@ ad_proc ::flyhh::set_participant_status {
             where participant_id=:participant_id
         "
 
-        db_dml update_event_participant_status $sql
+        set statement_name "update_event_participant_status"
+
+    }
+
+
+    if { $event_participant_status_id ne $from_status_id } {
+        error "set_participant_status: event_participant_status_id=$event_participant_status_id from_status_id=$from_status_id"
+    }
+
+    set delta_items [list \
+        [list $course        $from_status_id $to_status_id] \
+        [list $accommodation $from_status_id $to_status_id] \
+        [list $food_choice   $from_status_id $to_status_id] \
+        [list $bus_option    $from_status_id $to_status_id]]
+
+    db_transaction {
+
+        if { $to_status eq {Cancelled} } {
+
+            ::flyhh::set_to_cancelled_helper -participant_id $participant_id
+
+        }
+
+        # update event participant status
+        db_dml $statement_name $sql
+
+        ::flyhh::update_event_stats -project_id $project_id -delta_items $delta_items
 
     }
 
@@ -823,6 +1027,67 @@ ad_proc ::flyhh::check_event_exists {
     }
 }
 
+ad_proc ::flyhh::check_confirmed_free_capacity {
+    -project_id:required
+    -participant_id_list:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-14
+    @last-modified 2014-11-14
+} {
+
+    set sql_list [template::util::tcl_to_sql_list $participant_id_list]
+
+    set sql "
+        select course,accommodation,food_choice,bus_option
+        from flyhh_event_participants
+        where participant_id in (${sql_list})
+    "
+    array set delta [list]
+    db_foreach participant_registration $sql {
+
+        foreach var [list delta($course) delta($accommodation) delta($food_choice) delta($bus_option)] {
+            if { ![info exists $var] } { set $var 0 }
+        }
+
+        incr delta($course)
+        incr delta($accommodation)
+        incr delta($food_choice)
+        incr delta($bus_option)
+
+    }
+
+    if { [info exists delta("")] } {
+        unset delta("")
+    }
+
+    foreach {material_id delta_count} [array get delta] {
+
+        set sql "
+            select free_confirmed_capacity
+            from flyhh_event_materials em inner join flyhh_events evt on (evt.event_id=em.event_id)
+            where project_id=:project_id
+            and material_id=:material_id 
+            and free_confirmed_capacity < :delta_count
+        "
+
+        set exceeds_capacity_num [db_string exceeds_capacity_num $sql -default 0]
+
+        if { $exceeds_capacity_num } {
+            set sql "
+                select 
+                    material_name,
+                    material_type
+                from im_materials m inner join im_material_types mt on (mt.material_type_id=m.material_type_id)
+                where material_id=:material_id
+            "
+            db_1row material_info $sql
+            ad_complain "request for confirmation of $delta_count \"${material_name}\" (${material_type}) exceeds free confirmed capacity (=${exceeds_capacity_num})"
+        }
+
+    }
+
+}
 
 ad_proc ::flyhh::send_invoice_mail {
     -invoice_id
@@ -890,58 +1155,12 @@ ad_proc -public ::flyhh::invoice_pdf {
 } {
     Generate a PDF for an invoice and saves it as a CR Item
 
-    Copied ::intranet-openoffice::invoice_pdf and modified to handle the fact that
-    intranet-invoices/www/view.tcl does not really generate and neither does it 
-    return a pdf file, it just returns html.
-
 } {
 
-    # first fetches the invoice through an http request to intranet-invoices/view
-    set user_id [im_sysadmin_user_default]
-    set expiry_date [db_string current_date "select to_char(sysdate, 'YYYY-MM-DD') from dual"]
-    set auto_login [im_generate_auto_login -expiry_date $expiry_date -user_id $user_id]
-    # pdf_p does not seem to have any effect on the response, disabled it so that this proc
-    # will continue to work regardless of whether intranet-invoices/view is fixed
-    set invoice_url [export_vars -base "[ad_url]/intranet-invoices/view" -url {invoice_id user_id expiry_date auto_login {pdf_p 0} {render_template_id 1}}]
-    set mime_type "application/pdf"
-    set invoice_nr [db_string name "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
+    return [::intranet_openoffice::invoice_pdf -invoice_id $invoice_id]
 
-    set tmp_htmlfile [ns_tmpnam]
-    set tmp_pdffile [ns_tmpnam]
-
-    apm_transfer_file -url $invoice_url -output_file_name $tmp_htmlfile
-
-    # converts html to pdf
-    ::flyhh::html2pdf $tmp_htmlfile $tmp_pdffile
-    file delete $tmp_htmlfile
-
-    set item_id [content::item::get_id_by_name -name ${invoice_nr}.pdf -parent_id $invoice_id]
-    if {$item_id ne ""} {
-        set file_revision_id \
-            [cr_import_content \
-                -item_id $item_id \
-                -creation_user $user_id \
-                -title "${invoice_nr}.pdf" \
-                $invoice_id \
-                $tmp_pdffile \
-                [file size $tmp_pdffile] \
-                "application/pdf" \
-                "${invoice_nr}.pdf"]
-    } else {
-        set file_revision_id \
-            [cr_import_content \
-                -creation_user $user_id \
-                -title "${invoice_nr}.pdf" \
-                $invoice_id \
-                $tmp_pdffile \
-                [file size $tmp_pdffile] \
-                "application/pdf" \
-                "${invoice_nr}.pdf"]
-    }	
-    
-    content::item::set_live_revision -revision_id $file_revision_id
-    return $file_revision_id
 }
+
 
 ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
     {-payment_id:required ""}
@@ -954,6 +1173,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         select 
             cst.cost_id,
             cst.cost_status_id,
+            cst.paid_amount,
             participant_id
         from im_costs cst 
         inner join im_payments pay on (pay.cost_id=cst.cost_id)
@@ -975,7 +1195,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
                 -participant_id $participant_id \
                 -to_status "Registered"
                 
-        } elseif { $cost_status_id eq $cost_status_partially_paid } {
+        } elseif { $cost_status_id eq $cost_status_partially_paid || $paid_amount > 0 } {
 
             ::flyhh::set_participant_status \
                 -participant_id $participant_id \
@@ -1055,7 +1275,7 @@ ad_proc ::flyhh::send_invoice_reminder {
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
     @creation-date 2014-11-10
-    @last-modified 2014-11-10
+    @last-modified 2014-11-11
 } {
 
     ns_log notice "--->>> Flyhh Reminder System: $key for $participant_person_name sent to $to_addr"
@@ -1068,11 +1288,13 @@ ad_proc ::flyhh::send_invoice_reminder {
 Hi @participant_person_name@,
 
 This is a reminder that your invoice for @event_name@ is due:
-Event Registration Link: @event_registration_link@
+Event Registration Link: @event_registration_link;noquote@
 Invoice ID: @invoice_id@
 Invoice Date: @invoice_date@
 Due Date: @due_date@
 Amount: @amount@
+
+(@msg_key@)
     "
     set body [eval [template::adp_compile -string [::flyhh::mc ${key}_body ${msg_text}]]]
     set from_addr "noreply-${participant_id}@flying-hamburder.de"
@@ -1222,9 +1444,11 @@ ad_proc ::flyhh::mail_notification_system {} {
 
                 # new_invoice_id must be set to the same amount in negative values
 
+                # set sql "update im_invoice_items set price_per_unit = 0.0 - price_per_unit where invoice_id=:new_invoice_id"
+
                 set sql "
                     update im_invoice_items 
-                    set price_per_unit = 0.0 - price_per_unit 
+                    set item_units = 0.0 - item_units
                     where invoice_id=:new_invoice_id
                 "
 
@@ -1266,18 +1490,262 @@ ad_proc ::flyhh::mail_notification_system {} {
 
 }
 
-#ad_schedule_proc -thread t 900 ::flyhh::mail_notification_system
-
-ad_proc -public -callback flyhh_event_form_fill {
-    -form_id:required
-    -object_id:required
-    { -object_type "" }
-    { -type_id ""}
-    { -page_url "default" }
-    { -advanced_filter_p 0 }
-    { -include_also_hard_coded_p 0 }
+ad_proc ::flyhh::import_template_file {
+    template_file
 } {
-    This callback tracks acess to the object's main page.
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-11
+    @last-modified 2014-11-11
+} {
+
+    set template_name [file tail $template_file]
+
+    set sql "select count(1) from im_categories where category = :template_name and category_type = 'Intranet Cost Template'"
+    set cat_exists_p [db_string ex $sql]
+    if {!$cat_exists_p} {
+
+        set template_path [im_filestorage_template_path]
+        ns_cp $template_file "$template_path/$template_name"
+
+        set cat_id [db_nextval "im_categories_seq"]
+        set cat_id_exists_p [db_string cat_ex "select count(1) from im_categories where category_id = :cat_id"]
+        while {$cat_id_exists_p} {
+            set cat_id [db_nextval "im_categories_seq"]
+            set cat_id_exists_p [db_string cat_ex "select count(1) from im_categories where category_id = :cat_id"]
+        }
+
+        db_dml new_cat "
+            insert into im_categories (
+                    category_id,
+                    category,
+                    category_type,
+                    enabled_p
+            ) values (
+                    nextval('im_categories_seq'),
+                    :template_name,
+                    'Intranet Cost Template',
+                    't'
+            )
+        "
+    }
+
+}
+
+ad_proc ::flyhh::after_confirmation_edit_p {
+    event_participant_status_id
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+    # If the status of the event registration is no longer pending, 
+    # do not allow the editing of any fields but the name,
+    # address, dance partner and room mates.
+    #
+    # Pending Payment (=82502), Partially Paid (=82503), Registered (=82504), Refused (=82505), Cancelled (=82506)
+
+    set sql "
+        select category_id 
+        from im_categories 
+        where category_type='Flyhh - Event Registration Status' 
+        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused', 'Cancelled')
+    "
+    set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
+
+    return [expr { -1 != [lsearch -exact -integer $restrict_edit_list $event_participant_status_id] }]
+
+}
+
+ad_proc ::flyhh::record_after_confirmation_edit {
+    -participant_id:required
+    oldVar
+    newVar
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+    upvar $oldVar old
+    upvar $newVar new
+
+    ns_log notice "record_after_confirmation_edit: old=[array get old] new=[array get new]"
+
+    set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
+
+    set sql "
+        select 
+            project_id,
+            person_id as company_contact_id,
+            payment_type as payment_method_id,
+            payment_term as payment_term_id,
+            company_id,
+            order_id,
+            invoice_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql
+
+    # each delta item consists of three numbers: 
+    # item_units, percent of price, and material_id
+    # e.g. -1.0 0.7 34832
+    set delta_items [list]
+
+    set before_refund_reduction_date_p true  ;# TODO
+
+    set before_refund_cutoff_date_p true     ;# TODO
+
+    foreach element {course accommodation food_choice bus_option} {
+
+        if { $old($element) ne $new($element) } {
+
+            set old_material_id $old($element)
+            set new_material_id $new($element)
+            set sql "
+                select 
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:old_material_id) as old_price,
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:new_material_id) as new_price
+            "
+            db_1row old_and_new_price $sql
+
+            ns_log notice "record_after_confirmation_edit: old_price=$old_price new_price=$new_price"
+
+            # in case the change is for the classes material
+            if { $element eq {course} } {
+
+                # If the price of the new material is lower then the old material, just change the registration
+                # information, do not change the invoice. We do not offer refunds on classes.
+
+                if { $new_price <= $old_price } {}
+
+                # If the price of the new material is higher then the old material, create a correction invoice with a credit line for
+                # the old material and a debit line for the new material. The resulting invoice should therefore show
+                # the difference between the two materials.
+
+                if { $new_price > $old_price } {
+                    lappend delta_items [list -1.0 1.0 $old(course)]
+                    lappend delta_items [list 1.0 1.0 $new(course)]
+                }
+
+            } else {
+
+                # In case the change is for anything else and the prices differ:
+
+                # If the change date is after the refund_cutoff_date do nothing with regards to the invoice.
+                if { !$before_refund_cutoff_date_p } {continue}
+
+                # If the change date is before the refund_reduction_date or the new price is HIGHER then the old price, create a new
+                # invoice with two line items, one is a FULL credit for the old material and one is new debit line
+                # for the new material. 
+
+                if { $before_refund_reduction_date_p || $new_price > $old_price } {
+                    lappend delta_items [list -1.0 1.0 $old($element)]
+                    lappend delta_items [list 1.0 1.0 $new($element)]
+                }
+
+                # If the change date is after the refund_reduction_date but before the refund_cutoff_date and the
+                # new price is LOWER then the old price, create a new invoice with two line items, one is a 70%
+                # credit for the old material and one is a new debit line for the new material. If there is no new
+                # material (e.g. because the customer does not want the bus anymore, you only have a credit line
+                # with 70%). 
+
+                if { !$before_refund_reduction_date_p && $before_refund_cutoff_date_p && $new_price < $old_price } {
+                    lappend delta_items [list -1.0 0.7 $old($element)]
+                    lappend delta_items [list 1.0 1.0 $new($element)]
+                }
+
+            }
+
+        }
+
+    }
+
+    set invoice_type_id 3725  ;# Intranet Cost Type (3725 = Customer Invoice Correction)
+
+    set new_invoice_id \
+        [::flyhh::create_invoice \
+            -company_id $company_id \
+            -company_contact_id $company_contact_id \
+            -participant_id $participant_id \
+            -project_id $project_id \
+            -payment_method_id $payment_method_id \
+            -payment_term_id $payment_term_id \
+            -invoice_type_id $invoice_type_id \
+            -delta_items $delta_items]
+
+    if { $invoice_id ne {} } {
+        # add relationship between original invoice and correction invoice 
+        set rel_id [db_exec_plsql create_rel "
+            select acs_rel__new (
+                 null,                      -- rel_id
+                 'im_invoice_invoice_rel',  -- rel_type
+                 :invoice_id,               -- object_id_one
+                 :new_invoice_id,           -- object_id_two
+                 null,                      -- context_id
+                 null,                      -- creation_user
+                 null                       -- creation_ip
+            )"]
+    }
+
+}
+
+ad_proc -private ::flyhh::set_to_cancelled_helper {
+    -participant_id:required
+} {
+    @author Neophytos Demetriou (neophytos@azet.sk)
+    @creation-date 2014-11-12
+    @last-modified 2014-11-12
+} {
+
+
+    set sql "
+        select
+            course,
+            accommodation,
+            food_choice,
+            bus_option,
+            event_participant_status_id
+        from flyhh_event_participants
+        where participant_id=:participant_id
+    "
+
+    db_1row participant_info $sql -column_array old
+
+    if { [::flyhh::after_confirmation_edit_p $old(event_participant_status_id)] } {
+
+        array set new [list course "" accommodation "" food_choice "" bus_option ""]
+
+        ::flyhh::record_after_confirmation_edit -participant_id $participant_id old new
+
+    }
+
+}
+
+# ---------------------------------------------------------------
+# Callbacks
+# 
+# Generically create callbacks for all "package" object types
+# ---------------------------------------------------------------
+
+set object_types {
+    flyhh_event
+    flyhh_event_participant
+}
+
+foreach object_type $object_types {
+    
+    ad_proc -public -callback ${object_type}_before_create {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
 	
 	@param object_id ID of the $object_type 
 	@param status_id Optional status_id category. 
@@ -1290,10 +1758,148 @@ ad_proc -public -callback flyhh_event_form_fill {
 		   from the DB if the value is empty (which should rarely be the case)
 		   This field allows for quick filtering if the callback 
 		   implementation is to be executed only on certain object states.
-} -
+    } -
+    
+    ad_proc -public -callback ${object_type}_after_create {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
 
 
-    ad_proc -public -callback flyhh_event_participant_form_fill {
+    
+    ad_proc -public -callback ${object_type}_before_update {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+    
+    ad_proc -public -callback ${object_type}_after_update {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+
+
+    
+    ad_proc -public -callback ${object_type}_before_delete {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+    
+    ad_proc -public -callback ${object_type}_after_delete {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback allows you to execute action before and after every
+	important change of object. Examples:
+	- Copy preset values into the object
+	- Integrate with external applications via Web services etc.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+
+    ad_proc -public -callback ${object_type}_view {
+	{-object_id:required}
+	{-status_id ""}
+	{-type_id ""}
+    } {
+	This callback tracks acess to the object's main page.
+	
+	@param object_id ID of the $object_type 
+	@param status_id Optional status_id category. 
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object types.
+	@param type_id Optional type_id of category.
+		   This value is optional. You need to retrieve the status
+		   from the DB if the value is empty (which should rarely be the case)
+		   This field allows for quick filtering if the callback 
+		   implementation is to be executed only on certain object states.
+    } -
+
+    ad_proc -public -callback ${object_type}_form_fill {
         -form_id:required
         -object_id:required
         { -object_type "" }
@@ -1317,3 +1923,19 @@ ad_proc -public -callback flyhh_event_form_fill {
 		   implementation is to be executed only on certain object states.
     } -
 
+    ad_proc -public -callback ${object_type}_on_submit {
+        -form_id:required
+        -object_id:required
+    } {
+        This callback allows for additional validations and it should be called in the on_submit block of a form
+        
+        Usage: 
+            form set_error $form_id $error_field $error_message
+            break
+
+        @param object_id ID of the $object_type
+        @param form_id ID of the form which is being submitted
+    } -
+
+
+}

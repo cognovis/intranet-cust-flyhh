@@ -58,9 +58,19 @@ create table flyhh_event_materials (
                         constraint flyhh_event_materials__material_id_fk
                         references im_materials(material_id),
 
-    capacity            integer not null default 0,
+    capacity            integer,
 
-    num_used            integer not null default 0
+    -- status is in "Confirmed", "Pending Payment", or "Partially Paid"
+    num_confirmed       integer not null default 0,
+    
+    -- status is in "Registered"
+    num_registered      integer not null default 0,
+
+    -- capacity - num_registered
+    free_capacity       integer,
+
+    -- capacity - (num_registered + num_confirmed)
+    free_confirmed_capacity integer
 
 );
 

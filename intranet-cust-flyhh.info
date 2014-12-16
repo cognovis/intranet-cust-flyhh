@@ -18,7 +18,9 @@
         <callbacks>
         </callbacks>
         <parameters>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="invoice_template"  default="RechnungCognovis.en.odt" description="name of template to use for pdf invoices"/>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="first_reminder_interval"  default="7 days" description="days after invoice is due to send the first reminder"/>
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="provider_company_id"  default="8720" description="event projects will be created under this company, invoices will be issued from this company and so forth"/>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="second_reminder_interval"  default="17 days" description="days after invoice is due to send the second reminder"/>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="third_reminder_interval"  default="27 days" description="days after invoice is due to send the third reminder, if we have a partial payment the reminder goes to the project manager to have a chat with the customer, if we have no payment we create a correction invoice and mark the registration as cancelled"/>
         </parameters>
