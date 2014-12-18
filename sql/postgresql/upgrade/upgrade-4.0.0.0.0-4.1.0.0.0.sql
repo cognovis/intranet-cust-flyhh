@@ -2,6 +2,8 @@
 -- @creation-date 2014-10-30
 -- @last-modified 2014-10-30
 
+SELECT acs_log__debug('/packages/intranet-cust-flyhh/sql/postgresql/upgrade/upgrade-4.0.0.0.0-4.1.0.0.0.sql','');
+
 select acs_object_type__create_type (
         'flyhh_event',          -- object_type
         'Flyhh - Event',        -- pretty_name
