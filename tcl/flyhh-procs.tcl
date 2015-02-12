@@ -414,7 +414,6 @@ ad_proc ::flyhh::create_participant {
             :partner_text,
             :partner_name,
             :partner_email,
-            :roommates_text,
             :accepted_terms_p,
 
             :course,

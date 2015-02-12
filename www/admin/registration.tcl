@@ -23,6 +23,8 @@ ad_page_contract {
 } -errors {
 }
 
+
+
 # ad_maybe_redirect_for_registration
 
 set package_id [ad_conn package_id]
@@ -82,6 +84,7 @@ im_dynfield::append_attributes_to_form \
     -object_type $object_type \
     -form_id $form_id \
     -object_id 0 \
+    -form_display_mode $mode \
     -advanced_filter_p 0
 
 # Set the form values from the HTTP form variable frame

@@ -101,7 +101,7 @@ db_foreach material_id $sql {
 ad_form -extend -name $form_id -form $elements -validate {
 
     {event_name 
-        {[db_string must_not_exist "select false from flyhh_events where event_name=:event_name" -default true]}
+        {[db_string must_not_exist "select false from flyhh_events where event_name=:event_name and event_id != :event_id" -default true]}
         {[::flyhh::mc event_name_exists "event name must be unique, given name already exists"]}}
 
 }
