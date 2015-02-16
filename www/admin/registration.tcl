@@ -74,78 +74,109 @@ ad_form \
         
         {last_name:text
             {label {[::flyhh::mc Participant_Last_Name "Last Name"]}}}
-
-        {-section event_preferences
-            {legendtext {[::flyhh::mc Event_Registration_Section "Event Registration"]}}}
         
+        {-section contact_details
+            {legendtext {[::flyhh::mc Contact_Details_Section "Contact Details"]}}}
+            
+        {cell_phone:text,optional
+            {label {[::flyhh::mc Phone "Cell Phone"]}}}
+        
+        {ha_line1:text
+            {label {[::flyhh::mc Address_Line_1 "Address Line 1"]}}
+            {html {size 45}}
+        }
+        {ha_city:text
+            {label {[::flyhh::mc City "City"]}}
+            {html {size 30}}
+        }
+        
+        {ha_state:text,optional
+            {label {[::flyhh::mc State "State"]}}
+            {html {size 5}}
+        }
+        
+        {ha_postal_code:text
+            {label {[::flyhh::mc Postal_code "Postal Code"]}}
+            {html {size 10}}
+        }
+        
+        {ha_country_code:text(generic_sql)
+            {label {[::flyhh::mc Country "Country"]}}
+            {html {}}
+            {custom {sql {select iso,default_name from countries}}}}
+
+        {-section course_preferences
+            {legendtext {[::flyhh::mc Course_Registration_Section "Course Information"]}}}
+
+        {course:text(generic_sql)
+            {label {[::flyhh::mc Course "Course"]}}
+            {html {}}
+            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Course Income') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+        }
+
+        {lead_p:text(select)
+            {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
+            {options {{Lead t} {Follow f}}}
+        }        
+
+        {partner_text:text,optional
+            {label {[::flyhh::mc Partner "Partner"]}}
+            {value "${inviter_text}"}
+            {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+            {html {size 45}}
+        }
+        
+        {-section accommodation_preferences
+            {legendtext {[::flyhh::mc Accomodation_Registration_Section "Accommodation Information"]}}}
+        {accommodation:text(generic_sql)
+            {label {[::flyhh::mc Accommodation "Accommodation"]}}
+            {html {}}
+            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Accomodation') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+        }
+        {food_choice:text(generic_sql)
+            {label {[::flyhh::mc Food_Choice "Food Choice"]}}
+            {html {}}
+            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Food Choice') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+        }
+        {roommates_text:text(textarea),optional
+            {label {[::flyhh::mc Roommates "Roommates"]}}
+            {html "rows 4 cols 45"}
+            {help_text "comma-separated list of email addresses, names, or both"}
+        }
+        {accommodation_text:text,optional
+            {label {[::flyhh::mc Accommodation_Comments "Accommodation Comments"]}}
+            {help_text {[::flyhh::mc bedmate_help "Please provide the email address of your partner whom you agreed with in advance to share a queen sized double bed with. Alternatively, please state 'female' or 'male' if you are fine sharing a double bed with a person of that gender. And if you have any other comments about the accomodation let us know as well :-)"]}}
+            {html {style "width:300px;"}}
+        }
+        {-section event_preferences
+            {legendtext {[::flyhh::mc Accomodation_Registration_Section "Other Information"]}}}
+        {bus_option:text(generic_sql),optional
+            {label {[::flyhh::mc Bus_Option "Bus Option"]}}
+            {html {}}
+            {custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Bus Options')}}}
+        }
     }
-
-im_dynfield::append_attributes_to_form \
-    -object_type $object_type \
-    -form_id $form_id \
-    -object_id 0 \
-    -form_display_mode $mode \
-    -advanced_filter_p 0
-
-# Set the form values from the HTTP form variable frame
-im_dynfield::set_form_values_from_http -form_id $form_id
-im_dynfield::set_local_form_vars_from_http -form_id $form_id
+    
+if { [ad_form_new_p -key participant_id] } {
+    ad_form -extend -name $form_id -form {
+        {skills:text(textarea),optional
+            {label {[::flyhh::mc Skills "Skills"]}}
+            {html "rows 4 cols 45"}
+            {help_text {[::flyhh::mc skills_help "Please provide us with some of your skills"]}}
+        }
+        {comments:text(textarea),optional
+            {label {[::flyhh::mc Comments "Further Comments"]}}
+            {html "rows 4 cols 45"}
+            {help_text {[::flyhh::mc comments_help "Do you have any further comments for us?"]}}
+        }
+    }
+}
 
 ad_form -extend -name $form_id -form {
-
-    {lead_p:text(select)
-        {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
-        {options {{Lead t} {Follow f}}}}
-
-    {partner_text:text
-        {label {[::flyhh::mc Partner "Partner"]}}
-        {value "${inviter_text}"}
-        {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
-        {html {style "width:300px;"}}}
-
-    {roommates_text:text(textarea),optional
-        {label {[::flyhh::mc Roommates "Roommates"]}}
-        {html "rows 4 cols 30"}
-        {help_text "comma-separated list of email addresses, names, or both"}}
-
-    {-section contact_details
-        {legendtext {[::flyhh::mc Contact_Details_Section "Contact Details"]}}}
-        
-    {cell_phone:text,optional
-        {label {[::flyhh::mc Phone "Phone"]}}}
-
-    {ha_line1:text,optional
-        {label {[::flyhh::mc Address_Line_1 "Address Line 1"]}}
-        {html {size 30}}}
-
-    {ha_line2:text,optional
-        {label {[::flyhh::mc Address_Line_2 "Address Line 2"]}}
-        {html {size 30}}}
-
-    {ha_city:text,optional
-        {label {[::flyhh::mc City "City"]}}
-        {html {size 15}}}
-
-    {ha_state:text,optional
-        {label {[::flyhh::mc State "State"]}}
-        {html {size 2}}}
-
-    {ha_postal_code:text,optional
-        {label {[::flyhh::mc Postal_code "Postal Code"]}}
-        {html {size 5}}}
-
-    {ha_country_code:text(generic_sql),optional
-        {label {[::flyhh::mc Country "Country"]}}
-        {html {}}
-        {custom {sql {select iso,default_name from countries}}}}
-
-    # Unset the section. subsequent elements will not be in any section.
-    {-section ""}
-
     {accepted_terms_p:boolean(checkbox)
         {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
-        {options {{{<a href="https://www.startpage.com/">I have read and accept the terms and conditions for this event</a>} t}}}}
-
+        {options {{{<a href="https://www.startpage.com/">I have read and accept the terms and conditions for this event</a>} t}}}
+    }
 } -new_request {
 
     if { [set user_id [ad_conn user_id]] } {
@@ -227,14 +258,12 @@ ad_form -extend -name $form_id -form {
 } -validate {
 
     {partner_text
-        {[::flyhh::match_name_email $partner_text partner_name partner_email]}
+        {[::flyhh::match_name_email $partner_text partner_name partner_email] || $partner_text eq ""}
         {[::flyhh::mc partner_text_validation_error "partner text must be an email address, full name, or both"]}}
 
-} -on_submit {
-    
-    if { [ad_form_new_p -key participant_id] } {
-     
-        ::flyhh::create_participant \
+} -new_data {
+        
+    ::flyhh::create_participant \
             -participant_id $participant_id \
             -project_id $project_id \
             -email $email \
@@ -245,21 +274,72 @@ ad_form -extend -name $form_id -form {
             -accommodation $accommodation \
             -food_choice $food_choice \
             -bus_option $bus_option \
-            -level $level \
+            -level "" \
             -lead_p $lead_p \
-            -payment_type $payment_type \
-            -payment_term $payment_term \
+            -payment_type 1000 \
+            -payment_term "80107" \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
             -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
-            -ha_line2 $ha_line2 \
             -ha_city $ha_city \
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \
             -ha_country_code $ha_country_code
+            
+    # Deal with the comments as notes
+    set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+    
+    set skills [string trim $skills]
+    set skill_note_id [db_exec_plsql create_note "
+            SELECT im_note__new(
+                NULL,
+                'im_note',
+                now(),
+                :person_id,
+                '[ad_conn peeraddr]',
+                null,
+                :skills,
+                :participant_id,
+                11504,
+                [im_note_status_active]
+            )
+            "]
 
-    } else {
+
+    set comments [string trim $comments]
+    set skill_note_id [db_exec_plsql create_note "
+            SELECT im_note__new(
+                NULL,
+                'im_note',
+                now(),
+                :person_id,
+                '[ad_conn peeraddr]',
+                null,
+                :comments,
+                :participant_id,
+                11514,
+                [im_note_status_active]
+            )
+            "]            
+            
+    set accommodation_text [string trim $accommodation_text]
+    set skill_note_id [db_exec_plsql create_note "
+            SELECT im_note__new(
+                NULL,
+                'im_note',
+                now(),
+                :person_id,
+                '[ad_conn peeraddr]',
+                null,
+                :accommodation_text,
+                :participant_id,
+                11506,
+                [im_note_status_active]
+            )
+            "]   
+
+} -edit_data {
         
         set sql "select course, accommodation, food_choice, bus_option, event_participant_status_id
                  from flyhh_event_participants ep 
@@ -310,7 +390,7 @@ ad_form -extend -name $form_id -form {
                 -ha_country_code $ha_country_code
 
         }        
-    }
+    
 
 } -after_submit {
     ad_returnredirect [export_vars -base registration {project_id participant_id}]

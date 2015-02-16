@@ -183,7 +183,6 @@ ad_proc ::flyhh::set_user_contact_info {
     {-email ""}
     {-cell_phone ""}
     {-ha_line1 ""}
-    {-ha_line2 ""}
     {-ha_city ""}
     {-ha_state ""}
     {-ha_postal_code ""}
@@ -209,7 +208,6 @@ ad_proc ::flyhh::set_user_contact_info {
                 user_id,
                 cell_phone,
                 ha_line1,
-                ha_line2,
                 ha_city,
                 ha_state,
                 ha_postal_code,
@@ -218,7 +216,6 @@ ad_proc ::flyhh::set_user_contact_info {
                 :user_id,
                 :cell_phone,
                 :ha_line1,
-                :ha_line2,
                 :ha_city,
                 :ha_state,
                 :ha_postal_code,
@@ -233,7 +230,6 @@ ad_proc ::flyhh::set_user_contact_info {
             update users_contact set
                 cell_phone=:cell_phone,
                 ha_line1=:ha_line1,
-                ha_line2=:ha_line2,
                 ha_city=:ha_city,
                 ha_state=:ha_state,
                 ha_postal_code=:ha_postal_code,
@@ -354,7 +350,6 @@ ad_proc ::flyhh::create_participant {
     -roommates_text:required
     -cell_phone:required
     -ha_line1:required
-    -ha_line2:required
     -ha_city:required
     -ha_state:required
     -ha_postal_code:required
@@ -377,7 +372,6 @@ ad_proc ::flyhh::create_participant {
             -user_id $person_id \
             -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
-            -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \
@@ -387,7 +381,6 @@ ad_proc ::flyhh::create_participant {
             update im_offices set
                 phone=:cell_phone,
                 address_line1=:ha_line1,
-                address_line2=:ha_line2, 
                 address_city=:ha_city,
                 address_state=:ha_state,
                 address_postal_code=:ha_postal_code,
@@ -468,7 +461,6 @@ ad_proc ::flyhh::update_participant {
     -roommates_text:required
     -cell_phone:required
     -ha_line1:required
-    -ha_line2:required
     -ha_city:required
     -ha_state:required
     -ha_postal_code:required
@@ -539,7 +531,6 @@ ad_proc ::flyhh::update_participant {
             -email $email \
             -cell_phone $cell_phone \
             -ha_line1 $ha_line1 \
-            -ha_line2 $ha_line2 \
             -ha_city  $ha_city \
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \

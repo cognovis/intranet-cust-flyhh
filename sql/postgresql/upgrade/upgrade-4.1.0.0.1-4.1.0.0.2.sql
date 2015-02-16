@@ -30,5 +30,8 @@ end;' language 'plpgsql';
 select inline_0 ();
 drop function inline_0 ();
 
+update im_categories set category = 'Skill' where category_id = 11504;
+update im_categories set category = 'Accomodation' where category_id = 11506;
+
 
 update im_view_columns set extra_select = '''<a href="/intranet-invoices/view?invoice_id='' || invoice_id || ''">latest invoice</a>'' as latest_invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\">purchase order</a>'' as purchase_order_html' where variable_name ='event_participant_status_id' and column_name = 'Status'
