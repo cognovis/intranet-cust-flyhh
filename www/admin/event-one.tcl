@@ -41,6 +41,12 @@ ad_form \
         {event_name:text
             {label {[::flyhh::mc Event_Name "Name"]}}}
 
+        {event_url:text
+            {label {[::flyhh::mc Event_Name "URL"]}}}
+
+        {event_email:text
+            {label {[::flyhh::mc Event_Name "Sender E-Mail"]}}}
+
         {project_cost_center_id:text(generic_sql)
             {label {[::flyhh::mc Project_Cost_Center "Project Cost Center"]}}
             {html {}}
@@ -148,7 +154,7 @@ ad_form -extend -name $form_id -edit_request {
         "
 
         db_exec_plsql insert_event $sql
-
+        
         # The form has an input field (named capacity.material_id) 
         # for each material of the following types: Course Income,
         # Accomodation, Food Choice, Bus Options.
@@ -230,6 +236,9 @@ ad_form -extend -name $form_id -edit_request {
     }
 
 } -after_submit {
+
+    # Update url and e-mail
+    db_dml update "update flyhh_events set event_url = :event_url, event_email = :event_email where event_id = :event_id"
 
     ad_returnredirect [export_vars -base event-one {event_id}]
 

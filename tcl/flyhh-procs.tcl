@@ -52,13 +52,13 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
             *, 
             party__email(person_id) as email, 
             person__name(person_id) as name,
-            flyhh_event__name_from_project_id(project_id) as event_name,
             im_name_from_id(course) as course,
             im_name_from_id(accommodation) as accommodation,
             im_name_from_id(food_choice) as food_choice,
             im_name_from_id(bus_option) as bus_option
-        from flyhh_event_participants 
+        from flyhh_event_participants p, flyhh_events e
         where participant_id=:participant_id
+        and e.project_id = p.project_id
     "
     db_1row participant_info $sql
 
@@ -66,34 +66,40 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     # the same (so you can’t confirm on behalf of someone else). We could make it
     # more flexible by having a unique token that signs the link we sent out.
     #
-    set current_location [util_current_location]
-    set link_to_payment_page "${current_location}/flyhh/payment?participant_id=${participant_id}"
-    set from_addr "noreply-${participant_id}@flying-hamburger.de"
+    
+    set token [ns_sha1 "${participant_id}${project_id}"]
+
+    set link_to_payment_page "[export_vars -base "[ad_url]/flyhh/payment" -url {participant_id token}]"
+    set from_addr "$event_email"
     set to_addr ${email}
-    set mime_type "text/plain"
+    set mime_type "text/html"
     set subject "Event Registration Confirmation for ${name}"
     set body [eval [template::adp_compile -string {
 Hi @name@,
-
-We have reserved a spot for you for \"@event_name@\".
-
+<p>
+We have reserved a spot for you at @event_name@.
+</p>
 Here's what you have signed up for:
-Course: @course@
+<ul>
+<li>Course: @course@</li>
 <if @accommodation@ not nil>
-Accommodation: @accommodation@
+<li>Accommodation: @accommodation@</li>
 </if>
 <if @food_choice@ not nil>
-Food Choice: @food_choice@
+<li>Food Choice: @food_choice@</li>
 </if>
 <if @bus_option@ not nil>
-Bus Option: @bus_option@
+<li>Bus Option: @bus_option@</li>
 </if>
-
-To complete the registration, please proceed with payment at the following page:
-@link_to_payment_page;noquote@
+</ul>
+To complete the registration and reserve your spot, please click below for the payment information:
+<p>
+<a href='@link_to_payment_page;noquote@'>Payment Information</a>
+</p>
 }]]
 
     acs_mail_lite::send \
+        -send_immediately \
         -from_addr $from_addr \
         -to_addr $to_addr \
         -subject $subject \
@@ -271,7 +277,7 @@ ad_proc ::flyhh::create_user_if {
         upvar $person_idVar user_id
     }
 
-    set user_id [db_string user_id "select user_id from cc_users where email=:email" -default ""]
+    set user_id [db_string user_id "select party_id from parties where email=:email" -default ""]
 
     if { $user_id eq {} } {
 
@@ -295,7 +301,7 @@ ad_proc ::flyhh::create_user_if {
 
         if { "ok" != [string tolower $creation_status] } {
             error "[::flyhh::mc Error_creating_user "Error creating new user"]:
-            [:flyhh::mc Error_creating_user_status "Status"]: $creation_status
+            [::flyhh::mc Error_creating_user_status "Status"]: $creation_status
             \n$creation_info(creation_message)\n$creation_info(element_messages)
             "
         }
@@ -501,27 +507,21 @@ ad_proc ::flyhh::update_participant {
         db_exec_plsql insert_participant "select flyhh_event_participant__update(
 
             :participant_id,
-
             :email,
             :first_names,
             :last_name,
             :creation_ip,
-
             :project_id,
-
             :lead_p,
             :partner_text,
             :partner_name,
             :partner_email,
-            :roommates_text,
             :accepted_terms_p,
-
             :course,
             :accommodation,
             :food_choice,
             :bus_option,
             :level,
-            
             :payment_type,
             :payment_term
 
@@ -1928,4 +1928,56 @@ foreach object_type $object_types {
     } -
 
 
+}
+
+ad_proc -public flyhh_event_participant_permissions {user_id participant_id view_var read_var write_var admin_var} {
+    Fill the "by-reference" variables read, write and admin
+    with the permissions of $user_id on $participant_id.
+    
+    Currently defaults to grant all permissions. Need to fine grain this later
+} {
+    upvar $view_var view
+    upvar $read_var read
+    upvar $write_var write
+    upvar $admin_var admin
+
+    set current_user_id $user_id
+    set view 1
+    set read 1
+    set write 1
+    set admin 1
+}
+
+ad_proc -public im_note_type_skill {} { return 11515 }
+ad_proc -public im_note_type_accommodation {} { return 11516 }
+
+ad_proc -public flyhh_material_options {
+    -project_id:required
+    -material_type:required
+    { -company_id "" }
+    { -locale ""}
+    -mandatory:boolean
+} {
+    Returns a list of viable options for display in the registration form
+} {
+    set material_options [list]
+    if {!$mandatory_p} {
+        lappend material_options [list "" ""]
+    }
+    
+    if {$company_id eq ""} {
+        set company_id [im_company_internal]
+    }
+    if {$locale eq ""} {
+        set locale [lang::user::locale]
+    }
+    
+    db_foreach materials "SELECT m.material_id,material_name,p.price,p.currency FROM im_timesheet_prices p,im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and p.material_id = m.material_id and p.company_id = :company_id" {
+        set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
+        set material_display "$material_name ($currency $price)"
+        lappend material_options [list $material_display $material_id]
+    }
+    
+    return $material_options
+    
 }

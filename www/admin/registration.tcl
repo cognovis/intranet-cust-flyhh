@@ -41,8 +41,9 @@ set admin_p [permission::permission_p -object_id $package_id -party_id $user_id 
 #set sql "select project_id from im_projects where project_type_id=102 and company_id=8720 limit 1"
 #set project_id [db_string some_project_id $sql]
 
+set project_name [db_string project_name "select project_name from im_projects where project_id = :project_id"]
 set page_title "Registration Form"
-set context_bar [ad_context_bar $page_title]
+set context_bar [ad_context_bar [list [export_vars -base "participants-list" -url {project_id}] $project_name] $page_title]
 
 set form_id "registration_form"
 set action_url ""
@@ -143,11 +144,19 @@ ad_form \
             {html "rows 4 cols 45"}
             {help_text "comma-separated list of email addresses, names, or both"}
         }
+    }
+
+if { [ad_form_new_p -key participant_id] } {
+    ad_form -extend -name $form_id -form {
         {accommodation_text:text,optional
             {label {[::flyhh::mc Accommodation_Comments "Accommodation Comments"]}}
             {help_text {[::flyhh::mc bedmate_help "Please provide the email address of your partner whom you agreed with in advance to share a queen sized double bed with. Alternatively, please state 'female' or 'male' if you are fine sharing a double bed with a person of that gender. And if you have any other comments about the accomodation let us know as well :-)"]}}
             {html {style "width:300px;"}}
         }
+    }
+}
+
+ad_form -extend -name $form_id -form {
         {-section event_preferences
             {legendtext {[::flyhh::mc Accomodation_Registration_Section "Other Information"]}}}
         {bus_option:text(generic_sql),optional
@@ -157,7 +166,10 @@ ad_form \
         }
     }
     
+set new_request_p 0
+
 if { [ad_form_new_p -key participant_id] } {
+    set new_request_p 1
     ad_form -extend -name $form_id -form {
         {skills:text(textarea),optional
             {label {[::flyhh::mc Skills "Skills"]}}
@@ -179,7 +191,7 @@ ad_form -extend -name $form_id -form {
     }
 } -new_request {
 
-    if { [set user_id [ad_conn user_id]] } {
+    if { [set user_id [ad_conn user_id]] && !$admin_p} {
 
         # If a registered user who is already registered for this event wants to register anew, redirect to edit the registration page
         set sql "select participant_id from flyhh_event_participants where person_id=:user_id and project_id=:project_id"
@@ -290,7 +302,7 @@ ad_form -extend -name $form_id -form {
     # Deal with the comments as notes
     set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
     
-    set skills [string trim $skills]
+    set skills [list [string trim $skills] "text/plain"]
     set skill_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
@@ -301,13 +313,13 @@ ad_form -extend -name $form_id -form {
                 null,
                 :skills,
                 :participant_id,
-                11504,
+                [im_note_type_skill],
                 [im_note_status_active]
             )
             "]
 
 
-    set comments [string trim $comments]
+    set comments [list [string trim $comments] "text/plain"]
     set skill_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
@@ -318,12 +330,12 @@ ad_form -extend -name $form_id -form {
                 null,
                 :comments,
                 :participant_id,
-                11514,
+                [im_note_type_other],
                 [im_note_status_active]
             )
             "]            
             
-    set accommodation_text [string trim $accommodation_text]
+    set accommodation_text [list [string trim $accommodation_text] "text/plain"]
     set skill_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
@@ -334,7 +346,7 @@ ad_form -extend -name $form_id -form {
                 null,
                 :accommodation_text,
                 :participant_id,
-                11506,
+                [im_note_type_accommodation],
                 [im_note_status_active]
             )
             "]   
@@ -375,15 +387,14 @@ ad_form -extend -name $form_id -form {
                 -accommodation $accommodation \
                 -food_choice $food_choice \
                 -bus_option $bus_option \
-                -level $level \
+                -level "" \
                 -lead_p $lead_p \
-                -payment_type $payment_type \
-                -payment_term $payment_term \
+                -payment_type 1000 \
+                -payment_term "80107" \
                 -partner_text $partner_text \
                 -roommates_text $roommates_text \
                 -cell_phone $cell_phone \
                 -ha_line1 $ha_line1 \
-                -ha_line2 $ha_line2 \
                 -ha_city $ha_city \
                 -ha_state $ha_state \
                 -ha_postal_code $ha_postal_code \
@@ -397,4 +408,6 @@ ad_form -extend -name $form_id -form {
 }
 
 
+set left_navbar_html ""
+set show_context_help_p 0
 
