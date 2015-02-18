@@ -317,6 +317,7 @@ if { $bulk_actions ne {} } {
 
 db_foreach event_participants_query $sql {
 
+    set participant_status_pretty [im_category_from_id  $event_participant_status_id]
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"
