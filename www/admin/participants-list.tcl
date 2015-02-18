@@ -33,6 +33,7 @@ set key "participant_id"
 set bulk_actions {
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
+    "Send Mail" "participant-email" "E-Mail checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
@@ -318,6 +319,8 @@ if { $bulk_actions ne {} } {
 db_foreach event_participants_query $sql {
 
     set participant_status_pretty [im_category_from_id  $event_participant_status_id]
+
+    
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"

@@ -30,6 +30,7 @@ ad_page_contract {
 set package_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set admin_p [permission::permission_p -object_id $package_id -party_id $user_id -privilege admin]
+set return_url [ad_return_url]
 
 # TODO: token parameter is not meant to be optional
 # it is going to be a signed key that helps us extract
@@ -41,7 +42,23 @@ set admin_p [permission::permission_p -object_id $package_id -party_id $user_id 
 #set sql "select project_id from im_projects where project_type_id=102 and company_id=8720 limit 1"
 #set project_id [db_string some_project_id $sql]
 
-set project_name [db_string project_name "select project_name from im_projects where project_id = :project_id"]
+# Check if the Project ID is valid
+set event_name [db_string project "select event_name from flyhh_events where project_id = :project_id" -default ""]
+if {$event_name eq ""} {
+    set error_text "Illegal Event - $event_id is not an Event we know of"
+} else {
+    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email, project_name from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
+
+    switch $project_cost_center_id {
+        34915 {
+            set adp_master "master-scc"
+        }
+        default {
+            set adp_master "master-bcc"
+        }
+    }
+}
+
 set page_title "Registration Form"
 set context_bar [ad_context_bar [list [export_vars -base "participants-list" -url {project_id}] $project_name] $page_title]
 
@@ -407,6 +424,9 @@ ad_form -extend -name $form_id -form {
     ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
 
+set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+
+set mail_url [export_vars -base "[apm_package_url_from_key "intranet-mail"]mail" -url {{object_id $participant_id} {party_ids $person_id} {subject "${project_name}: "} {from_addr $event_email} return_url}]
 
 set left_navbar_html ""
 set show_context_help_p 0
