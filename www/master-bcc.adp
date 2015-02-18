@@ -9,6 +9,7 @@
                <title>Balboa Castle Camp Registration</title>
                <link rel="stylesheet" href="http://balboacastlecamp.de/style.css" type="text/css" media="screen" />
                <link rel="stylesheet" href="http://balboacastlecamp.de/css/slimbox.css" type="text/css" media="screen" />
+               <link rel="stylesheet" href="/intranet/style/style.saltnpepper.css?" type="text/css" media="screen" />
                <script type="text/javascript" src="http://balboacastlecamp.de/js/mootools.js"></script>
                <script type="text/javascript" src="http://balboacastlecamp.de/js/slimbox.js"></script>
        

@@ -107,6 +107,9 @@ To complete the registration and reserve your spot, please click below for the p
         -mime_type $mime_type \
         -object_id $participant_id
 
+    # Update the quote to mark the E-Mail has been send.
+    db_dml update_quote_status "update im_costs set cost_status_id = [im_cost_status_outstanding] where cost_id = :quote_id"
+    
     # TODO: record confirmation_mail_sent_p flag in participants table and confirmation_mail_date
     # and consider storing the delivery date (we need to figure out how to use callbacks for that)
 
@@ -562,7 +565,7 @@ ad_proc ::flyhh::update_participant {
 }
 
 
-ad_proc ::flyhh::create_purchase_order {
+ad_proc ::flyhh::create_quote {
     -company_id
     -company_contact_id 
     -participant_id
@@ -575,10 +578,6 @@ ad_proc ::flyhh::create_purchase_order {
     @last-modified 2014-11-04
 } {
 
-    # Intranet Cost Type
-    # (3706 = Purchase Order)
-    set invoice_type_id "3706"
-
     return [::flyhh::create_invoice \
                 -company_id $company_id \
                 -company_contact_id $company_contact_id \
@@ -586,7 +585,7 @@ ad_proc ::flyhh::create_purchase_order {
                 -project_id $project_id \
                 -payment_method_id $payment_method_id \
                 -payment_term_id $payment_term_id \
-                -invoice_type_id $invoice_type_id]
+                -invoice_type_id [im_cost_type_quote]]
 
 }
 
@@ -619,8 +618,8 @@ ad_proc ::flyhh::create_invoice {
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
     set invoice_template [parameter::get -parameter invoice_template -default "RechnungCognovis.en.odt"]
 
-    set provider_id 8720          ;# Company that provides this service - Us
-    set invoice_status_id "3802"  ;# Intranet Cost Status (3800 = Created)
+    set provider_id [im_company_internal]          ;# Company that provides this service - Us
+    set invoice_status_id "[im_cost_status_created]"  ;# Intranet Cost Status (3800 = Created)
 
     set sql "select category_id from im_categories where category = :invoice_template and category_type = 'Intranet Cost Template'"
     set invoice_template_id [db_string invoice_template_id $sql] ;# Intranet Cost Template
@@ -1081,8 +1080,8 @@ ad_proc ::flyhh::check_confirmed_free_capacity {
 
 ad_proc ::flyhh::send_invoice_mail {
     -invoice_id
+    -from_addr
     {-recipient_id ""}
-    {-from_addr ""}
     {-cc_addr ""}
 } {
 
@@ -1096,15 +1095,11 @@ ad_proc ::flyhh::send_invoice_mail {
 
     set user_id [ad_conn user_id]
     if {"" == $recipient_id} {
-    set recipient_id [db_string company_contact_id "select company_contact_id from im_invoices where invoice_id = :invoice_id" -default $user_id]
+        set recipient_id [db_string company_contact_id "select company_contact_id from im_invoices where invoice_id = :invoice_id" -default $user_id]
     } 
 
     db_1row get_recipient_info "select first_names, last_name, email as to_addr from cc_users where user_id = :recipient_id"
 
-    if {"" == $from_addr} {
-    set from_addr [party::email -party_id $user_id]
-    }
-    
     # Get the type information so we can get the strings
     set invoice_type_id [db_string type "select cost_type_id from im_costs where cost_id = :invoice_id"]
     
@@ -1112,7 +1107,7 @@ ad_proc ::flyhh::send_invoice_mail {
     set subject [lang::util::localize "#intranet-invoices.invoice_email_subject_${invoice_type_id}#" $recipient_locale]
     set body [lang::util::localize "#intranet-invoices.invoice_email_body_${invoice_type_id}#" $recipient_locale]
 
-    acs_mail_lite::send -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender
+    acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender
 
 }
 
@@ -1146,9 +1141,22 @@ ad_proc -public ::flyhh::invoice_pdf {
     Generate a PDF for an invoice and saves it as a CR Item
 
 } {
-
-    return [::intranet_openoffice::invoice_pdf -invoice_id $invoice_id]
-
+    db_1row invoice_info "select invoice_nr,last_modified from im_invoices,acs_objects where invoice_id = :invoice_id and invoice_id = object_id"
+       
+    set invoice_item_id [content::item::get_id_by_name -name "${invoice_nr}.pdf" -parent_id $invoice_id]
+    
+    if {"" == $invoice_item_id} {
+        set invoice_revision_id [intranet_openoffice::invoice_pdf -invoice_id $invoice_id]
+    } else {
+        set invoice_revision_id [content::item::get_best_revision -item_id $invoice_item_id]
+        
+        # Check if we need to create a new revision
+        if {[db_string date_check "select 1 from acs_objects where object_id = :invoice_revision_id and last_modified < :last_modified" -default 0]} {
+            set invoice_revision_id [intranet_openoffice::invoice_pdf -invoice_id $invoice_id]
+        }
+    }
+    
+    return $invoice_revision_id
 }
 
 
@@ -1571,7 +1579,7 @@ ad_proc ::flyhh::record_after_confirmation_edit {
             payment_type as payment_method_id,
             payment_term as payment_term_id,
             company_id,
-            order_id,
+            quote_id,
             invoice_id
         from flyhh_event_participants
         where participant_id=:participant_id

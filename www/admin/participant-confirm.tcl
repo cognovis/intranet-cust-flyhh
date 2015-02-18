@@ -36,17 +36,15 @@ db_transaction {
             -from_status "Waiting List" \
             -to_status "Confirmed"
 
-        ::flyhh::send_confirmation_mail $id
-
         set sql "
-            select project_id,person_id,payment_type,payment_term,company_id,order_id
+            select project_id,person_id,payment_type,payment_term,company_id,quote_id
             from flyhh_event_participants
             where participant_id=:id
         "
         db_1row participant_info $sql
 
         # skip the parts below if we have already created an order for this participant
-        if { $order_id ne {} } {
+        if { $quote_id ne {} } {
             continue
         }
 
@@ -54,7 +52,7 @@ db_transaction {
         # on the materials used for the registration. This basically is the transformation 
         # of the registration into a financial document.
 
-        set order_id [::flyhh::create_purchase_order \
+        set quote_id [::flyhh::create_quote \
                         -company_id ${company_id} \
                         -company_contact_id ${person_id} \
                         -participant_id ${id} \
@@ -62,8 +60,10 @@ db_transaction {
                         -payment_method_id ${payment_type} \
                         -payment_term_id ${payment_term}]
 
-        set sql "update flyhh_event_participants set order_id=:order_id where participant_id=:id"
+        set sql "update flyhh_event_participants set quote_id=:quote_id where participant_id=:id"
         db_dml update_participant_info $sql
+
+        ::flyhh::send_confirmation_mail $id
 
     }
 
