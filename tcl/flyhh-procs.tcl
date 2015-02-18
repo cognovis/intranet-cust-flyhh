@@ -105,7 +105,7 @@ To complete the registration and reserve your spot, please click below for the p
         -subject $subject \
         -body $body \
         -mime_type $mime_type \
-        -object_id $participant_id
+        -object_id $project_id
 
     # Update the quote to mark the E-Mail has been send.
     db_dml update_quote_status "update im_costs set cost_status_id = [im_cost_status_outstanding] where cost_id = :quote_id"
@@ -1083,6 +1083,7 @@ ad_proc ::flyhh::send_invoice_mail {
     -from_addr
     {-recipient_id ""}
     {-cc_addr ""}
+    {-project_id ""}
 } {
 
     Copied im_invoice_send_invoice_mail and modified it in two ways:
@@ -1107,7 +1108,7 @@ ad_proc ::flyhh::send_invoice_mail {
     set subject [lang::util::localize "#intranet-invoices.invoice_email_subject_${invoice_type_id}#" $recipient_locale]
     set body [lang::util::localize "#intranet-invoices.invoice_email_body_${invoice_type_id}#" $recipient_locale]
 
-    acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender
+    acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender -object_id $project_id
 
 }
 
@@ -1246,7 +1247,7 @@ You can register by followining the link below:
         -subject $subject \
         -body $body \
         -mime_type $mime_type \
-        -object_id $participant_id
+        -object_id $project_id
 
 
     set sql "
@@ -1306,7 +1307,7 @@ Amount: @amount@
             -subject $subject \
             -body $body \
             -mime_type $mime_type \
-            -object_id $participant_id
+            -object_id $project_id
 
 
         set sql "

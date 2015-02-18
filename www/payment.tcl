@@ -62,7 +62,7 @@ if {$error_text eq ""} {
         
     # An E-Mail is send to the participant with the PDF attached and the payment 
     # information similar to what is displayed on the Web site.
-#    ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email
+    ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
     
     # The webpage should display the information what has been provided with the registration,
     # a link to the PDF invoice for review, the total amount, the due date (based on the time 
@@ -120,6 +120,7 @@ if {$error_text eq ""} {
         set subtotal [expr $subtotal + $amount]
     }
     
+    # Calculate the total sum plus the minimum payment (Anzahlung)
 
     set total_due_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal+0] $rounding_precision] "" $locale]
     set due_now_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal*0.3 +0] $rounding_precision] "" $locale]
@@ -129,12 +130,6 @@ if {$error_text eq ""} {
           <td class=roweven align=right><b><nobr>$total_due_pretty $currency</nobr></b></td>
         </tr>
     "
-    # Calculate the total sum plus the minimum payment (Anzahlung)
     
-    
-    # Add text that an E-Mail with the invoice has been send.
-    
-    
-    # Add the payment information with paypal add 5%
 }
 

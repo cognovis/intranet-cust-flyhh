@@ -50,7 +50,7 @@ if {$party_id ne ""} {
     set registration_url [export_vars -base "[ad_url]/flyhh/registration" -url {token {user_id $party_id} event_id}]
     set mail_body "Dear $first_names, <p>You are almost done!<br />To register please click the following link:</p><p> <a href='$registration_url'>Register for $event_name</a></p><p>Your $event_name Crew.</p>"
     
-    acs_mail_lite::send -send_immediately -to_addr $email -from_addr $event_email -use_sender -subject $mail_subject -body $mail_body -mime_type "text/html"
+    acs_mail_lite::send -send_immediately -to_addr $email -from_addr $event_email -use_sender -subject $mail_subject -body $mail_body -mime_type "text/html" -object_id $project_id
     
 } else {
     
