@@ -31,11 +31,11 @@ begin
 end;
 $$ LANGUAGE 'plpgsql';
 
-update im_categories set category = 'Skill' where category_id = 11504;
-update im_categories set category = 'Accomodation' where category_id = 11506;
+select im_category_new(11515,'Skill','Intranet Notes Type');
+select im_category_new(11516,'Accommodation','Intranet Notes Type');
 
 
-update im_view_columns set extra_select = '''<a href="/intranet-invoices/view?invoice_id='' || invoice_id || ''">latest invoice</a>'' as latest_invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\">purchase order</a>'' as purchase_order_html' where variable_name ='event_participant_status_id' and column_name = 'Status'
+update im_view_columns set extra_select = '''<a href="/intranet-invoices/view?invoice_id='' || invoice_id || ''">latest invoice</a>'' as latest_invoice_html, ''<a href="/intranet-invoices/view?invoice_id='' || order_id || ''\">purchase order</a>'' as purchase_order_html' where variable_name ='event_participant_status_id' and column_name = 'Status';
 
 CREATE OR REPLACE FUNCTION inline_0 ()
 RETURNS INTEGER AS
@@ -162,3 +162,7 @@ end;
 $$ language 'plpgsql';
 
 update im_categories set category = 'Accommodation' where category_id = 9002;
+    
+update im_view_columns set column_render_tcl = '"<a href=registration?project_id=$project_id&participant_id=$participant_id>$participant_id</a>"' where column_id = '300001';
+update im_view_columns set column_render_tcl = '"<a href=''/intranet/companies/view?company_id=$company_id''>$participant_person_name</a><br>$email"' where column_id = '300002';
+update im_view_columns set column_render_tcl = '"<b>$participant_status_pretty</b> <p />$purchase_order_html <br>$latest_invoice_html"' where column_id = '300013';
