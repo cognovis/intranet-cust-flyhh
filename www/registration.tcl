@@ -125,14 +125,26 @@ if {$error_text eq ""} {
         {lead_p:text(select)
             {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
             {options {{Lead t} {Follow f}}}
-        }        
+        }
+    }  
 
+if {$inviter_text eq ""} {
+    ad_form -extend -name $form_id {
         {partner_text:text,optional
             {label {[::flyhh::mc Partner "Partner"]}}
-            {value "${inviter_text}"}
             {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
             {html {size 45}}
         }
+    }
+} else {
+    ad_form -extend -name $form_id {
+        {partner_text:text(inform)
+            {label {[::flyhh::mc Partner "Partner"]}}
+            {value "${inviter_text}"}
+            {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+        }
+    }
+}
         
         {-section accommodation_preferences
             {legendtext {[::flyhh::mc Accomodation_Registration_Section "Accommodation Information"]}}}
@@ -326,6 +338,25 @@ if {$error_text eq ""} {
                 )
                 "]
         }
+        
+        
+        # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
+        # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
+        # is already pre-filled?
+        
+        ::flyhh::match_name_email "$partner_text" partner_name partner_email
+        
+        if {$email ne ""} {
+            ::flyhh::send_invite_partner_mail \
+            -participant_id $participant_id \
+            -participant_person_name "$first_names $last_name" \
+            -participant_email $email \
+            -project_id $project_id \
+            -event_name $event_name \
+            -from_addr $event_email \
+            -partner_email $partner_email 
+        }
+        
     } -after_submit {
         ad_returnredirect [export_vars -base registration {event_id participant_id user_id token}]
     }
