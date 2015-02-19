@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="intranet-cust-flyhh" locale="de_DE" charset="ISO-8859-1">
+
+  <msg key="Accommodation">Unterkunft</msg>
+  <msg key="Accommodation_Comments">Kommentare zur Unterkunft</msg>
+  <msg key="Accomodation_Registration_Section">Unterkunft</msg>
+  <msg key="Address_Line_1">Straße</msg>
+  <msg key="Basic_Info_Section">Basis Informationen</msg>
+  <msg key="Bus_Option">Bus</msg>
+  <msg key="City">Stadt</msg>
+  <msg key="Comments">Kommentare</msg>
+  <msg key="get_reg_link_body">Hallo %first_names%, &lt;p&gt;Du bist fast fertig!&lt;br /&gt;Um die Anmeldung abzuschliessen klicke bitte auf den folgenden Link:&lt;/p&gt;&lt;p&gt; &lt;a href='%registration_url%'&gt;Zu %event_name% anmelden&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Deine %event_name% Crew.&lt;/p&gt;
+</msg>
+  <msg key="lt_THANK_YOU_FOR_YOUR_RE">DANKE FÜR DEINE ANMELDUNG</msg>
+  <msg key="lt_Transfer_note_invoice">Betreff: %invoice_nr% - %full_name%</msg>
+  <msg key="Participant_Email">E-Mail</msg>
+  <msg key="Participant_First_Name">Vorname</msg>
+  <msg key="Participant_Last_Name">Nachname</msg>
+</message_catalog>

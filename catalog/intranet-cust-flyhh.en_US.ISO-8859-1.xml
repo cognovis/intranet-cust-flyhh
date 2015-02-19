@@ -71,7 +71,7 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="lt_THANK_YOU_FOR_YOUR_RE">THANK YOU FOR YOUR REGISTRATION!</msg>
   <msg key="lt_There_was_an_error_pr">There was an error processing your request:</msg>
   <msg key="lt_To_complete_the_regis">To complete the registration and reserve your spot, please click below for the payment information:</msg>
-  <msg key="lt_Transfer_note_invoice">Transfer note: ?%invoice_nr% - %full_name%?</msg>
+  <msg key="lt_Transfer_note_invoice">Transfer note: %invoice_nr% - %full_name%</msg>
   <msg key="lt_Viewing_stats_for_eve">Viewing stats for event:</msg>
   <msg key="lt_We_have_reserved_a_sp">We have reserved a spot for you at %event_name%.</msg>
   <msg key="lt_You_will_receive_an_E">You will receive an E-Mail if we have found a space for you. This might take a couple of days, please be patient.</msg>

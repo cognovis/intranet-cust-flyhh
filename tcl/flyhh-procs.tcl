@@ -40,12 +40,12 @@ proc ::flyhh::match_name_email {text nameVar emailVar} {
 
 }
 
-proc ::flyhh::send_confirmation_mail {participant_id} {
-#
-# @creation-user Neophytos Demetriou (neophytos@azet.sk)
-# @creation-date 2014-11-02
-# @last-modified 2014-11-11
-#
+ad_proc ::flyhh::send_confirmation_mail {participant_id} {
+
+ @creation-user Neophytos Demetriou (neophytos@azet.sk)
+ @creation-date 2014-11-02
+ @last-modified 2015-02-19
+} {
 
     set sql "
         select 
@@ -93,7 +93,7 @@ if {$food_choice ne ""} {
     append body "<li>[_ intranet-cust-flyhh.Food_Choice]: $food_choice</li>"
 }
 if {$bus_option ne ""} {
-    append body "<li>[_ intranet-cust-flyhh.Bus]: $bus_option</li>"
+    append body "<li>[_ intranet-cust-flyhh.Bus_Option]: $bus_option</li>"
 }
 
 append body "
@@ -101,8 +101,7 @@ append body "
 [_ intranet-cust-flyhh.lt_To_complete_the_regis]
 <p>
 <a href='@link_to_payment_page;noquote@'>[_ intranet-cust-flyhh.Payment_Information]</a>
-</p>
-}]]
+</p>"
 
     acs_mail_lite::send \
         -send_immediately \
