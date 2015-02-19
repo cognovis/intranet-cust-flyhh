@@ -63,7 +63,7 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     db_1row participant_info $sql
 
     # The payment page checks that the logged in user and the participant_id are 
-    # the same (so you can’t confirm on behalf of someone else). We could make it
+    # the same (so you can?t confirm on behalf of someone else). We could make it
     # more flexible by having a unique token that signs the link we sent out.
     #
     
@@ -73,28 +73,34 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     set from_addr "$event_email"
     set to_addr ${email}
     set mime_type "text/html"
-    set subject "Event Registration Confirmation for ${name}"
-    set body [eval [template::adp_compile -string {
-Hi @name@,
+    set subject "[_ intranet-cust-flyhh.confirm_mail_subject]"
+    set body "
+Hi $name,
 <p>
-We have reserved a spot for you at @event_name@.
+<#_ We have reserved a spot for you at %event_name%.#>
 </p>
-Here's what you have signed up for:
+<#_ Here's what you have signed up for:#>
 <ul>
-<li>Course: @course@</li>
-<if @accommodation@ not nil>
-<li>Accommodation: @accommodation@</li>
-</if>
-<if @food_choice@ not nil>
-<li>Food Choice: @food_choice@</li>
-</if>
-<if @bus_option@ not nil>
-<li>Bus Option: @bus_option@</li>
-</if>
+"
+
+if {$course ne ""} {
+    append body "<li>[_ intranet-cust-flyhh.Course]: $course</li>"
+}
+if {$accommodation ne ""} {
+    append body "<li>[_ intranet-cust-flyhh.Accommodation]: $accommodation</li>"
+}
+if {$food_choice ne ""} {
+    append body "<li>[_ intranet-cust-flyhh.Food_Choice]: $food_choice</li>"
+}
+if {$bus_option ne ""} {
+    append body "<li>[_ intranet-cust-flyhh.Bus]: $bus_option</li>"
+}
+
+append body "
 </ul>
-To complete the registration and reserve your spot, please click below for the payment information:
+<#_ To complete the registration and reserve your spot, please click below for the payment information:#>
 <p>
-<a href='@link_to_payment_page;noquote@'>Payment Information</a>
+<a href='@link_to_payment_page;noquote@'><#_ Payment Information#></a>
 </p>
 }]]
 
@@ -256,6 +262,9 @@ ad_proc ::flyhh::mc { key default_text } {
     @creation-date 2014-11-10
     @last-modified 2014-11-10
 } {
+    if {![lang::message::message_exists_p en_US intranet-cust-flyhh.${key}]} {
+        lang::message::register en_US intranet-cust-flyhh $key $default_text
+    }
     return [::lang::message::lookup "" intranet-cust-flyhh.${key} ${default_text}]
 }
 
@@ -1334,7 +1343,7 @@ ad_proc ::flyhh::mail_notification_system {} {
 
     # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
     # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
-    # is already pre-filled 
+    # is already pre-filled?
 
     set sql "
         select 
@@ -1373,7 +1382,7 @@ ad_proc ::flyhh::mail_notification_system {} {
     # 17 days after due date: Send a second reminder. Same info as above, yet a different E-Mail body and subject will
     # be used
     #
-    # 27 days after due date: 
+    # 27 days after due date:?
     # (a) In case we have a partial payment, send an E-Mail to the Project Manager to have a chat with the customer
     # (b) In case we have no payment, create a correction invoice. This is basically an invoice copy with type invoice
     # correction and the same amounts in negative values. Mark the registration as cancelled.
