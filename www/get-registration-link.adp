@@ -1,21 +1,22 @@
  <master src=@adp_master@>
  <if @error_text@ ne "">
- There was an error processing your request:
+ #intranet-cust-flyhh.lt_There_was_an_error_pr#
 <p />
 @error_text@
 </if>
 <else>
     <if @mail_body@ ne "">
-        Your mail is on its way!
+        #intranet-cust-flyhh.lt_Your_mail_is_on_its_w#
     </if>
     <else>
 
-        Please provide us with your first and lastname and click submit to receive your registration link via E-Mail
+        #intranet-cust-flyhh.lt_Please_provide_us_wit#
         <p />
         <div style="width:620px;">
             <formtemplate id="@form_id@"></formtemplate>
         </div>
     </else>
 </else>
+
 
 

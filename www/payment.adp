@@ -1,19 +1,19 @@
  <master src=@adp_master@>
   <if @error_text@ ne "">
-  There was an error processing your request:
+  #intranet-cust-flyhh.lt_There_was_an_error_pr#
  <p />
  @error_text@
  </if>
  <else>
- <h2>Please find below your order with us:</h2>
+ <h2>#intranet-cust-flyhh.lt_Please_find_below_you#</h2>
  <table align=center width='80%' cellpadding=1 cellspacing=2 border=0>
  @invoice_item_html;noquote@
  <tr><td colspan=3>
  <br />
- <b>Please make your initial payment of at least @due_now_pretty@ @currency@ to our bank account within the next 3 days.</b>
+ <b>#intranet-cust-flyhh.lt_Please_make_your_init#</b>
  </td><tr>
  <tr><td colspan=2>
- <h2>Bank Info</h2>
+ <h2>#intranet-cust-flyhh.Bank_Info#</h2>
  <td></td>
  </tr>
  <tr valign=top><td colspan=2>
@@ -22,12 +22,12 @@
      BIC (8-digits): PBNKDEFF<br/>
      BIC (11-digits): PBNKDEFF200<br/>
      Postbank Hamburg<br/>
-     Transfer note: “@invoice_nr@ - @full_name@”<br/>
+     #intranet-cust-flyhh.lt_Transfer_note_invoice#<br/>
      </td><td>
-     In case you need the bank's address:<br/>
+     #intranet-cust-flyhh.lt_In_case_you_need_the_#<br/>
      Ueberseering 26<br/>
      22297 Hamburg, Germany<br/>
  </td>
  </td></tr></table>
- <div align=center><B>Full payment of @total_due_pretty@ @currency@ is due August 1st 2015</b></div>
+ <div align=center><B>#intranet-cust-flyhh.lt_Full_payment_of_total#</b></div>
 </else>

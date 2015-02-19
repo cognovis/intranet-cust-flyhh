@@ -46,7 +46,9 @@ if {$error_text eq ""} {
     set form_id "registration_form"
     set action_url ""
     
+    # Set the locale for the user
     set locale [lang::user::locale -user_id $user_id]
+    ad_conn -set locale $locale
     
     # If a registered user who is already registered for this event wants to register anew, redirect to edit the registration page
     set sql "select participant_id from flyhh_event_participants where person_id=:user_id and project_id=:project_id"
@@ -193,7 +195,7 @@ if {$error_text eq ""} {
     ad_form -extend -name $form_id -form {
         {accepted_terms_p:boolean(checkbox)
             {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
-            {options {{{I have read and accept the terms and conditions for this event} t}}}
+            {options {{{[::flyhh::mc accepted_conditions "I have read and accept the terms and conditions for this event"]} t}}}
             {help_text {[::flyhh::mc terms_help "You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>"]}}
         }
     } -new_request {

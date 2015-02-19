@@ -6,7 +6,7 @@ ad_page_contract {
 
     If a customer registration is cancelled by the project manager (so not automatically by the reminder system) and the
     status is at least pending payment (so we have a confirmation by the customer they want to participate) , create a
-    correction invoice which contains refunds as in ::flyhh::record_after_confirmation_edit.Â 
+    correction invoice which contains refunds as in ::flyhh::record_after_confirmation_edit. 
 
 } {
     participant_id:integer,multiple,notnull

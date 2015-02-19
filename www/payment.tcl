@@ -10,10 +10,6 @@ set adp_master "master-bcc"
 set locale "en_US"
 
 
-set project_id [db_string project_id "select project_id from flyhh_event_participants where participant_id = :participant_id"]
-
-db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
-
 # check that the token is correct
 set check_token [ns_sha1 "${participant_id}${project_id}"]
 if {$token ne $check_token} {
@@ -22,6 +18,8 @@ if {$token ne $check_token} {
 
 if {$error_text eq ""} {
     
+    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
+
     # Check if the status has already been changed
     db_1row participant_info "select * from flyhh_event_participants where participant_id = :participant_id"
     
@@ -64,7 +62,7 @@ if {$error_text eq ""} {
     # information similar to what is displayed on the Web site.
     ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
     
-    # The webpage should display theÂ information what has been provided with the registration,
+    # The webpage should display the information what has been provided with the registration,
     # a link to the PDF invoice for review, the total amount, the due date (based on the time 
     # the link was clicked and the payment terms).
     

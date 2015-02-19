@@ -77,9 +77,9 @@ proc ::flyhh::send_confirmation_mail {participant_id} {
     set body "
 Hi $name,
 <p>
-<#_ We have reserved a spot for you at %event_name%.#>
+[_ intranet-cust-flyhh.lt_We_have_reserved_a_sp]
 </p>
-<#_ Here's what you have signed up for:#>
+[_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
 <ul>
 "
 
@@ -98,9 +98,9 @@ if {$bus_option ne ""} {
 
 append body "
 </ul>
-<#_ To complete the registration and reserve your spot, please click below for the payment information:#>
+[_ intranet-cust-flyhh.lt_To_complete_the_regis]
 <p>
-<a href='@link_to_payment_page;noquote@'><#_ Payment Information#></a>
+<a href='@link_to_payment_page;noquote@'>[_ intranet-cust-flyhh.Payment_Information]</a>
 </p>
 }]]
 

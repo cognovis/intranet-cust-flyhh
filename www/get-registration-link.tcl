@@ -38,8 +38,17 @@ if {$event_name eq ""} {
 
 if {$error_text eq ""} {
     
-set mail_subject "Registration link for $event_name"
-set mail_body ""
+    set mail_body ""
+
+    # Set the locale from the E-Mail Address.. Crude guess
+    set ha_country_code [lindex [split $email "."] end]
+    if {$ha_country_code eq "de"} {
+        set site_wide_locale "de_DE"
+    } else {
+        set site_wide_locale "en_US"
+    }
+    # Set the locale for the user
+    ad_conn -set locale $site_wide_locale
 
 # Check if we have the E-Mail on record
 set party_id [party::get_by_email -email $email]
@@ -48,7 +57,8 @@ if {$party_id ne ""} {
     db_1row user_info "select first_names, last_name from persons where person_id = :party_id"
     set token [ns_sha1 "${party_id}${event_id}"]
     set registration_url [export_vars -base "[ad_url]/flyhh/registration" -url {token {user_id $party_id} event_id}]
-    set mail_body "Dear $first_names, <p>You are almost done!<br />To register please click the following link:</p><p> <a href='$registration_url'>Register for $event_name</a></p><p>Your $event_name Crew.</p>"
+    set mail_subject "[_ intranet-cust-flyhh.lt_Registration_link_for]"
+    set mail_body "[::lang::message::lookup "" intranet-cust-flyhh.get_reg_link_body "Dear %first_names%, <p>You are almost done!<br />To register please click the following link:</p><p> <a href='%registration_url%'>Register for %event_name%/a></p><p>Your %event_name% Crew.</p>"]"
     
     acs_mail_lite::send -send_immediately -to_addr $email -from_addr $event_email -use_sender -subject $mail_subject -body $mail_body -mime_type "text/html" -object_id $project_id
     
@@ -75,9 +85,32 @@ if {$party_id ne ""} {
         {last_name:text
             {label {[::flyhh::mc Participant_Last_Name "Last Name"]}}
         }
-    } \
-    -on_request {
+    } 
+
+    set locale_options [list]
+    db_foreach get_locales {
+        select label, locale
+        from enabled_locales
+        order by label
+    } {
+        if { [lang::message::message_exists_p $locale acs-lang.this-language] } {
+            set label "[lang::message::lookup $locale  acs-lang.this-language]"
+        }
+        lappend locale_options [list ${label} $locale]
+    }
+    
+    if { [llength $locale_options] > 1 } {
+        ad_form -extend -name $form_id -form {
+            {site_wide_locale:text(select_locales),optional
+                {label "[_ acs-lang.Your_Preferred_Locale]"}
+                {options $locale_options}
+            }
+        }
+    }
+
+    ad_form -extend -name $form_id -on_request {
         set email $email
+
     } \
     -new_data {
         # Create the user and then send the E-Mail
@@ -105,16 +138,9 @@ if {$party_id ne ""} {
             \n$creation_info(creation_message)\n$creation_info(element_messages)
             "
         }
-        
-        set user_id $creation_info(user_id)
 
-        # Set the locale from the E-Mail Address.. Crude guess
-        set ha_country_code [lindex [split $email "."] end]
-        if {$ha_country_code eq "de"} {
-           lang::user::set_locale -user_id $user_id "de_DE"
-        } else {
-           lang::user::set_locale -user_id $user_id "en_US"            
-        }
+        set user_id $creation_info(user_id)
+        lang::user::set_locale -user_id $user_id $site_wide_locale
     } \
     -after_submit {
         ad_returnredirect [export_vars -base "get-registration-link" -url {email event_id}]

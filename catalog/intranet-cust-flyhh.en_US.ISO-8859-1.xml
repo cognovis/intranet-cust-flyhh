@@ -1,10 +1,113 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <message_catalog package_key="intranet-cust-flyhh" locale="en_US" charset="ISO-8859-1">
 
+  <msg key="&lt;input_type=&quot;checkbox&quot;&gt;">&lt;input type=&quot;checkbox&quot;&gt;</msg>
+  <msg key="accepted_conditions">I have read and accept the terms and conditions for this event</msg>
+  <msg key="Accomm.">Accomm.</msg>
+  <msg key="Accommodation">Accommodation</msg>
+  <msg key="Accommodation_Comments">Accommodation Comments</msg>
+  <msg key="Accomodation_Registration_Section">Accommodation Information</msg>
+  <msg key="Add_Event">Add Event</msg>
+  <msg key="add_participant">add participant</msg>
+  <msg key="Address_Line_1">Address Line 1</msg>
+  <msg key="Bank_Info">Bank Info</msg>
+  <msg key="Basic_Info_Section">Basic Info</msg>
+  <msg key="bedmate_help">Please let us know if you are fine to share a double bed with another person (male, female), have a special someone whom you want to share your bed with or any other comments regarding accommodation.</msg>
+  <msg key="Bus_Option">Bus Option</msg>
+  <msg key="City">City</msg>
+  <msg key="Comments">Comments</msg>
+  <msg key="comments_help">Do you have any further comments for us?</msg>
+  <msg key="confirm_body_start">Hi %name%,
+&lt;p&gt;
+We have reserved a spot for you at %event_name%.
+&lt;/p&gt;
+Here's what you have signed up for:
+&lt;ul&gt;&quot;
+
+if {&quot;&quot; != $course} {
+    append body &quot;&lt;li&gt;[_ intranet-cust-flyhh.Course]: $course&lt;/li&gt;&quot;
+}
+if {&quot;&quot; != $accommodation} {
+    append body &quot;&lt;li&gt;[_ intranet-cust-flyhh.Accommodation]: $accommodation&lt;/li&gt;&quot;
+}
+if {&quot;&quot; != $food_choice} {
+    append body &quot;&lt;li&gt;[_ intranet-cust-flyhh.Food_Choice]: $food_choice&lt;/li&gt;&quot;
+}
+
+if {&quot;&quot; != $bus_option} {
+    append body &quot;&lt;li&gt;[_ intranet-cust-flyhh.Bus_Option]: $bus_option&lt;/li&gt;&quot;
+}
+
+append body &quot;&lt;#confirm_body_end
+&lt;/ul&gt;
+To complete the registration and reserve your spot, please click below for the payment information:
+&lt;p&gt;
+&lt;a href='%link_to_payment_page%'&gt;Payment Information&lt;/a&gt;
+&lt;/p&gt;</msg>
+  <msg key="confirm_mail_subject">Event Registration Confirmation for %name%</msg>
+  <msg key="Contact_Details_Section">Contact Details</msg>
+  <msg key="Country">Country</msg>
+  <msg key="Course">Course</msg>
+  <msg key="Course_Registration_Section">Course Information</msg>
+  <msg key="Enable_Event">Enable?</msg>
+  <msg key="Event_Info">Event Info</msg>
+  <msg key="Event_Name">Name</msg>
   <msg key="Filter_Participants">Filter Participants</msg>
+  <msg key="Food_Choice">Food Choice</msg>
+  <msg key="get_reg_link_body">Dear %first_names%, &lt;p&gt;You are almost done!&lt;br /&gt;To register please click the following link:&lt;/p&gt;&lt;p&gt; &lt;a href='%registration_url%'&gt;Register for %event_name%&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Your %event_name% Crew.&lt;/p&gt;</msg>
+  <msg key="L/F">L/F</msg>
+  <msg key="Lead_or_Follow">Lead/Follow</msg>
   <msg key="Lead_or_follow">Lead/Follow</msg>
   <msg key="Level">Level</msg>
   <msg key="List_of_participants">List of participants</msg>
+  <msg key="lt_Event_Registration_Co">Event Registration Confirmation for %name%</msg>
+  <msg key="lt_Full_payment_of_total">Full payment of %total_due_pretty% %currency% is due August 1st 2015</msg>
+  <msg key="lt_Heres_what_you_have_s">Here's what you have signed up for:</msg>
+  <msg key="lt_In_case_you_need_the_">In case you need the bank's address:</msg>
+  <msg key="lt_Please_find_below_you">Please find below your order with us:</msg>
+  <msg key="lt_Please_make_your_init">Please make your initial payment of at least %due_now_pretty% %currency% to our bank account within the next 3 days.</msg>
+  <msg key="lt_Please_provide_us_wit">Please provide us with your first and lastname and click submit to receive your registration link via E-Mail</msg>
+  <msg key="lt_Registration_link_for">Registration link for %event_name%</msg>
+  <msg key="lt_THANK_YOU_FOR_YOUR_RE">THANK YOU FOR YOUR REGISTRATION!</msg>
+  <msg key="lt_There_was_an_error_pr">There was an error processing your request:</msg>
+  <msg key="lt_To_complete_the_regis">To complete the registration and reserve your spot, please click below for the payment information:</msg>
+  <msg key="lt_Transfer_note_invoice">Transfer note: ?%invoice_nr% - %full_name%?</msg>
+  <msg key="lt_Viewing_stats_for_eve">Viewing stats for event:</msg>
+  <msg key="lt_We_have_reserved_a_sp">We have reserved a spot for you at %event_name%.</msg>
+  <msg key="lt_You_will_receive_an_E">You will receive an E-Mail if we have found a space for you. This might take a couple of days, please be patient.</msg>
+  <msg key="lt_Your_mail_is_on_its_w">Your mail is on its way!</msg>
+  <msg key="material_33311">Balboa Track</msg>
+  <msg key="material_33312">Balboa Masters Track</msg>
+  <msg key="material_33313">Vegetarian Meals + Party</msg>
+  <msg key="material_33314">Non Vegetarian Meals + Party</msg>
+  <msg key="material_34832">One Way Bus</msg>
+  <msg key="material_34833">Bus Round Trip</msg>
+  <msg key="material_35117">Lindy Hop Track</msg>
+  <msg key="material_35118">Solo Jazz Track</msg>
+  <msg key="material_36464">Balboa Weekend Course</msg>
+  <msg key="material_39590">Bus Halle One Way</msg>
+  <msg key="Name">Name</msg>
+  <msg key="participant">participant</msg>
+  <msg key="Participant_Email">E-Mail</msg>
+  <msg key="Participant_First_Name">First Name</msg>
+  <msg key="Participant_Last_Name">Last Name</msg>
+  <msg key="participants">participants</msg>
+  <msg key="Partner">Partner</msg>
+  <msg key="Payment_Information">Payment Information</msg>
+  <msg key="Payment_Term">Payment Term</msg>
+  <msg key="Payment_Type">Payment Type</msg>
+  <msg key="Phone">Phone</msg>
+  <msg key="Postal_code">Postal Code</msg>
+  <msg key="Project_Cost_Center">Project Cost Center</msg>
+  <msg key="Provider_Company">Provider Company:</msg>
+  <msg key="Reg.ID">Reg.ID</msg>
+  <msg key="Roommate(s)">Roommate(s)</msg>
+  <msg key="Roommates">Roommates</msg>
+  <msg key="Skills">Skills</msg>
+  <msg key="skills_help">Please provide us with some of your skills</msg>
+  <msg key="State">State</msg>
   <msg key="Status">Status</msg>
+  <msg key="Terms_and_Conditions">Terms and Conditions</msg>
+  <msg key="terms_help">You can find the terms at &lt;a href=&quot;http://swingcastlecamp.de/terms.php&quot;&gt;http://swingcastlecamp.de/terms.php&lt;/a&gt;</msg>
   <msg key="Validation">Validation</msg>
 </message_catalog>

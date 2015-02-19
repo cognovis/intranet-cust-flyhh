@@ -1,7 +1,7 @@
 <master>
 <property name="title">@page_title;noquote@</property>
 <property name="context">@page_title;noquote@</property>
-<property name="main_navbar_label">participant</property>
+<property name="main_navbar_label">#intranet-cust-flyhh.participant#</property>
 <property name="left_navbar">@left_navbar_html;noquote@</property>
 <property name="show_context_help">@show_context_help_p;noquote@</property>
 @context_bar;noquote@
@@ -37,3 +37,4 @@
 </td></tr>
 </table>
 </else>
+

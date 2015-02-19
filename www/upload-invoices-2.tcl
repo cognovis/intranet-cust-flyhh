@@ -182,14 +182,14 @@ foreach csv_line_fields $values_list_of_lists {
         switch $country {
             "Deutschland" - "deutschland" - "D" - "Berlin" - "BRD" - "BED :-)" - "d" {set country_code "de"}
             "Russia" {set country_code "ru"}
-            "Ã–sterreich" {set country_code "at"}
+            "Österreich" {set country_code "at"}
             "Schweiz" - "schweiz" {set country_code "ch"}
             "USA" - "usa" {set country_code "us"}
             "UK" - "U.K." {set country_code "uk"}
             "Western Australia" {set country_code "au"}
             "Sverige" {set country_code "se"}
             "Italia" {set country_code "it"}
-            "EspaÃ±a" {set country_code "es"}
+            "España" {set country_code "es"}
             default {ns_write "<li>country missing $country for $first_name $last_name</li>"}
         }
     }

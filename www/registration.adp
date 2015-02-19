@@ -1,7 +1,7 @@
  <master src=@adp_master@>
 <if @mode@ eq "display">
-    <center>THANK YOU FOR YOUR REGISTRATION!<center><p />
-    You will receive an E-Mail if we have found a space for you. This might take a couple of days, please be patient.<p />
+    <center>#intranet-cust-flyhh.lt_THANK_YOU_FOR_YOUR_RE#<center><p />
+    #intranet-cust-flyhh.lt_You_will_receive_an_E#<p />
     </if>
 <div style="width:620px;">
     <formtemplate id="@form_id@" style="tiny-plain-po"></formtemplate>
