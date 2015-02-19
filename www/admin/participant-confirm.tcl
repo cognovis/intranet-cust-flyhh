@@ -27,9 +27,27 @@ ad_page_contract {
     }
 }
 
+# Get the list of partners for the participants who are not confirmed yet and append them. 
+# Also filter out anyone who is not on the Waiting list
+set participant_ids [db_list participant_ids "
+        select e.partner_participant_id 
+          from flyhh_event_participants e, flyhh_event_participants p
+         where e.participant_id in ([template::util::tcl_to_sql_list $participant_id])
+           and p.participant_id = e.partner_participant_id
+           and p.partner_mutual_p = true
+           and e.partner_mutual_p = true
+           and p.event_participant_status_id = [im_category_from_category -category "Waiting List"]
+        UNION
+        select participant_id
+          from flyhh_event_participants 
+         where participant_id in ([template::util::tcl_to_sql_list $participant_id])
+           and event_participant_status_id = [im_category_from_category -category "Waiting List"]
+    "
+    ]
+
 db_transaction {
 
-    foreach id $participant_id {
+    foreach id $participant_ids {
 
         ::flyhh::set_participant_status \
             -participant_id $id \

@@ -55,8 +55,8 @@ set party_id [party::get_by_email -email $email]
 if {$party_id ne ""} {
     # Directly send the party the registration link
     db_1row user_info "select first_names, last_name from persons where person_id = :party_id"
-    set token [ns_sha1 "${party_id}${event_id}"]
-    set registration_url [export_vars -base "[ad_url]/flyhh/registration" -url {token {user_id $party_id} event_id}]
+    set token [ns_sha1 "${email}${event_id}"]
+    set registration_url [export_vars -base "[ad_url]/flyhh/registration" -url {token email event_id}]
     set mail_subject "[_ intranet-cust-flyhh.lt_Registration_link_for]"
     set mail_body "[::lang::message::lookup "" intranet-cust-flyhh.get_reg_link_body "Dear %first_names%, <p>You are almost done!<br />To register please click the following link:</p><p> <a href='%registration_url%'>Register for %event_name%/a></p><p>Your %event_name% Crew.</p>"]"
     

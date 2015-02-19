@@ -93,11 +93,18 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="Participant_Last_Name">Last Name</msg>
   <msg key="participants">participants</msg>
   <msg key="Partner">Partner</msg>
+  <msg key="Partner_Mail_Subject">Invitation to register for %event_name%</msg>
   <msg key="Payment_Information">Payment Information</msg>
   <msg key="Payment_Term">Payment Term</msg>
   <msg key="Payment_Type">Payment Type</msg>
   <msg key="Phone">Phone</msg>
   <msg key="Postal_code">Postal Code</msg>
+  <msg key="pPartner_Mail_Body">%participant_person_name% (%participant_email%) has registered for %event_name@%
+and would like to have you as his/her partner.
+
+You can register by followining the link below:
+%event_registration_link%
+&quot;</msg>
   <msg key="Project_Cost_Center">Project Cost Center</msg>
   <msg key="Provider_Company">Provider Company:</msg>
   <msg key="Reg.ID">Reg.ID</msg>

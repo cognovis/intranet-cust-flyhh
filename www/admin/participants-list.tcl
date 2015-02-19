@@ -319,8 +319,25 @@ if { $bulk_actions ne {} } {
 db_foreach event_participants_query $sql {
 
     set participant_status_pretty [im_category_from_id  $event_participant_status_id]
-
     
+    if {$partner_participant_id ne ""} {
+        set partner_url [export_vars -base "registration" -url {{ project_id $project_id } { participant_id $partner_participant_id }}]
+        if {$partner_mutual_p} {
+            set style_html "style=color:green;"
+            set mutual_html ""
+        } else {
+            set style_html "style=color:orange;"
+            set mutual_html "<br />(not mutual)"
+        }
+        set partner_html "<a $style_html href='$partner_url'>$partner_person_name</a>$mutual_html"
+        if {$partner_email eq ""} {append partner_html "<br />(match by name)"}
+    } else {
+        if {$partner_text ne ""} {
+            set partner_html  "<font color=red>$partner_text</font><br />(not registered)"
+        } else {
+            set partner_html ""
+        }
+    }
 
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"

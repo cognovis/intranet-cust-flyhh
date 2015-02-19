@@ -110,7 +110,8 @@ ad_proc ::flyhh::create_invoice {
                     course,
                     accommodation,
                     food_choice,
-                    bus_option
+                    bus_option,
+                    partner_mutual_p
                 from flyhh_event_participants
                 where participant_id=:participant_id
             "
@@ -122,6 +123,11 @@ ad_proc ::flyhh::create_invoice {
                 if { $material_id eq {} } { continue }
 
                 lappend delta_items [list 1.0 1.0 $material_id]
+            }
+            
+            if {$partner_mutual_p eq "t"} {
+                # Qualify for the partner rebate.
+                lappend delta_items [list 1.0 1.0 [db_string partner_material_id "select material_id from im_materials where lower(material_nr) = 'partner'"]]
             }
 
         }

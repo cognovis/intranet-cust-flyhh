@@ -517,8 +517,23 @@ ad_proc ::flyhh::update_participant {
 
     set creation_ip [ad_conn peeraddr]
 
-    ::flyhh::match_name_email $partner_text partner_name partner_email
+    ::flyhh::match_name_email $partner_text partner_text_name partner_email
+    
+    set partner_person_id [party::get_by_email -email $partner_email]
+    
+    if {$partner_person_id eq ""} {
+        # Try getting the ID from the name   
+        set partner_person_id [db_string partner_person "select person_id from persons where person__name(person_id) = :partner_text_name" -default ""]
+    }
+     
+    if {$partner_person_id ne ""} {
+        set partner_name [person::name -person_id $partner_person_id]
+    } else {
+        set partner_name $partner_text_name
+    }
 
+    set partner_participant_id [db_string partner_participant_id "select participant_id from flyhh_event_participants where person_id = :partner_person_id and project_id=:project_id" -default ""]
+    
     db_transaction {
 
         db_exec_plsql insert_participant "select flyhh_event_participant__update(
@@ -533,6 +548,8 @@ ad_proc ::flyhh::update_participant {
             :partner_text,
             :partner_name,
             :partner_email,
+            :partner_person_id,
+            :partner_participant_id,
             :accepted_terms_p,
             :course,
             :accommodation,
@@ -885,10 +902,11 @@ ad_proc ::flyhh::send_invite_partner_mail {
     -participant_id
     -participant_person_name
     -participant_email
-    -project_id
+    -event_id
     -event_name
     -from_addr
     -partner_email
+    -project_id 
 } {
 
     Invites partner to join an event.
@@ -898,36 +916,23 @@ ad_proc ::flyhh::send_invite_partner_mail {
 } {
 
     set inviter_text "$participant_person_name $participant_email"
-    set event_registration_link [export_vars -base [ad_url]/flyhh/registration {project_id inviter_text}]
-    set to_addr $partner_email
-    set body "<#pPartner_Mail_Body
-%participant_person_name% (%participant_email%) has registered for %event_name@%
-and would like to have you as his/her partner.
+    
+    set email $partner_email
+    set token [ns_sha1 "${email}${event_id}"]
+    set event_registration_link [export_vars -base [ad_url]/flyhh/registration {event_id token email inviter_text}]
 
-You can register by followining the link below:
-%event_registration_link%
-"#>
+    set body "[_ intranet-cust-flyhh.pPartner_Mail_Body]"
     set mime_type text/plain
-    set subject "<#Partner_Mail_Subject Invitation to register for %event_name% #>"
+    set subject "[_ intranet-cust-flyhh.Partner_Mail_Subject]"
 
     acs_mail_lite::send \
         -send_immediately \
         -from_addr $from_addr \
-        -to_addr $to_addr \
+        -to_addr $partner_email \
         -subject $subject \
         -body $body \
         -mime_type $mime_type \
         -object_id $project_id
-
-
-    set sql "
-        update flyhh_event_participants
-        set partner_reminder_sent=now()
-        where participant_id = :participant_id
-    "
-
-    db_dml partner_reminder_sent $sql
-
 }
 
 
@@ -1162,222 +1167,6 @@ ad_proc -private ::flyhh::set_to_cancelled_helper {
         ::flyhh::record_after_confirmation_edit -participant_id $participant_id old new
 
     }
-
-}
-
-# ---------------------------------------------------------------
-# Callbacks
-# 
-# Generically create callbacks for all "package" object types
-# ---------------------------------------------------------------
-
-set object_types {
-    flyhh_event
-    flyhh_event_participant
-}
-
-foreach object_type $object_types {
-    
-    ad_proc -public -callback ${object_type}_before_create {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-    
-    ad_proc -public -callback ${object_type}_after_create {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-
-
-    
-    ad_proc -public -callback ${object_type}_before_update {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-    
-    ad_proc -public -callback ${object_type}_after_update {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-
-
-    
-    ad_proc -public -callback ${object_type}_before_delete {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-    
-    ad_proc -public -callback ${object_type}_after_delete {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback allows you to execute action before and after every
-	important change of object. Examples:
-	- Copy preset values into the object
-	- Integrate with external applications via Web services etc.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-
-    ad_proc -public -callback ${object_type}_view {
-	{-object_id:required}
-	{-status_id ""}
-	{-type_id ""}
-    } {
-	This callback tracks acess to the object's main page.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-
-    ad_proc -public -callback ${object_type}_form_fill {
-        -form_id:required
-        -object_id:required
-        { -object_type "" }
-        { -type_id ""}
-        { -page_url "default" }
-        { -advanced_filter_p 0 }
-        { -include_also_hard_coded_p 0 }
-    } {
-	This callback tracks acess to the object's main page.
-	
-	@param object_id ID of the $object_type 
-	@param status_id Optional status_id category. 
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object types.
-	@param type_id Optional type_id of category.
-		   This value is optional. You need to retrieve the status
-		   from the DB if the value is empty (which should rarely be the case)
-		   This field allows for quick filtering if the callback 
-		   implementation is to be executed only on certain object states.
-    } -
-
-    ad_proc -public -callback ${object_type}_on_submit {
-        -form_id:required
-        -object_id:required
-    } {
-        This callback allows for additional validations and it should be called in the on_submit block of a form
-        
-        Usage: 
-            form set_error $form_id $error_field $error_message
-            break
-
-        @param object_id ID of the $object_type
-        @param form_id ID of the form which is being submitted
-    } -
-
 
 }
 

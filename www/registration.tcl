@@ -8,7 +8,7 @@ ad_page_contract {
     @cvs-id $Id$
 } {
     event_id:integer,notnull
-    user_id:notnull
+    email:notnull
     {inviter_text:trim,notnull ""}
     token:notnull
 } -properties {
@@ -37,7 +37,7 @@ if {$event_name eq ""} {
 }
 
 # check that the token is correct
-set check_token [ns_sha1 "${user_id}${event_id}"]
+set check_token [ns_sha1 "${email}${event_id}"]
 if {$token ne $check_token} {
     set error_text "Illegal Token - You should not edit the link!"
 }
@@ -46,8 +46,20 @@ if {$error_text eq ""} {
     set form_id "registration_form"
     set action_url ""
     
-    # Set the locale for the user
-    set locale [lang::user::locale -user_id $user_id]
+    set user_id [party::get_by_email -email $email]
+    set ha_country_code [lindex [split $email "."] end]
+
+    if {$user_id ne ""} {
+        # Set the locale for the user
+        set locale [lang::user::locale -user_id $user_id]
+    } else {
+        # Set the locale from the E-Mail Address.. Crude guess
+        if {$ha_country_code eq "de"} {
+            set site_wide_locale "de_DE"
+        } else {
+            set site_wide_locale "en_US"
+        }
+    }
     ad_conn -set locale $locale
     
     # If a registered user who is already registered for this event wants to register anew, redirect to edit the registration page
@@ -66,7 +78,7 @@ if {$error_text eq ""} {
     -action $action_url \
     -mode $mode \
     -has_edit 1 \
-    -export [list project_id event_id user_id token] \
+    -export [list project_id event_id token inviter_text] \
     -form {
 
         participant_id:key(acs_object_id_seq)
@@ -74,8 +86,10 @@ if {$error_text eq ""} {
         {-section basic_info
             {legendtext {[::flyhh::mc Basic_Info_Section "Basic Info"]}}}
 
-        {email:text
-            {label {[::flyhh::mc Participant_Email "Email"]}}}
+        {email:text(inform)
+            {label {[::flyhh::mc Participant_Email "Email"]}}
+            {value "$email"}
+        }
 
         {first_names:text
             {label {[::flyhh::mc Participant_First_Name "First Name"]}}}
@@ -116,36 +130,48 @@ if {$error_text eq ""} {
         {-section course_preferences
             {legendtext {[::flyhh::mc Course_Registration_Section "Course Information"]}}}
 
-        {course:text(select)
-            {label {[::flyhh::mc Course "Course"]}}
-            {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
-        }
+    }
 
-        {lead_p:text(select)
-            {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
-            {options {{Lead t} {Follow f}}}
+    if {$inviter_text eq ""} {
+        ad_form -extend -name $form_id -form {
+            {course:text(select)
+                {label {[::flyhh::mc Course "Course"]}}
+                {html {}}
+                {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
+            }
+    
+            {lead_p:text(select)
+                {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
+                {options {{"" ""} {Lead t} {Follow f}}}
+            }    
+            {partner_text:text,optional
+                {label {[::flyhh::mc Partner "Partner"]}}
+                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+                {html {size 45}}
+            }
         }
-    }  
-
-if {$inviter_text eq ""} {
-    ad_form -extend -name $form_id {
-        {partner_text:text,optional
-            {label {[::flyhh::mc Partner "Partner"]}}
-            {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
-            {html {size 45}}
+    } else {
+        ad_form -extend -name $form_id -form {
+            {course:text(select)
+                {label {[::flyhh::mc Course "Course"]}}
+                {html {}}
+                {mode display}
+                {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
+            }
+            {lead_p:text(select)
+                {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
+                {mode display}
+                {options {{"" ""} {Lead t} {Follow f}}}
+            }    
+            {partner_text:text(inform)
+                {label {[::flyhh::mc Partner "Partner"]}}
+                {value "${inviter_text}"}
+                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+            }
         }
     }
-} else {
-    ad_form -extend -name $form_id {
-        {partner_text:text(inform)
-            {label {[::flyhh::mc Partner "Partner"]}}
-            {value "${inviter_text}"}
-            {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
-        }
-    }
-}
-        
+    
+    ad_form -extend -name $form_id -form {
         {-section accommodation_preferences
             {legendtext {[::flyhh::mc Accomodation_Registration_Section "Accommodation Information"]}}}
         {accommodation:text(select)
@@ -213,14 +239,22 @@ if {$inviter_text eq ""} {
     } -new_request {
 
         # If a registered user who already has information in the system registers for a new event, pre fill the known information.
-        set sql "
-        select first_names, last_name, email 
-        from parties pa 
-        inner join persons p on (p.person_id=pa.party_id) 
-        left outer join users_contact uc on (uc.user_id=pa.party_id)
-        where person_id=:user_id"
-        db_1row user_info $sql
-
+        if {$user_id ne ""} {
+            set sql "
+            select first_names, last_name 
+            from parties pa 
+            inner join persons p on (p.person_id=pa.party_id) 
+            left outer join users_contact uc on (uc.user_id=pa.party_id)
+            where person_id=:user_id"
+            db_1row user_info $sql
+        }
+        
+        if {$inviter_text ne ""} {
+            # Load the data from the partner
+            ::flyhh::match_name_email $inviter_text partner_name partner_email
+            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and p.email=:partner_email"
+            if {$lead_p == t} {set lead_p f} else {set lead_p t}
+        }
         set ha_country_code [lindex [split $email "."] end]
         if {$ha_country_code eq "com"} {set ha_country_code ""}
     } -edit_request {
@@ -258,6 +292,11 @@ if {$inviter_text eq ""} {
             {[::flyhh::mc partner_text_validation_error "partner text must be an email address, full name, or both"]}}
 
     } -new_data {
+        
+        # Unset the partner in case we have solo material
+        if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like 'solo%'" -default "0"]} {
+            set partner_text ""
+        }
         
         ::flyhh::create_participant \
             -participant_id $participant_id \
@@ -339,26 +378,27 @@ if {$inviter_text eq ""} {
                 "]
         }
         
-        
-        # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
-        # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
-        # is already pre-filled?
-        
-        ::flyhh::match_name_email "$partner_text" partner_name partner_email
-        
-        if {$email ne ""} {
-            ::flyhh::send_invite_partner_mail \
-            -participant_id $participant_id \
-            -participant_person_name "$first_names $last_name" \
-            -participant_email $email \
-            -project_id $project_id \
-            -event_name $event_name \
-            -from_addr $event_email \
-            -partner_email $partner_email 
-        }
-        
+        if {$inviter_text eq ""} {
+            # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
+            # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
+            # is already pre-filled?
+            
+            ::flyhh::match_name_email "$partner_text" partner_name partner_email
+            
+            if {$partner_email ne ""} {
+                ::flyhh::send_invite_partner_mail \
+                -participant_id $participant_id \
+                -participant_person_name "$first_names $last_name" \
+                -participant_email $email \
+                -event_id $event_id \
+                -event_name $event_name \
+                -from_addr $event_email \
+                -partner_email $partner_email \
+                -project_id $project_id
+            }
+        }    
     } -after_submit {
-        ad_returnredirect [export_vars -base registration {event_id participant_id user_id token}]
+        ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
     }
 
 }

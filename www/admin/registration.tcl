@@ -32,6 +32,7 @@ set user_id [ad_conn user_id]
 set admin_p [permission::permission_p -object_id $package_id -party_id $user_id -privilege admin]
 set return_url [ad_return_url]
 
+set locale [lang::user::locale]
 # TODO: token parameter is not meant to be optional
 # it is going to be a signed key that helps us extract
 # the project_id and it prevents sequential access
@@ -118,43 +119,42 @@ ad_form \
             {html {size 10}}
         }
         
-        {ha_country_code:text(generic_sql)
+        {ha_country_code:text(select)
             {label {[::flyhh::mc Country "Country"]}}
             {html {}}
-            {custom {sql {select iso,default_name from countries}}}}
+            {options {[im_country_options]}}
+        }
 
         {-section course_preferences
             {legendtext {[::flyhh::mc Course_Registration_Section "Course Information"]}}}
 
-        {course:text(generic_sql)
+        {course:text(select)
             {label {[::flyhh::mc Course "Course"]}}
             {html {}}
-            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Course Income') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
         }
-
+        
         {lead_p:text(select)
             {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
-            {options {{Lead t} {Follow f}}}
-        }        
-
+            {options {{"" ""} {Lead t} {Follow f}}}
+        }    
         {partner_text:text,optional
             {label {[::flyhh::mc Partner "Partner"]}}
-            {value "${inviter_text}"}
             {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
             {html {size 45}}
         }
-        
+                
         {-section accommodation_preferences
             {legendtext {[::flyhh::mc Accomodation_Registration_Section "Accommodation Information"]}}}
-        {accommodation:text(generic_sql)
+        {accommodation:text(select)
             {label {[::flyhh::mc Accommodation "Accommodation"]}}
             {html {}}
-            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Accomodation') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
-        {food_choice:text(generic_sql)
+        {food_choice:text(select)
             {label {[::flyhh::mc Food_Choice "Food Choice"]}}
             {html {}}
-            {custom {sql {SELECT m.material_id,material_name FROM im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Food Choice') and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0}}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Food Choice" -locale $locale]}}
         }
         {roommates_text:text(textarea),optional
             {label {[::flyhh::mc Roommates "Roommates"]}}
@@ -176,10 +176,10 @@ if { [ad_form_new_p -key participant_id] } {
 ad_form -extend -name $form_id -form {
         {-section event_preferences
             {legendtext {[::flyhh::mc Accomodation_Registration_Section "Other Information"]}}}
-        {bus_option:text(generic_sql),optional
+        {bus_option:text(select),optional
             {label {[::flyhh::mc Bus_Option "Bus Option"]}}
             {html {}}
-            {custom {sql {SELECT material_id,material_name FROM im_materials WHERE material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Bus Options')}}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Bus Options" -locale $locale]}}
         }
     }
     
@@ -319,8 +319,11 @@ ad_form -extend -name $form_id -form {
     # Deal with the comments as notes
     set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
     
-    set skills [list [string trim $skills] "text/plain"]
-    set skill_note_id [db_exec_plsql create_note "
+  # Deal with the comments as notes
+    set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+    if {$skills ne ""} {
+        set skills [list [string trim $skills] "text/plain"]
+        set skill_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
                 'im_note',
@@ -334,10 +337,11 @@ ad_form -extend -name $form_id -form {
                 [im_note_status_active]
             )
             "]
-
-
-    set comments [list [string trim $comments] "text/plain"]
-    set skill_note_id [db_exec_plsql create_note "
+    }
+    
+    if {$comments ne ""} {
+        set comments [list [string trim $comments] "text/plain"]
+        set comment_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
                 'im_note',
@@ -351,9 +355,11 @@ ad_form -extend -name $form_id -form {
                 [im_note_status_active]
             )
             "]            
-            
-    set accommodation_text [list [string trim $accommodation_text] "text/plain"]
-    set skill_note_id [db_exec_plsql create_note "
+    }
+                
+    if {$accommodation_text ne ""} {
+        set accommodation_text [list [string trim $accommodation_text] "text/plain"]
+        set accommodation_note_id [db_exec_plsql create_note "
             SELECT im_note__new(
                 NULL,
                 'im_note',
@@ -366,8 +372,8 @@ ad_form -extend -name $form_id -form {
                 [im_note_type_accommodation],
                 [im_note_status_active]
             )
-            "]   
-
+            "]
+    }
 } -edit_data {
         
         set sql "select course, accommodation, food_choice, bus_option, event_participant_status_id
