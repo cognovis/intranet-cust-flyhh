@@ -192,6 +192,7 @@ ad_proc ::flyhh::create_company_if {
         set role_id [im_biz_object_role_key_account]
         im_biz_object_add_role $user_id $company_id $role_id
         db_dml update_primary_contact "update im_companies set primary_contact_id = :user_id where company_id = :company_id and primary_contact_id is null"
+        db_dml update_vat "update im_companies set vat_type_id = 42000 where company_id = :company_id"
 
     }
 

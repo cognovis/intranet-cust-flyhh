@@ -163,3 +163,5 @@ begin
 
 end;
 $$ language 'plpgsql';
+
+update im_companies set vat_type_id = 42000;

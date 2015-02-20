@@ -312,10 +312,22 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
             cst.cost_id,
             cst.cost_status_id,
             cst.paid_amount,
-            participant_id
+            cst.amount as invoice_amount,
+            cst.amount - cst.paid_amount as open_amount,
+            cst.cost_name as invoice_nr,
+            cst.currency,
+            pay.amount as payment_amount,
+            reg.participant_id,
+            p.email as to_addr,
+            p.party_id,
+            e.event_email as from_addr,
+            e.event_name,
+            e.project_id
         from im_costs cst 
         inner join im_payments pay on (pay.cost_id=cst.cost_id)
         inner join flyhh_event_participants reg on (reg.company_id = cst.customer_id and reg.project_id = cst.project_id)
+        inner join flyhh_events e on (e.project_id = cst.project_id)
+        inner join parties p on (reg.person_id = p.party_id)
         where payment_id=:payment_id
     "
 
@@ -323,28 +335,53 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
 
     if { $exists_p } {
 
+
         set cost_status_paid [im_cost_status_paid]
 
         set cost_status_partially_paid [im_cost_status_partially_paid]
+        
+        # Format the amounts
+        set locale [lang::user::locale -user_id $party_id]
+        set payment_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $payment_amount+0] 2] "" $locale]
+        set paid_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $paid_amount+0] 2] "" $locale]
+        set open_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $open_amount+0] 2] "" $locale]
 
         if { $cost_status_id eq $cost_status_paid } {
 
             ::flyhh::set_participant_status \
                 -participant_id $participant_id \
                 -to_status "Registered"
+                
+            # Mail the user he is fully registered
+            set subject "Payment received for $event_name - You are fully registered"
+            set body "Thank you for the payment of $currency $payment_amount. You have now fully paid for $event_name and your invoice $invoice_nr is settled."
 
         } elseif { $cost_status_id eq $cost_status_partially_paid || $paid_amount > 0 } {
 
             ::flyhh::set_participant_status \
                 -participant_id $participant_id \
                 -to_status "Partially Paid"
-
+            
+            # Mail the user he is fully registered
+            set subject "Payment received for $event_name"
+            set body "Thank you for the payment of $currency $payment_amount_pretty for $event_name. You have now paid a total $currency $paid_amount_pretty of the invoiced amount for invoice $invoice_nr. Please transfer the outstanding amount of $currency $open_amount_pretty until 1st of August 2015."
         } else {
 
+            set to_addr ""
             ns_log error "expected cost_status_id to be $cost_status_paid or $cost_status_partially_paid but got $cost_status_id"
 
         }
-
+        
+        if {$to_addr ne ""} {
+            acs_mail_lite::send \
+            -send_immediately \
+            -from_addr $from_addr \
+            -to_addr $to_addr \
+            -subject $subject \
+            -body $body \
+            -mime_type text_html \
+            -object_id $project_id        
+        }
     }
 
 }
