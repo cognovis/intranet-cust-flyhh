@@ -9,8 +9,9 @@ ad_page_contract {
 } {
     event_id:integer,notnull
     email:notnull
-    {inviter_text:trim,notnull ""}
+    {inviter_text:trim ""}
     token:notnull
+    alternative_accommodation:multiple,optional
 } -properties {
 }
 
@@ -41,6 +42,9 @@ set check_token [ns_sha1 "${email}${event_id}"]
 if {$token ne $check_token} {
     set error_text "Illegal Token - You should not edit the link!"
 }
+
+############ CHANGE THIS #####################
+set error_text ""
 
 if {$error_text eq ""} {
     set form_id "registration_form"
@@ -179,6 +183,12 @@ if {$error_text eq ""} {
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
+        {alternative_accommodation:text(multiselect),optional
+            {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
+            {html {}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {help_text {[::flyhh::mc alt_accomm_help "Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp."]}}
+        }
         {food_choice:text(select)
             {label {[::flyhh::mc Food_Choice "Food Choice"]}}
             {html {}}
@@ -204,7 +214,7 @@ if {$error_text eq ""} {
 
     ad_form -extend -name $form_id -form {
         {-section event_preferences
-            {legendtext {[::flyhh::mc Accomodation_Registration_Section "Other Information"]}}}
+            {legendtext {[::flyhh::mc Event_Preference_Registration_Section "Other Information"]}}}
         {bus_option:text(select),optional
             {label {[::flyhh::mc Bus_Option "Bus Option"]}}
             {html {}}
@@ -293,6 +303,7 @@ if {$error_text eq ""} {
 
     } -new_data {
         
+
         # Unset the partner in case we have solo material
         if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like 'solo%'" -default "0"]} {
             set partner_text ""
@@ -378,6 +389,35 @@ if {$error_text eq ""} {
                 "]
         }
         
+        set alternative_accommodation_ids [element get_values $form_id alternative_accommodation]
+
+        if {[exists_and_not_null alternative_accommodation_ids]} {
+            # Store the alternatives in a note
+            set alt_accom_text "[::flyhh::mc alt_accom_text "ALTERNATIVE ACCOMMODATION<ul>"]"
+        
+            foreach accommodation_id $alternative_accommodation_ids {
+                set material_name [db_string mat_name "select material_name from im_materials where material_id = :accommodation_id"]
+                append alt_accom_text "<li>$material_name</li>"
+            }
+            append alt_accom_text "</ul>"
+            set alt_accom_text [list [string trim $alt_accom_text] "text/html"]
+
+            set alt_accommodation_note_id [db_exec_plsql create_note "
+            SELECT im_note__new(
+                NULL,
+                'im_note',
+                now(),
+                :person_id,
+                '[ad_conn peeraddr]',
+                null,
+                :alt_accom_text,
+                :participant_id,
+                [im_note_type_accommodation],
+                [im_note_status_active]
+            )
+            "] 
+        }
+
         if {$inviter_text eq ""} {
             # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
             # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
