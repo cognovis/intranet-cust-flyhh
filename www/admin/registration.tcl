@@ -430,9 +430,9 @@ ad_form -extend -name $form_id -form {
     ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
 
-set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+# set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
 
-set mail_url [export_vars -base "[apm_package_url_from_key "intranet-mail"]mail" -url {{object_id $participant_id} {party_ids $person_id} {subject "${project_name}: "} {from_addr $event_email} return_url}]
+# set mail_url [export_vars -base "[apm_package_url_from_key "intranet-mail"]mail" -url {{object_id $participant_id} {party_ids $person_id} {subject "${project_name}: "} {from_addr $event_email} return_url}]
 
 set left_navbar_html ""
 set show_context_help_p 0

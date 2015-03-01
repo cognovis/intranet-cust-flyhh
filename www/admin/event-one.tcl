@@ -42,10 +42,10 @@ ad_form \
             {label {[::flyhh::mc Event_Name "Name"]}}}
 
         {event_url:text
-            {label {[::flyhh::mc Event_Name "URL"]}}}
+            {label {[::flyhh::mc Event_URL "URL"]}}}
 
         {event_email:text
-            {label {[::flyhh::mc Event_Name "Sender E-Mail"]}}}
+            {label {[::flyhh::mc Event_E-Mail "Sender E-Mail"]}}}
 
         {project_cost_center_id:text(generic_sql)
             {label {[::flyhh::mc Project_Cost_Center "Project Cost Center"]}}
@@ -76,7 +76,7 @@ set sql "
     from im_timesheet_prices itp 
     inner join im_materials m on (m.material_id=itp.material_id) 
     inner join im_material_types mt on (m.material_type_id=mt.material_type_id) 
-    where material_type in ('Accomodation', 'Course Income', 'Bus Options', 'Food Choice')
+    where material_type in ('Accommodation', 'Course Income', 'Bus Options', 'Food Choice')
 "
 
 set section ""
