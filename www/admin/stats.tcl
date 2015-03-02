@@ -27,9 +27,6 @@ template::list::create \
     -name $list_id \
     -multirow $multirow \
     -elements {
-        material_id {
-            label "Material ID"
-        }
         material_type {
             label "Material Type"
         }
@@ -74,6 +71,10 @@ set sql "
     on (em.material_id = m.material_id)
     inner join im_material_types mt
     on (mt.material_type_id = m.material_type_id)
+    inner join flyhh_events e
+    on (e.event_id = em.event_id)
+    and em.capacity >0
+    and e.project_id = :project_id
     order by material_type,material_name
 "
 db_multirow stats $multirow $sql
