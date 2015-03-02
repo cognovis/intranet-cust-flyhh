@@ -31,6 +31,9 @@ begin
 end;
 $$ LANGUAGE 'plpgsql';
 
+SELECT inline_0 ();
+DROP FUNCTION inline_0 ();
+
 select im_category_new(11515,'Skill','Intranet Notes Type');
 select im_category_new(11516,'Accommodation','Intranet Notes Type');
 
