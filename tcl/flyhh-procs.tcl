@@ -106,7 +106,7 @@ append body "
 </ul>
 [_ intranet-cust-flyhh.lt_To_complete_the_regis]
 <p>
-<a href='@link_to_payment_page;noquote@'>[_ intranet-cust-flyhh.Payment_Information]</a>
+<a href='$link_to_payment_page'>[_ intranet-cust-flyhh.Payment_Information]</a>
 </p>"
 
     acs_mail_lite::send \

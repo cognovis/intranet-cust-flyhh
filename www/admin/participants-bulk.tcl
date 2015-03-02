@@ -34,6 +34,7 @@ switch -exact $bulk_action {
                 # ::flyhh::send_cancellation_mail $id        
             }
         }       
+	ad_returnredirect $return_url
     }
     "Send Mail" {
         db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email, project_name from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"

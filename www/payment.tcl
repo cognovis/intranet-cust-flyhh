@@ -69,6 +69,15 @@ if {$error_text eq ""} {
  
     set invoice_nr [db_string invoice_nr "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
     set full_name [im_name_from_user_id $person_id]
+
+    set ctr 1
+    set subtotal 0
+    set cur_format [im_l10n_sql_currency_format]
+    set rounding_precision 2
+    set rounding_factor [expr exp(log(10) * $rounding_precision)]
+    set rf $rounding_factor
+    set bgcolor(0) "class=invoiceroweven"
+    set bgcolor(1) "class=invoicerowodd"
     
     # CREATE a table with all the invoice items in it
     set sql "select
@@ -76,8 +85,8 @@ if {$error_text eq ""} {
         now() as delivery_date_pretty,
         im_category_from_id(i.item_type_id) as item_type,
         im_category_from_id(i.item_uom_id) as item_uom,
-        coalesce(round(i.price_per_unit * i.item_units * :rf),0) / :rf as amount,
-        to_char(coalesce(round(i.price_per_unit * i.item_units * :rf),0) / :rf, :cur_format) as amount_formatted,
+        coalesce(round(i.price_per_unit * i.item_units),0) as amount,
+        to_char(coalesce(round(i.price_per_unit * i.item_units),0), :cur_format) as amount_formatted,
         i.currency as item_currency
       from
         im_invoice_items i
@@ -94,14 +103,6 @@ if {$error_text eq ""} {
         <td class=rowtitle align=right>[lang::message::lookup $locale intranet-invoices.Amount]</td>
         </tr>"
         
-    set ctr 1
-    set subtotal 0
-    set cur_format [im_l10n_sql_currency_format]
-    set rounding_precision 2
-    set rounding_factor [expr exp(log(10) * $rounding_precision)]
-    set rf $rounding_factor
-    set bgcolor(0) "class=invoiceroweven"
-    set bgcolor(1) "class=invoicerowodd"
     
     db_foreach invoice_items $sql {
         
