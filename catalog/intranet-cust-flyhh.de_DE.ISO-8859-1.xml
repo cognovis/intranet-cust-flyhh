@@ -16,4 +16,10 @@
   <msg key="Participant_Email">E-Mail</msg>
   <msg key="Participant_First_Name">Vorname</msg>
   <msg key="Participant_Last_Name">Nachname</msg>
+  <msg key="payment_part_body">Thank you for the payment of %currency% %payment_amount_pretty% for %event_name%. You have now paid a total %currency% %paid_amount_pretty% of the invoiced amount for invoice &lt;a href='%invoice_url%'&gt;%invoice_nr%&lt;/a&gt;. Please transfer the outstanding amount of %currency% %open_amount_pretty% until 1st of August 2015.</msg>
+  <msg key="pPartner_Mail_Body">%participant_person_name% (%participant_email%) has registered for %event_name%
+and would like to have you as his/her partner.
+
+You can register by followining the link below:
+%event_registration_link%</msg>
 </message_catalog>

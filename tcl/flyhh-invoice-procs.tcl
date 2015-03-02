@@ -346,6 +346,8 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         set paid_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $paid_amount+0] 2] "" $locale]
         set open_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $open_amount+0] 2] "" $locale]
 
+	set token [ns_sha1 "${participant_id}${project_id}"]
+	set invoice_url [export_vars -base "[ad_url]/flyhh/invoice" -url {participant_id token}]
         if { $cost_status_id eq $cost_status_paid } {
 
             ::flyhh::set_participant_status \
@@ -353,8 +355,8 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
                 -to_status "Registered"
                 
             # Mail the user he is fully registered
-            set subject "Payment received for $event_name - You are fully registered"
-            set body "Thank you for the payment of $currency $payment_amount. You have now fully paid for $event_name and your invoice $invoice_nr is settled."
+            set subject "[_ intranet-cust-flyhh.payment_full_subject]"
+            set body "[_ intranet-cust-flyhh.payment_full_body]"
 
         } elseif { $cost_status_id eq $cost_status_partially_paid || $paid_amount > 0 } {
 
@@ -363,8 +365,8 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
                 -to_status "Partially Paid"
             
             # Mail the user he is fully registered
-            set subject "Payment received for $event_name"
-            set body "Thank you for the payment of $currency $payment_amount_pretty for $event_name. You have now paid a total $currency $paid_amount_pretty of the invoiced amount for invoice $invoice_nr. Please transfer the outstanding amount of $currency $open_amount_pretty until 1st of August 2015."
+            set subject "[_ intranet-cust-flyhh.payment_part_subject]"
+            set body "[_ intranet-cust-flyhh.payment_part_body]"
         } else {
 
             set to_addr ""

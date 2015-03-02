@@ -10,6 +10,9 @@
   <msg key="Add_Event">Add Event</msg>
   <msg key="add_participant">add participant</msg>
   <msg key="Address_Line_1">Address Line 1</msg>
+  <msg key="alt_accom_text">ALTERNATIVE ACCOMMODATION&lt;ul&gt;</msg>
+  <msg key="alt_accomm_help">Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp.</msg>
+  <msg key="Alternative_Accommodation">Alternative Accommodation</msg>
   <msg key="Bank_Info">Bank Info</msg>
   <msg key="Basic_Info_Section">Basic Info</msg>
   <msg key="bedmate_help">Please let us know if you are fine to share a double bed with another person (male, female), have a special someone whom you want to share your bed with or any other comments regarding accommodation.</msg>
@@ -50,8 +53,11 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="Course">Course</msg>
   <msg key="Course_Registration_Section">Course Information</msg>
   <msg key="Enable_Event">Enable?</msg>
+  <msg key="Event_E-Mail">Sender E-Mail</msg>
   <msg key="Event_Info">Event Info</msg>
   <msg key="Event_Name">Name</msg>
+  <msg key="Event_Preference_Registration_Section">Other Information</msg>
+  <msg key="Event_URL">URL</msg>
   <msg key="Filter_Participants">Filter Participants</msg>
   <msg key="Food_Choice">Food Choice</msg>
   <msg key="get_reg_link_body">Dear %first_names%, &lt;p&gt;You are almost done!&lt;br /&gt;To register please click the following link:&lt;/p&gt;&lt;p&gt; &lt;a href='%registration_url%'&gt;Register for %event_name%&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Your %event_name% Crew.&lt;/p&gt;</msg>
@@ -76,6 +82,9 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="lt_We_have_reserved_a_sp">We have reserved a spot for you at %event_name%.</msg>
   <msg key="lt_You_will_receive_an_E">You will receive an E-Mail if we have found a space for you. This might take a couple of days, please be patient.</msg>
   <msg key="lt_Your_mail_is_on_its_w">Your mail is on its way!</msg>
+  <msg key="material_33306">4+ Room</msg>
+  <msg key="material_33308">3-4 People Room</msg>
+  <msg key="material_33309">2p Room</msg>
   <msg key="material_33311">Balboa Track</msg>
   <msg key="material_33312">Balboa Masters Track</msg>
   <msg key="material_33313">Vegetarian Meals + Party</msg>
@@ -86,6 +95,11 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="material_35118">Solo Jazz Track</msg>
   <msg key="material_36464">Balboa Weekend Course</msg>
   <msg key="material_39590">Bus Halle One Way</msg>
+  <msg key="material_39602">2P with Private Bath</msg>
+  <msg key="material_39603">Shuttle Halle Return</msg>
+  <msg key="material_39604">Balboa Track Swing</msg>
+  <msg key="material_39606">Tap Track</msg>
+  <msg key="material_39607">Evening Classes Only</msg>
   <msg key="Name">Name</msg>
   <msg key="participant">participant</msg>
   <msg key="Participant_Email">E-Mail</msg>
@@ -94,7 +108,11 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="participants">participants</msg>
   <msg key="Partner">Partner</msg>
   <msg key="Partner_Mail_Subject">Invitation to register for %event_name%</msg>
+  <msg key="payment_full_body">Thank you for the payment of %currency% %payment_amount%. You have now fully paid for %event_name% and your invoice &lt;a href='%invoice_url%'&gt;%invoice_nr%&lt;/a&gt; is settled.</msg>
+  <msg key="payment_full_subject">Payment received for %event_name% - You are fully registered</msg>
   <msg key="Payment_Information">Payment Information</msg>
+  <msg key="payment_part_body">Thank you for the payment of %currency% %payment_amount_pretty% for %event_name%. You have now paid a total %currency% %paid_amount_pretty% of the invoiced amount for invoice &lt;a href='%invoice_url%&gt;%invoice_nr%&lt;/a&gt;. Please transfer the outstanding amount of %currency% %open_amount_pretty% until 1st of August 2015.</msg>
+  <msg key="payment_part_subject">Payment received for %event_name%</msg>
   <msg key="Payment_Term">Payment Term</msg>
   <msg key="Payment_Type">Payment Type</msg>
   <msg key="Phone">Phone</msg>
