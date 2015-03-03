@@ -47,6 +47,9 @@ ad_form \
         {event_email:text
             {label {[::flyhh::mc Event_E-Mail "Sender E-Mail"]}}}
 
+        {start_date:text
+            {label {[::flyhh::mc Event_Start_date "Start Date"]}}}
+
         {project_cost_center_id:text(generic_sql)
             {label {[::flyhh::mc Project_Cost_Center "Project Cost Center"]}}
             {html {}}
@@ -126,7 +129,7 @@ ad_form -extend -name $form_id -edit_request {
     }
 
     set sql "
-        select *
+        select evt.*,p.project_id,p.project_cost_center_id
         from flyhh_events evt
         inner join im_projects p on (p.project_id = evt.project_id)
         where event_id = :event_id
@@ -238,7 +241,7 @@ ad_form -extend -name $form_id -edit_request {
 } -after_submit {
 
     # Update url and e-mail
-    db_dml update "update flyhh_events set event_url = :event_url, event_email = :event_email where event_id = :event_id"
+    db_dml update "update flyhh_events set event_url = :event_url, event_email = :event_email, start_date=:start_date where event_id = :event_id"
 
     ad_returnredirect [export_vars -base event-one {event_id}]
 
