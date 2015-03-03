@@ -129,7 +129,6 @@ ad_proc ::flyhh::create_invoice {
                 # Qualify for the partner rebate.
                 lappend delta_items [list 1.0 1.0 [db_string partner_material_id "select material_id from im_materials where lower(material_nr) = 'partner'"]]
             }
-
         }
 
         ::flyhh::create_invoice_items \
