@@ -438,6 +438,49 @@ if {$error_text eq ""} {
             }
         }    
     } -after_submit {
+	set from_addr "$event_email"
+	set to_addr ${email}
+	set mime_type "text/html"
+	set subject "Thank you for registering for $event_name"
+	set body "Hi $first_names,
+         <p>
+         Thanks for registering to $event_name. We have received your registration and will send you a confirmation E-Mail once we have found a spot for you. This is NOT a confirmation, please wait with booking flights and travel arrangements until we can confirm we found a place for you.
+         [_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
+        </p>
+        <ul>
+         "
+
+	if {$course ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Course]: [db_string material_course "select material_name from im_materials where material_id = $course" -default ""]"
+	    if {$lead_p} {append body " (LEAD)</li>"} else {append body " (FOLLOW)</li>"}
+	}
+	if {$accommodation ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Accommodation]: [db_string material_course "select material_name from im_materials where material_id = $accommodation" -default ""]</li>"
+	}
+	if {$food_choice ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Food_Choice]: [db_string material_course "select material_name from im_materials where material_id = $food_choice" -default ""]</li>"
+	}
+	if {$bus_option ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Bus_Option]: [db_string material_course "select material_name from im_materials where material_id = $bus_option" -default ""]</li>"
+	}
+	if {$partner_text ne ""} {
+	    append body "<li>[::flyhh::mc Partner "Partner"]: $partner_text</li>"
+	} 
+	if {$roommates_text ne ""} {
+	    append body "<li>[::flyhh::mc Roommates "Roommates"]: $roommates_text</li>"
+	} 
+	append body "</ul>"
+
+	acs_mail_lite::send \
+	    -send_immediately \
+	    -from_addr $from_addr \
+	    -to_addr $to_addr \
+	    -subject $subject \
+	    -body $body \
+	    -mime_type $mime_type \
+	    -object_id $project_id
+	
+
         ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
     }
 
