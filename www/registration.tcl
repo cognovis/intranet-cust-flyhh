@@ -257,6 +257,8 @@ if {$error_text eq ""} {
             left outer join users_contact uc on (uc.user_id=pa.party_id)
             where person_id=:user_id"
             db_1row user_info $sql
+
+	    db_0or1row company_info "select address_line1 as ha_line1, address_city as ha_city, address_postal_code as ha_postal_code,address_country_code as ha_country_code, address_state as ha_state from im_offices, im_companies where office_id = main_office_id and primary_contact_id = :user_id"
         }
         
         if {$inviter_text ne ""} {

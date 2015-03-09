@@ -296,7 +296,7 @@ ad_proc ::flyhh::create_user_if {
         upvar $person_idVar user_id
     }
 
-    set user_id [db_string user_id "select party_id from parties where email=:email" -default ""]
+    set user_id [db_string user_id "select party_id from parties where lower(email)=lower(:email)" -default ""]
 
     if { $user_id eq {} } {
 
