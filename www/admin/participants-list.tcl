@@ -52,7 +52,7 @@ set admin_p [im_is_user_site_wide_or_intranet_admin $user_id]
 set subsite_id [ad_conn subsite_id]
 set current_user_id $user_id
 set today [lindex [split [ns_localsqltimestamp] " "] 0]
-set project_name [db_string project_name "select project_name from im_projects where project_id = :project_id"]
+db_1row project_name "select project_name,event_id from im_projects p, flyhh_events e where p.project_id = :project_id and e.project_id = p.project_id"
 set page_title "[_ intranet-cust-flyhh.List_of_participants]"
 set context_bar [ad_context_bar [list [util_get_current_url] $project_name] $page_title]
 set return_url [im_url_with_query]
