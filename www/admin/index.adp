@@ -10,8 +10,9 @@
 <br>
 <br>
 <listtemplate name="@list_id@"></listtemplate>
+<multiple name="events">
+    <include src="/packages/intranet-cust-flyhh/lib/event-stats" event_id=@events.event_id@>
+</multiple>
 <br>
 <br>
 #intranet-cust-flyhh.Provider_Company# <a href="@provider_company_link@">@provider_company_name@</a>
-
-

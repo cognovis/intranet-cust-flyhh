@@ -11,6 +11,7 @@
     <p>
     <a class="button" href="registration?project_id=@project_id@">#intranet-cust-flyhh.add_participant#</a>
     <p>
+    <include src="/packages/intranet-cust-flyhh/lib/event-stats" event_id=@event_id@>
 	<table class="table_list_page">
             @table_header_html;noquote@
             @table_body_html;noquote@ 
