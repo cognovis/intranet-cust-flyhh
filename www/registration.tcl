@@ -244,7 +244,7 @@ if {$error_text eq ""} {
         {accepted_terms_p:boolean(checkbox)
             {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
             {options {{{[::flyhh::mc accepted_conditions "I have read and accept the terms and conditions for this event"]} t}}}
-            {help_text {[::flyhh::mc terms_help "You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>"]}}
+            {help_text {You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>}}
         }
     } -new_request {
 
