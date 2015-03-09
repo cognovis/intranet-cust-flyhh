@@ -426,16 +426,20 @@ if {$error_text eq ""} {
             ::flyhh::match_name_email "$partner_text" partner_name partner_email
             
             if {$partner_email ne ""} {
-                ::flyhh::send_invite_partner_mail \
-                -participant_id $participant_id \
-                -participant_person_name "$first_names $last_name" \
-                -participant_email $email \
-                -event_id $event_id \
-                -event_name $event_name \
-                -from_addr $event_email \
-                -partner_email $partner_email \
-                -project_id $project_id
-            }
+		# Check if the partner is already registered
+		set partner_registered_p [db_string parnter "select 1 from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and email = :partner_email" -default 0]
+		if {!$partner_registered_p} {
+		    ::flyhh::send_invite_partner_mail \
+			-participant_id $participant_id \
+			-participant_person_name "$first_names $last_name" \
+			-participant_email $email \
+			-event_id $event_id \
+			-event_name $event_name \
+			-from_addr $event_email \
+			-partner_email $partner_email \
+			-project_id $project_id
+		}
+	    }
         }    
     } -after_submit {
 	set from_addr "$event_email"
