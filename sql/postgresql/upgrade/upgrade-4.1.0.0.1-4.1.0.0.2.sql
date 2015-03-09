@@ -194,3 +194,26 @@ update im_categories set category = 'Accommodation' where category_id = 9002;
 update im_view_columns set column_render_tcl = '"<a href=registration?project_id=$project_id&participant_id=$participant_id>$participant_id</a>"' where column_id = '300001';
 update im_view_columns set column_render_tcl = '"<a href=''/intranet/companies/view?company_id=$company_id''>$participant_person_name</a><br>$email"' where column_id = '300002';
 update im_view_columns set column_render_tcl = '"<b>$participant_status_pretty</b> <p />$quote_html <br>$latest_invoice_html"' where column_id = '300013';
+
+
+CREATE OR REPLACE FUNCTION inline_0 ()
+RETURNS INTEGER AS
+$$
+declare
+    v_count integer;
+begin
+    select count(*) into v_count
+    from	 user_tab_columns 
+    where lower(table_name) = 'flyhh_events'
+    and lower(column_name) = 'start_date';
+    IF 0 != v_count THEN return 0; END IF;
+
+    alter table flyhh_events
+    add column start_date            date;
+
+    return 1;
+
+end;
+$$ LANGUAGE 'plpgsql';
+SELECT inline_0 ();
+DROP FUNCTION inline_0 ();

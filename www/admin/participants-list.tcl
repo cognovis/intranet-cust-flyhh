@@ -38,6 +38,7 @@ set bulk_actions {
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
 
+set locale [lang::user::locale]
 
 # ---------------------------------------------------------------
 # 2. Defaults & Security
@@ -93,6 +94,7 @@ if { $bulk_actions ne {} } {
     lappend column_headers_admin ""
 }
 
+set order_by_options [list [list Random random]]
 
 set column_sql "
 select
@@ -125,6 +127,7 @@ db_foreach column_list_sql $column_sql {
             if {$order_by==$column_name} {
                 set view_order_by_clause $order_by_clause
             }
+	    lappend order_by_options [list [lang::util::localize $column_name] $column_name]
         }
     }
 }
@@ -145,44 +148,53 @@ ad_form \
     -action $action_url \
     -mode $form_mode \
     -method GET \
-    -export {project_id order_by}\
+    -export {project_id}\
     -form {
 
         {lead_p:text(select),optional
             {label {[::flyhh::mc Lead_or_follow "Lead/Follow"]}}
             {options {{"" ""} {Lead t} {Follow f}}}}
+        {course:text(select),optional
+            {label {[::flyhh::mc Course "Course"]}}
+            {html {}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
+        }
 
-        {level:text(im_category_tree),optional
-            {label {[::flyhh::mc Level "Level"]}} 
-            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
+#        {level:text(im_category_tree),optional
+#            {label {[::flyhh::mc Level "Level"]}} 
+#            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
-        {validation_mask:text(multiselect),optional,multiple
-            {label {[::flyhh::mc Validation "Validation"]}} 
-            {options {
-                {"" ""} 
-                {"Invalid Partner" 1} 
-                {"Invalid Roommates" 2} 
-                {"Mismatch Accomm." 4} 
-                {"Mismatch L/F" 8}
-                {"Mismatch Level" 16}
-            }}} 
+#        {validation_mask:text(multiselect),optional,multiple
+#            {label {[::flyhh::mc Validation "Validation"]}} 
+#            {options {
+#                {"" ""} 
+#                {"Invalid Partner" 1} 
+#                {"Invalid Roommates" 2} 
+#                {"Mismatch Accomm." 4} 
+#                {"Mismatch L/F" 8}
+#                {"Mismatch Level" 16}
+#            }}} 
 
         {event_participant_status_id:text(im_category_tree),optional
             {label {[::flyhh::mc Status "Status"]}} 
             {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
+        {order_by:text(select),optional
+            {label {[::flyhh::mc Order_by "Order by"]}}
+            {options $order_by_options}
+	}
     } -on_submit {
 
         set mask 0
-        foreach num $validation_mask {
-            if { $num == 1 } { lappend criteria "invalid_partner_p" }
-            if { $num == 2 } { lappend criteria "invalid_roommates_p" }
-            if { $num == 4 } { lappend criteria "mismatch_accomm_p" }
-            if { $num == 8 } { lappend criteria "mismatch_lead_p" }
-            if { $num == 16 } { lappend criteria "mismatch_level_p" }
-        }
+#        foreach num $validation_mask {
+#            if { $num == 1 } { lappend criteria "invalid_partner_p" }
+#            if { $num == 2 } { lappend criteria "invalid_roommates_p" }
+#            if { $num == 4 } { lappend criteria "mismatch_accomm_p" }
+#            if { $num == 8 } { lappend criteria "mismatch_lead_p" }
+#            if { $num == 16 } { lappend criteria "mismatch_level_p" }
+#        }
 
-        foreach varname {lead_p level event_participant_status_id validation_status_id} {
+        foreach varname {lead_p course event_participant_status_id validation_status_id} {
 
             if { [exists_and_not_null $varname] } {
 
@@ -219,6 +231,11 @@ if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
 } else {
     set order_by_clause "order by participant_id"
+}
+
+# Support for randomization
+if {$order_by == "random"} {
+    set order_by_clause "order by random()"
 }
 
 set extra_where_clause [join [concat $criteria $extra_wheres] " and "]

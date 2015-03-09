@@ -12,11 +12,11 @@
 				
 		
 		        <title>Swing Castle Camp Registration</title>
-		        <link rel="stylesheet" href="http://swingcastlecamp.de/style7.css" type="text/css" media="screen" />
-		        <link rel="stylesheet" href="http://swingcastlecamp.de/css/slimbox.css" type="text/css" media="screen" />
-		        <script type="text/javascript" src="http://swingcastlecamp.de/js/mootools.js"></script>
-		        <script type="text/javascript" src="http://swingcastlecamp.de/js/slimbox.js"></script>
-		        <link rel="image_src" href="http://swingcastlecamp.de/images/start.jpg" />
+		        <link rel="stylesheet" href="/flyhh/css/scc.css" type="text/css" media="screen" />
+		        <link rel="stylesheet" href="/flyhh/css/slimbox.css" type="text/css" media="screen" />
+		        <script type="text/javascript" src="/flyhh/js/mootools.js"></script>
+		        <script type="text/javascript" src="/flyhh/js/slimbox.js"></script>
+		        <link rel="image_src" href="/flyhh/images/scc.jpg" />
 		    </head>
 		
 		<body >
@@ -34,34 +34,28 @@
 		        <a href="http://swingcastlecamp.de/"> 
 		        <img 
 		            border="0"
-		            src="http://swingcastlecamp.de/images/banner.png"
+		            src="/flyhh/images/scc-banner.png"
 		            alt="Swing Castle Camp Banner"
 		            width="1024px"
 		            height="213px"
 		            />
 		        </a>		<div id="sidebar">
 		
-		            <ul id="navigation">
-		                    <li id="welcome"><a href="http://swingcastlecamp.de/index.php">WELCOME</a></li>
-		                <li id="location"><a href="http://swingcastlecamp.de/location.php">LOCATION</a></li>
-		                <li id="instructors"><a href="http://swingcastlecamp.de/instructors.php">INSTRUCTORS</a></li>
-		                <li id="classes"><a href="http://swingcastlecamp.de/classes.php">CLASSES</a></li>
-		                <li id="evenings"><a href="http://swingcastlecamp.de/evenings.php">EVENINGS</a></li>
-		                <li id="music"><a href="http://swingcastlecamp.de/music.php">MUSIC</a></li>
-		                <li id="competitions"><a href="http://swingcastlecamp.de/competitions.php">COMPETITIONS</a></li>
-		                <li id="schedule"><a href="http://swingcastlecamp.de/schedule.php">SCHEDULE</a></li>
-		                <li id="accomodation"><a href="http://swingcastlecamp.de/accommodation.php">EAT & SLEEP</a></li>
-		                <li id="travel"><a href="http://swingcastlecamp.de/travel.php">TRAVEL</a></li>
-		                <li id="costs"><a href="http://swingcastlecamp.de/costs.php">COSTS</a></li>
-		                <li id="register"><a href="http://swingcastlecamp.de/register.php">REGISTER</a></li>
-		                <li id="faq"><a href="http://swingcastlecamp.de/faq.php">FAQ</a></li>
-		                <li id="contact"><a href="http://swingcastlecamp.de/contact.php">CONTACT</a></li>
-		                <li id="newslettert"><a href="http://swingcastlecamp.de/newsletter.php">NEWSLETTER</a></li>
-		                <li id="datenschutz"><a href="http://swingcastlecamp.de/terms.php">TERMS & CONDITIONS</a></li>
-		                <li id="datenschutz"><a href="http://swingcastlecamp.de/datenschutz.php">DATENSCHUTZ</a></li>
-		                <li id="impressum"><a href="http://swingcastlecamp.de/impressum.php">IMPRESSUM</a></li>
-		            </ul>
-    		        </div>			
+    		        <ul id="navigation">
+			<li id="welcome"><a href="index.php"><i>Welcome</i></a></li>
+			<li id="location"><a href="location.php"><i>Location</i></a></li>
+			<li id="instructors"><a href="instructors.php"><i>Instructors</i></a></li>
+			<li id="classes"><a href="classes.php"><i>Classes</i></a></li>
+			<li id="evenings"><a href="evenings.php"><i>Evenings</i></a></li>
+			<li id="accomodation"><a href="accommodation.php"><i>Eat and Sleep</i></a></li>
+			<li id="travel"><a href="travel.php"><i>Travel</i></a></li>
+			<li id="register"><a href="register.php"><i>Register</i></a></li>
+			<li id="faq"><a href="faq.php"><i>FAQ</i></a></li>
+			<li id="newsletter"><a href="newsletter.php"><i>Newsletter</i></a></li>
+			<li id="about"><a href="about.php"><i>About</i></a></li>
+			<li id="contact"><a href="contact.php"><i>Contact</i></a></li>
+			</ul>
+			</div>			
 		
 		    <div id="content">
 		

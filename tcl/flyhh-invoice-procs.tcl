@@ -51,8 +51,10 @@ ad_proc ::flyhh::create_invoice {
     }
 
     set payment_days [ad_decode $payment_term_id "80107" "7" "80114" "14" "80130" "30" "80160" "60" ""]
-    set invoice_template [parameter::get -parameter invoice_template -default "RechnungCognovis.en.odt"]
-
+    set invoice_template [parameter::get -parameter invoice_template -default "InvoiceFlyHH"]
+    set locale [lang::user::locale -user_id $company_contact_id]
+    set invoice_template "${invoice_template}.${locale}.odt"
+    
     set provider_id [im_company_internal]          ;# Company that provides this service - Us
     set invoice_status_id "[im_cost_status_created]"  ;# Intranet Cost Status (3800 = Created)
 
@@ -66,6 +68,8 @@ ad_proc ::flyhh::create_invoice {
     set note "$cost_center_code $participant_id"
     set user_id [ad_conn user_id]
     set peeraddr [ad_conn peeraddr]
+
+    set delivery_date [db_string start_date "select start_date from flyhh_events where project_id = :project_id" -default ""]
 
     db_transaction {
         set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
@@ -99,7 +103,8 @@ ad_proc ::flyhh::create_invoice {
                 cost_center_id = :cost_center_id, 
                 project_id = :project_id,
                 payment_term_id = :payment_term_id, 
-                vat_type_id = 42021 
+                vat_type_id = 42021,
+                delivery_date = :delivery_date
             where cost_id = :invoice_id
          "
 
@@ -129,7 +134,6 @@ ad_proc ::flyhh::create_invoice {
                 # Qualify for the partner rebate.
                 lappend delta_items [list 1.0 1.0 [db_string partner_material_id "select material_id from im_materials where lower(material_nr) = 'partner'"]]
             }
-
         }
 
         ::flyhh::create_invoice_items \

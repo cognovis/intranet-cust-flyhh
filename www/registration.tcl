@@ -104,9 +104,6 @@ if {$error_text eq ""} {
         {-section contact_details
             {legendtext {[::flyhh::mc Contact_Details_Section "Contact Details"]}}}
             
-        {cell_phone:text,optional
-            {label {[::flyhh::mc Phone "Cell Phone"]}}}
-        
         {ha_line1:text
             {label {[::flyhh::mc Address_Line_1 "Address Line 1"]}}
             {html {size 45}}
@@ -131,6 +128,9 @@ if {$error_text eq ""} {
             {html {}}
             {options {[im_country_options]}}
         }
+        {cell_phone:text,optional
+            {label {[::flyhh::mc Phone "Cell Phone"]}}}
+        
         {-section course_preferences
             {legendtext {[::flyhh::mc Course_Registration_Section "Course Information"]}}}
 
@@ -150,7 +150,7 @@ if {$error_text eq ""} {
             }    
             {partner_text:text,optional
                 {label {[::flyhh::mc Partner "Partner"]}}
-                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+                {help_text {[::flyhh::mc partner_text_help "Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate"]}}
                 {html {size 45}}
             }
         }
@@ -170,7 +170,7 @@ if {$error_text eq ""} {
             {partner_text:text(inform)
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {value "${inviter_text}"}
-                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+                {help_text {[::flyhh::mc partner_text_present_help "Your partner invited you to the event, so you are unable to change the course, role and partner."]}}
             }
         }
     }
@@ -197,7 +197,7 @@ if {$error_text eq ""} {
         {roommates_text:text(textarea),optional
             {label {[::flyhh::mc Roommates "Roommates"]}}
             {html "rows 4 cols 45"}
-            {help_text "comma-separated list of email addresses, names, or both"}
+            {help_text {[::flyhh::mc roommates_text_help "Comma-separated list of email addresses"]}}
         }
     }
 
@@ -244,7 +244,7 @@ if {$error_text eq ""} {
         {accepted_terms_p:boolean(checkbox)
             {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
             {options {{{[::flyhh::mc accepted_conditions "I have read and accept the terms and conditions for this event"]} t}}}
-            {help_text {[::flyhh::mc terms_help "You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>"]}}
+            {help_text {You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>}}
         }
     } -new_request {
 
@@ -257,6 +257,8 @@ if {$error_text eq ""} {
             left outer join users_contact uc on (uc.user_id=pa.party_id)
             where person_id=:user_id"
             db_1row user_info $sql
+
+	    db_0or1row company_info "select address_line1 as ha_line1, address_city as ha_city, address_postal_code as ha_postal_code,address_country_code as ha_country_code, address_state as ha_state from im_offices, im_companies where office_id = main_office_id and primary_contact_id = :user_id"
         }
         
         if {$inviter_text ne ""} {
@@ -305,10 +307,10 @@ if {$error_text eq ""} {
         
 
         # Unset the partner in case we have solo material
-        if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like 'solo%'" -default "0"]} {
+        if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like '%- solo%'" -default "0"]} {
             set partner_text ""
         }
-        
+
         ::flyhh::create_participant \
             -participant_id $participant_id \
             -project_id $project_id \
@@ -426,18 +428,65 @@ if {$error_text eq ""} {
             ::flyhh::match_name_email "$partner_text" partner_name partner_email
             
             if {$partner_email ne ""} {
-                ::flyhh::send_invite_partner_mail \
-                -participant_id $participant_id \
-                -participant_person_name "$first_names $last_name" \
-                -participant_email $email \
-                -event_id $event_id \
-                -event_name $event_name \
-                -from_addr $event_email \
-                -partner_email $partner_email \
-                -project_id $project_id
-            }
+		# Check if the partner is already registered
+		set partner_registered_p [db_string parnter "select 1 from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and email = :partner_email" -default 0]
+		if {!$partner_registered_p} {
+		    ::flyhh::send_invite_partner_mail \
+			-participant_id $participant_id \
+			-participant_person_name "$first_names $last_name" \
+			-participant_email $email \
+			-event_id $event_id \
+			-event_name $event_name \
+			-from_addr $event_email \
+			-partner_email $partner_email \
+			-project_id $project_id
+		}
+	    }
         }    
     } -after_submit {
+	set from_addr "$event_email"
+	set to_addr ${email}
+	set mime_type "text/html"
+	set subject "Thank you for registering for $event_name"
+	set body "Hi $first_names,
+         <p>
+         Thanks for registering to $event_name. We have received your registration and will send you a confirmation E-Mail once we have found a spot for you. This is NOT a confirmation, please wait with booking flights and travel arrangements until we can confirm we found a place for you.
+         [_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
+        </p>
+        <ul>
+         "
+
+	if {$course ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Course]: [db_string material_course "select material_name from im_materials where material_id = $course" -default ""]"
+	    if {$lead_p} {append body " (LEAD)</li>"} else {append body " (FOLLOW)</li>"}
+	}
+	if {$accommodation ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Accommodation]: [db_string material_course "select material_name from im_materials where material_id = $accommodation" -default ""]</li>"
+	}
+	if {$food_choice ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Food_Choice]: [db_string material_course "select material_name from im_materials where material_id = $food_choice" -default ""]</li>"
+	}
+	if {$bus_option ne ""} {
+	    append body "<li>[_ intranet-cust-flyhh.Bus_Option]: [db_string material_course "select material_name from im_materials where material_id = $bus_option" -default ""]</li>"
+	}
+	if {$partner_text ne ""} {
+	    append body "<li>[::flyhh::mc Partner "Partner"]: $partner_text</li>"
+	} 
+	if {$roommates_text ne ""} {
+	    append body "<li>[::flyhh::mc Roommates "Roommates"]: $roommates_text</li>"
+	} 
+	append body "</ul>"
+
+	acs_mail_lite::send \
+	    -send_immediately \
+	    -from_addr $from_addr \
+	    -to_addr $to_addr \
+	    -subject $subject \
+	    -body $body \
+	    -mime_type $mime_type \
+	    -object_id $project_id
+	
+
         ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
     }
 
