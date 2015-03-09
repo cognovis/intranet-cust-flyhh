@@ -12,11 +12,11 @@
 				
 		
 		        <title>Swing Castle Camp Registration</title>
-		        <link rel="stylesheet" href="http://swingcastlecamp.de/style7.css" type="text/css" media="screen" />
-		        <link rel="stylesheet" href="http://swingcastlecamp.de/css/slimbox.css" type="text/css" media="screen" />
-		        <script type="text/javascript" src="http://swingcastlecamp.de/js/mootools.js"></script>
-		        <script type="text/javascript" src="http://swingcastlecamp.de/js/slimbox.js"></script>
-		        <link rel="image_src" href="http://swingcastlecamp.de/images/start.jpg" />
+		        <link rel="stylesheet" href="/flyhh/css/scc.css" type="text/css" media="screen" />
+		        <link rel="stylesheet" href="/flyhh/css/slimbox.css" type="text/css" media="screen" />
+		        <script type="text/javascript" src="/flyhh/js/mootools.js"></script>
+		        <script type="text/javascript" src="/flyhh/js/slimbox.js"></script>
+		        <link rel="image_src" href="/flyhh/images/scc.jpg" />
 		    </head>
 		
 		<body >
@@ -34,7 +34,7 @@
 		        <a href="http://swingcastlecamp.de/"> 
 		        <img 
 		            border="0"
-		            src="http://swingcastlecamp.de/images/banner.png"
+		            src="/flyhh/images/scc-banner.png"
 		            alt="Swing Castle Camp Banner"
 		            width="1024px"
 		            height="213px"
