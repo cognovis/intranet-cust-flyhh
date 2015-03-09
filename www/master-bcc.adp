@@ -7,11 +7,11 @@
                <meta name="description"    content="Balboa Swing Dance Camp"/>
                <meta name="keywords"       content="Balboa, Balswing, Bal-Swing, Swing, Dance, Dancing, Camp, Lindy Hop, Charleston, NOLA, Tanzen, Swingtanzen"/>
                <title>Balboa Castle Camp Registration</title>
-               <link rel="stylesheet" href="http://balboacastlecamp.de/style.css" type="text/css" media="screen" />
-               <link rel="stylesheet" href="http://balboacastlecamp.de/css/slimbox.css" type="text/css" media="screen" />
+               <link rel="stylesheet" href="/flyhh/css/slimbox.css" type="text/css" media="screen" />
                <link rel="stylesheet" href="/intranet/style/style.saltnpepper.css?" type="text/css" media="screen" />
-               <script type="text/javascript" src="http://balboacastlecamp.de/js/mootools.js"></script>
-               <script type="text/javascript" src="http://balboacastlecamp.de/js/slimbox.js"></script>
+               <link rel="stylesheet" href="/flyhh/css/bcc.css" type="text/css" media="screen" />
+               <script type="text/javascript" src="/flyhh/js/mootools.js"></script>
+               <script type="text/javascript" src="/flyhh/js/slimbox.js"></script>
        
            </head>
        
@@ -26,10 +26,10 @@
                    }(document, 'script', 'facebook-jssdk'));
                </script>
        <div id="wrapper">
-               <a href="http://balboacastlecamp.de/http://balboacastlecamp.de/http://www.balboacastlecamp.de/"> 
+               <a href="http://balboacastlecamp.de/">
                    <img 
                        border="0"
-                       src="http://balboacastlecamp.de/images/banner.png"
+                       src="/flyhh/images/bcc-banner.png"
                        alt="Balboa Castle Camp"
                        width="1024px"
                        height="150px"

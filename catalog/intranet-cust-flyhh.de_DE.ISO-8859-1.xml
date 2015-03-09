@@ -1,25 +1,55 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <message_catalog package_key="intranet-cust-flyhh" locale="de_DE" charset="ISO-8859-1">
 
+  <msg key="accepted_conditions">Ich habe die AGB gelesen und stimme diesen zu</msg>
+  <msg key="Accomm.">Accomm.</msg>
   <msg key="Accommodation">Unterkunft</msg>
   <msg key="Accommodation_Comments">Kommentare zur Unterkunft</msg>
   <msg key="Accomodation_Registration_Section">Unterkunft</msg>
+  <msg key="Add_Event">Event Hinzufügen</msg>
+  <msg key="add_participant">Teilnehmer hinzufügen</msg>
   <msg key="Address_Line_1">Straße</msg>
+  <msg key="alt_accom_text">Alternative Unterkünfte</msg>
+  <msg key="alt_accomm_help">Bitte gib uns alternative Übernachtungsmöglichkeiten an für den Fall dass Deine erste Wahl nicht verfügbar ist. Dies erhöht die Chancen dass Du im Camp teilnehmen kannst.</msg>
+  <msg key="Alternative_Accommodation">Alternative Unterkunft</msg>
+  <msg key="Bank_Info">Bank Info</msg>
   <msg key="Basic_Info_Section">Basis Informationen</msg>
+  <msg key="bedmate_help">Lass uns wissen ob du gewillt bist ein Doppelbett mit einer anderen Person (männlich/weiblich) zu teilen, bzw. die E-Mail wenn es eine bestimmte Person sein soll. Ferner kannst Du das Feld für alle weiteren Kommentare hinsichtlich der Unterkunft nutzen.</msg>
   <msg key="Bus_Option">Bus</msg>
   <msg key="City">Stadt</msg>
   <msg key="Comments">Kommentare</msg>
+  <msg key="confirm_mail_subject">Bestätigung der Anmeldung für %name%</msg>
+  <msg key="Contact_Details_Section">Kontaktdaten</msg>
+  <msg key="Country">Land</msg>
+  <msg key="Course">Kurs</msg>
+  <msg key="Course_Registration_Section">Kurs Information</msg>
+  <msg key="Enable_Event">Einschalten?</msg>
+  <msg key="Event_E-Mail">E-Mail des Absenders</msg>
+  <msg key="Event_Info">Event Information</msg>
+  <msg key="Event_Preference_Registration_Section">Weitere Informationen</msg>
+  <msg key="Food_Choice">Essenswahl</msg>
   <msg key="get_reg_link_body">Hallo %first_names%, &lt;p&gt;Du bist fast fertig!&lt;br /&gt;Um die Anmeldung abzuschliessen klicke bitte auf den folgenden Link:&lt;/p&gt;&lt;p&gt; &lt;a href='%registration_url%'&gt;Zu %event_name% anmelden&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Deine %event_name% Crew.&lt;/p&gt;
 </msg>
+  <msg key="Lead_or_Follow">Lead/Follow</msg>
   <msg key="lt_THANK_YOU_FOR_YOUR_RE">DANKE FÜR DEINE ANMELDUNG</msg>
   <msg key="lt_Transfer_note_invoice">Betreff: %invoice_nr% - %full_name%</msg>
+  <msg key="lt_Your_mail_is_on_its_w">Die E-Mail mit dem Link zur Registrierung ist auf dem Weg zu Deinem Postfach. Bitte schaue im SPAM nach falls die E-mail nicht angekommen ist.</msg>
   <msg key="Participant_Email">E-Mail</msg>
   <msg key="Participant_First_Name">Vorname</msg>
   <msg key="Participant_Last_Name">Nachname</msg>
+  <msg key="Partner">Tanzpartner</msg>
+  <msg key="partner_text_help">Falls Du einen Partner hast für den Kurs, gib bitte die E-Mail Adresse Deines Partners an so dass wir Sie/Ihn informieren können und Euch beiden den Partner Rabatt gewähren. Das ist nicht relevant für Solo / Tap Kurse.</msg>
   <msg key="payment_part_body">Thank you for the payment of %currency% %payment_amount_pretty% for %event_name%. You have now paid a total %currency% %paid_amount_pretty% of the invoiced amount for invoice &lt;a href='%invoice_url%'&gt;%invoice_nr%&lt;/a&gt;. Please transfer the outstanding amount of %currency% %open_amount_pretty% until 1st of August 2015.</msg>
+  <msg key="Phone">(Mobil-) Telefon</msg>
+  <msg key="Postal_code">Postleitzahl</msg>
   <msg key="pPartner_Mail_Body">%participant_person_name% (%participant_email%) has registered for %event_name%
 and would like to have you as his/her partner.
 
 You can register by followining the link below:
 %event_registration_link%</msg>
+  <msg key="Roommates">Roommates</msg>
+  <msg key="roommates_text_help">Durch Komma getrennte Liste von E-Mail Adressen der Personen mit denen Du das Zimmer teilen möchtest.</msg>
+  <msg key="State">Staat</msg>
+  <msg key="Terms_and_Conditions">AGB</msg>
+  <msg key="terms_help">Du kannst die AGB unter &lt;a href=&quot;http://swingcastlecamp.de/terms.php&quot;&gt;http://swingcastlecamp.de/terms.php&lt;/a&gt; finden</msg>
 </message_catalog>

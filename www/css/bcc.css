@@ -1,0 +1,305 @@
+			@import url(http://fonts.googleapis.com/css?family=Voltaire);
+			@import url(http://fonts.googleapis.com/css?family=Merriweather);
+			@import url(http://fonts.googleapis.com/css?family=Josefin+Sans:600,600italic,700);
+			
+			body {
+				font-size: 100%;
+				color: #000000;
+				text-align: left;
+				background: url(/flyhh/images/Floortilesmall.jpg);
+				background-attachment: fixed;
+				}
+			
+			p {
+				
+				font-family: 'Merriweather', sans-serif;
+				color: #000000;
+				font-size:14px;
+				line-height:19px;
+				text-align: left;
+			
+				}
+			
+
+			h1 {
+				font-family: 'Voltaire', sans-serif;
+				font-style:normal;
+				color:#000000;
+				font-size:22px;
+				line-height:28px;
+				text-decoration:none;
+				letter-spacing:2px;
+				}
+	
+			h2 {
+				font-family: 'Merriweather', sans-serif;
+				color: #000000;
+				font-size:16px;
+				line-height:22px;
+				text-align: left;
+				font-style:bold;
+				}
+	
+			hr {
+				height: 3px;
+				background-color: #000000;
+				}
+	
+			
+			
+			ul  {
+				padding-left: 24px;
+				padding-bottom: 6px;
+				margin: 0px;
+				}
+				
+			td {
+				padding-left: 4px;
+				padding-right: 4px;
+				}
+				
+			#wrapper {
+				width: 1124px;
+				margin: 0 auto;
+				}
+			
+			#sidebar {
+				width: 210px;
+				float: left;
+				}
+				
+			#content {
+				background-color: #ccd5ca;
+				color: black;
+				margin-left: 210px;
+				width: 728px;
+				padding-top:25px;
+				padding-bottom:25px;
+				padding-right:30px;
+				padding-left:30px;
+				
+				}
+
+					#content2 {
+				background-color: white;
+				color: black;
+				margin-left: 210px;
+				width: 728px;
+				padding-top:35px;
+				padding-bottom:25px;
+				padding-right:30px;
+				padding-left:30px;
+				border: 4px black;
+				-moz-border-radius: 25px;
+				-webkit-border-radius: 25px;
+				
+				}
+				
+			#content.li p {
+				font-family: 'Merriweather', sans-serif;
+				color: #000000;
+				font-size:14px;
+				line-height:18px;
+				text-align: left;
+				
+				}	
+			/*
+			#navigation {
+				width: 210px; height: 392px;
+				background-image: url(navmenu.png);
+				background-position: 0px 0px;
+				background-repeat: no-repeat;
+				margin: 0px;
+				padding: 0px;
+				text-align: left;
+				list-style-type: none;
+				position: relative;
+				}
+			*/
+			
+			#navigation {
+				
+				margin: 0px;
+				padding: 0px;
+				text-align:center;
+				list-style-type: none;
+				position: relative;
+			
+				}
+			
+			#navigation li {
+				list-style-type: none;
+				display: block;
+				margin-right: 10px;
+			
+				}
+				
+			#navigation li a{
+				font-family: 'Voltaire', sans-serif;
+				font-style:normal;
+				color:#FFFFFF;
+				font-size:20px;
+				line-height:28px;
+				text-decoration:none;
+				letter-spacing:2px;
+				}	
+				
+				
+			#navigation li a:hover {color:#ccd5ca}
+			#navigation li a:active {color:#ccd5ca}
+	
+		/*
+			#welcome a, #location a, #instructors a, #classes a, #evenings a, #accomodation a, #travel a, #register a, #faq a, #about a, #home a, #impressum a, #datenschutz a, #contact a{
+				display: block;
+				width: 210px; height: 32px;
+				margin: 0px;
+				text-decoration: none;
+				}
+			
+			a i {
+				visibility: hidden;
+				}
+			
+			#welcome a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -416px;
+				background-repeat: no-repeat;
+				}
+			
+			#location a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -448px;
+				background-repeat: no-repeat;
+				}
+				
+			#instructors a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -480px;
+				background-repeat: no-repeat;
+				}
+
+			#classes a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -512px;
+				background-repeat: no-repeat;
+				}	
+				
+			#evenings a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -544px;
+				background-repeat: no-repeat;
+				}	
+				
+			#accomodation a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -576px;
+				background-repeat: no-repeat;
+				}
+
+			#travel a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -608px;
+				background-repeat: no-repeat;
+				}	
+				
+			#register a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -640px;
+				background-repeat: no-repeat;
+				}
+
+			#faq a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -672px;
+				background-repeat: no-repeat;
+				}	
+			
+		
+			
+			#about a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -702px;
+				background-repeat: no-repeat;
+				}
+			
+			#contact a:hover {
+				background-image: url(navmenu.png);
+				background-position: 0px -734px;
+				background-repeat: no-repeat;
+				}
+			*/
+			
+		
+				/* nur f¸r img mit class left */
+			img.left {
+				padding-top:0px;
+				padding-bottom:10px;
+				padding-right:20px;
+				padding-left:0px;
+				margin-bottom:10px;
+				max-width: 100%;
+				border: 30px;
+				float: left;
+				}
+			
+			img.right {
+				padding-top:0px;
+				padding-bottom:10px;
+				padding-right:0px;
+				padding-left:20px;
+				margin-bottom:10px;
+				max-width: 100%;
+				border: 30px;
+				float: right;
+				}
+			
+						
+			p.headblock {
+				padding-left:5px;
+				font-size:1.4em;
+				line-height:96%;
+				letter-spacing:3px;
+				}
+			
+			
+			#content p {
+				margin:0 0 20px 0;
+				}
+			
+			a img {
+					border: none;
+					}
+			
+			a:link {text-decoration: none; color: maroon;}
+			a:visited {text-decoration: none; color: maroon;}
+			a:active {text-decoration: none;}
+			a:hover {text-decoration: underline; color: red;}
+
+
+.filter-block .margin-form .form-item-wrapper {
+    padding: 0 0 10px;
+	background-color: #ccd5ca;
+}
+
+.filter-block .margin-form .form-item-wrapper .form-label {
+    text-align: left;
+    position: relative; 
+    float: none;
+    padding-top: 0px;
+    margin-left: 0em;
+    font-weight: bold;
+	background-color: #ccd5ca;
+}
+
+.filter-block .margin-form .form-button, .filter-block .margin-form .form-help-text {
+    position: relative; 
+    margin-left: 0em;
+    padding-bottom: 8px;
+	background-color: #ccd5ca;
+}
+.filter-block .margin-form .form-item-wrapper .form-widget {
+        margin-left: 0em;
+        padding-top: 0px;
+	background-color: #ccd5ca;
+}
+
