@@ -104,9 +104,6 @@ if {$error_text eq ""} {
         {-section contact_details
             {legendtext {[::flyhh::mc Contact_Details_Section "Contact Details"]}}}
             
-        {cell_phone:text,optional
-            {label {[::flyhh::mc Phone "Cell Phone"]}}}
-        
         {ha_line1:text
             {label {[::flyhh::mc Address_Line_1 "Address Line 1"]}}
             {html {size 45}}
@@ -131,6 +128,9 @@ if {$error_text eq ""} {
             {html {}}
             {options {[im_country_options]}}
         }
+        {cell_phone:text,optional
+            {label {[::flyhh::mc Phone "Cell Phone"]}}}
+        
         {-section course_preferences
             {legendtext {[::flyhh::mc Course_Registration_Section "Course Information"]}}}
 
@@ -150,7 +150,7 @@ if {$error_text eq ""} {
             }    
             {partner_text:text,optional
                 {label {[::flyhh::mc Partner "Partner"]}}
-                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+                {help_text {[::flyhh::mc partner_text_help "Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate"]}}
                 {html {size 45}}
             }
         }
@@ -170,7 +170,7 @@ if {$error_text eq ""} {
             {partner_text:text(inform)
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {value "${inviter_text}"}
-                {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+                {help_text {[::flyhh::mc partner_text_present_help "Your partner invited you to the event, so you are unable to change the course, role and partner."]}}
             }
         }
     }
@@ -197,7 +197,7 @@ if {$error_text eq ""} {
         {roommates_text:text(textarea),optional
             {label {[::flyhh::mc Roommates "Roommates"]}}
             {html "rows 4 cols 45"}
-            {help_text "comma-separated list of email addresses, names, or both"}
+            {help_text {[::flyhh::mc roommates_text_help "Comma-separated list of email addresses"]}}
         }
     }
 
@@ -305,10 +305,10 @@ if {$error_text eq ""} {
         
 
         # Unset the partner in case we have solo material
-        if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like 'solo%'" -default "0"]} {
+        if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like '%- solo%'" -default "0"]} {
             set partner_text ""
         }
-        
+
         ::flyhh::create_participant \
             -participant_id $participant_id \
             -project_id $project_id \

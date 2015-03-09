@@ -186,7 +186,8 @@ ad_proc ::flyhh::create_company_if {
                             -company_path           $company_path \
                             -main_office_id         $main_office_id \
                             -company_type_id        $company_type_id \
-                            -company_status_id      $company_status_id]
+                            -company_status_id      $company_status_id \
+			   -no_callback]
                 
         # add users to the company as key account
         set role_id [im_biz_object_role_key_account]
@@ -1213,7 +1214,7 @@ ad_proc -public flyhh_material_options {
         set locale [lang::user::locale]
     }
     
-    db_foreach materials "SELECT m.material_id,material_name,p.price,p.currency FROM im_timesheet_prices p,im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and p.material_id = m.material_id and p.company_id = :company_id" {
+    db_foreach materials "SELECT m.material_id,material_name,p.price,p.currency FROM im_timesheet_prices p,im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and p.material_id = m.material_id and p.company_id = :company_id order by material_nr" {
         set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
         set material_display "$material_name ($currency $price)"
         lappend material_options [list $material_display $material_id]

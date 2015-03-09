@@ -57,6 +57,7 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="Event_Info">Event Info</msg>
   <msg key="Event_Name">Name</msg>
   <msg key="Event_Preference_Registration_Section">Other Information</msg>
+  <msg key="Event_Start_date">Start Date</msg>
   <msg key="Event_URL">URL</msg>
   <msg key="Filter_Participants">Filter Participants</msg>
   <msg key="Food_Choice">Food Choice</msg>
@@ -81,7 +82,7 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="lt_Viewing_stats_for_eve">Viewing stats for event:</msg>
   <msg key="lt_We_have_reserved_a_sp">We have reserved a spot for you at %event_name%.</msg>
   <msg key="lt_You_will_receive_an_E">You will receive an E-Mail if we have found a space for you. This might take a couple of days, please be patient.</msg>
-  <msg key="lt_Your_mail_is_on_its_w">Your mail is on its way!</msg>
+  <msg key="lt_Your_mail_is_on_its_w">Your mail with the registration link is on its way! Make sure to look in the spam folder as well if you do not receive the mail shortly.</msg>
   <msg key="material_33306">4+ Room</msg>
   <msg key="material_33308">3-4 People Room</msg>
   <msg key="material_33309">2p Room</msg>
@@ -100,6 +101,7 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="material_39604">Balboa Track Swing</msg>
   <msg key="material_39606">Tap Track</msg>
   <msg key="material_39607">Evening Classes Only</msg>
+  <msg key="material_39697">External Accommodation</msg>
   <msg key="Name">Name</msg>
   <msg key="participant">participant</msg>
   <msg key="Participant_Email">E-Mail</msg>
@@ -108,6 +110,8 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="participants">participants</msg>
   <msg key="Partner">Partner</msg>
   <msg key="Partner_Mail_Subject">Invitation to register for %event_name%</msg>
+  <msg key="partner_text_help">Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate. This does not apply to Solo / Tap classes</msg>
+  <msg key="partner_text_present_help">Your partner invited you to the event, so you are unable to change the course, role and partner.</msg>
   <msg key="payment_full_body">Thank you for the payment of %currency% %payment_amount%. You have now fully paid for %event_name% and your invoice &lt;a href='%invoice_url%'&gt;%invoice_nr%&lt;/a&gt; is settled.</msg>
   <msg key="payment_full_subject">Payment received for %event_name% - You are fully registered</msg>
   <msg key="Payment_Information">Payment Information</msg>
@@ -128,6 +132,7 @@ You can register by followining the link below:
   <msg key="Reg.ID">Reg.ID</msg>
   <msg key="Roommate(s)">Roommate(s)</msg>
   <msg key="Roommates">Roommates</msg>
+  <msg key="roommates_text_help">Comma-separated list of email addresses</msg>
   <msg key="Skills">Skills</msg>
   <msg key="skills_help">Please provide us with some of your skills</msg>
   <msg key="State">State</msg>
