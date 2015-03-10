@@ -264,7 +264,7 @@ if {$error_text eq ""} {
         if {$inviter_text ne ""} {
             # Load the data from the partner
             ::flyhh::match_name_email $inviter_text partner_name partner_email
-            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and p.email=:partner_email"
+            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email)"
             if {$lead_p == t} {set lead_p f} else {set lead_p t}
         }
         set ha_country_code [lindex [split $email "."] end]

@@ -21,7 +21,7 @@ ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {
     set name ""
     set email ""
 
-    set email_re {([^\s\.]+@[^\s\.]+\.(?:[^\s\.]+)+)}
+    set email_re {([^\s]+@[^\s\.]+\.(?:[^\s]+))}
     set name_re {((?:[^\s]+\s+)+[^\s]+)}
     set name_email_re "${name_re}\\s+${email_re}"
 
@@ -33,6 +33,9 @@ ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {
         }
     }
     
+    set email [string map {( ""} $email]
+    set email [string map {) ""} $email]
+
     set party_id [party::get_by_email -email $email]
     if {$party_id ne ""} {
         # Directly send the party the registration link
@@ -40,6 +43,10 @@ ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {
         set name "$first_names $last_name"
     } else {
         set name [string trim $name " "]
+	regsub -all {'} $name {''} name
+	if {$name ne ""} {
+	    set email [db_string party "select email from im_companies,parties where lower(company_name) like lower('$name') and primary_contact_id = party_id limit 1" -default ""]
+	}
     }   
     
     return true
@@ -1222,4 +1229,51 @@ ad_proc -public flyhh_material_options {
     
     return $material_options
     
+}
+
+ad_proc -public ::flyhh::cleanup_text {} {
+    Cleanup the text for roommates and partners
+} {
+    ::flyhh::clean_roommate_text
+    ::flyhh::clean_partner_text
+}
+
+ad_proc -public ::flyhh::clean_partner_text {} {
+    Clean up the partner_text
+} {
+    db_foreach partner {select partner_text, participant_id from flyhh_event_participants where partner_text is not null and partner_participant_id is null} {
+	set flag [::flyhh::match_name_email $partner_text name email]
+	set partner_participant_id [db_string parti "select participant_id from flyhh_event_participants, parties where party_id = person_id and email = :email" -default ""]
+	set partner_person_id [party::get_by_email -email $email]
+	db_dml update_partner_text "update flyhh_event_participants set partner_name = :name, partner_email = :email, partner_participant_id = :partner_participant_id, partner_person_id = :partner_person_id where participant_id = :participant_id"
+	db_1row automaton "select flyhh_event_participant__status_automaton(:participant_id) from dual"
+    }
+}
+
+ad_proc -public ::flyhh::clean_roommate_text {} {
+    Clean up roommates
+} {
+    db_foreach roommate {select * from flyhh_event_roommates} {
+	if {$roommate_person_id ne ""} {
+	    if {$roommate_name eq "" || $roommate_email eq ""} {
+		set roommate_email [party::email -party_id $roommate_person_id]
+		set roommate_name [person::name -person_id $roommate_person_id]
+		db_dml update "update flyhh_event_roommates set roommate_email = :roommate_email, roommate_name = :roommate_name where roommate_person_id = :roommate_person_id"
+		db_1row automaton "select flyhh_event_participant__status_automaton(:participant_id) from dual"
+	    }
+	} else {
+	    set flag [::flyhh::match_name_email "$roommate_name $roommate_email" roommate_name roommate_email]
+	}
+
+	if {$roommate_email ne ""} {
+	    set roommate_person_id [party::get_by_email -email $roommate_email]
+	    if {$roommate_person_id ne ""} {
+		if {$roommate_name eq ""} {
+		    set roommate_name [person::name -person_id $roommate_person_id]
+		} 
+		db_dml update "update flyhh_event_roommates set roommate_person_id = :roommate_person_id, roommate_name = :roommate_name where roommate_email = :roommate_email"
+		db_1row automaton "select flyhh_event_participant__status_automaton(:participant_id) from dual"
+	    }
+	}
+    }
 }
