@@ -44,9 +44,10 @@ if {$token ne $check_token} {
 }
 
 ############ CHANGE THIS #####################
-set error_text ""
 
-if {$error_text eq ""} {
+if {$error_text ne ""} {
+    ad_return_error "Error in URL" "$error_text"
+} else {
     set form_id "registration_form"
     set action_url ""
     
@@ -258,13 +259,13 @@ if {$error_text eq ""} {
             where person_id=:user_id"
             db_1row user_info $sql
 
-	    db_0or1row company_info "select address_line1 as ha_line1, address_city as ha_city, address_postal_code as ha_postal_code,address_country_code as ha_country_code, address_state as ha_state from im_offices, im_companies where office_id = main_office_id and primary_contact_id = :user_id"
+	    db_0or1row company_info "select address_line1 as ha_line1, address_city as ha_city, address_postal_code as ha_postal_code,address_country_code as ha_country_code, address_state as ha_state from im_offices, im_companies where office_id = main_office_id and primary_contact_id = :user_id limit 1"
         }
         
         if {$inviter_text ne ""} {
             # Load the data from the partner
             ::flyhh::match_name_email $inviter_text partner_name partner_email
-            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email)"
+            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email) limit 1"
             if {$lead_p == t} {set lead_p f} else {set lead_p t}
         }
         set ha_country_code [lindex [split $email "."] end]
