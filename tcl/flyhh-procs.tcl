@@ -1298,3 +1298,15 @@ ad_proc -public ::flyhh::clean_roommate_text {} {
 	}
     }
 }
+
+ad_proc -public flyhh_roommate_component {
+    -participant_id:required
+    {-return_url ""}
+} {
+    Component to display the roommates
+} {
+    set params [list  [list participant_id $participant_id]  [list return_url ""]  ]
+    
+    set result [ad_parse_template -params $params "/packages/intranet-cust-flyhh/lib/roommates-list"]
+    return [string trim $result]    
+}
