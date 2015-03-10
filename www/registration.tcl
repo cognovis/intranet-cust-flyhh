@@ -248,7 +248,6 @@ if {$error_text ne ""} {
             {help_text {You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>}}
         }
     } -new_request {
-
         # If a registered user who already has information in the system registers for a new event, pre fill the known information.
         if {$user_id ne ""} {
             set sql "
@@ -303,10 +302,13 @@ if {$error_text ne ""} {
         {partner_text
             {[::flyhh::match_name_email $partner_text partner_name partner_email] || $partner_text eq ""}
             {[::flyhh::mc partner_text_validation_error "partner text must be an email address, full name, or both"]}}
+        {roommates_text
+            {[::flyhh::valid_roommates_p -roommates_text $roommates_text]}
+            {[::flyhh::mc invalid_roommate "Your list does not contain E-Mail addresses or names we can use. Please correct"]}
+        }
 
     } -new_data {
         
-
         # Unset the partner in case we have solo material
         if {[db_string course_material "select 1 from im_materials where material_id = :course and lower(material_nr) like '%- solo%'" -default "0"]} {
             set partner_text ""

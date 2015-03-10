@@ -43,10 +43,13 @@ ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {
         set name "$first_names $last_name"
     } else {
         set name [string trim $name " "]
-	regsub -all {'} $name {''} name
-	if {$name ne ""} {
-	    set email [db_string party "select email from im_companies,parties where lower(company_name) like lower('$name') and primary_contact_id = party_id limit 1" -default ""]
-	}
+        	regsub -all {'} $name {''} name
+        if {$name ne ""} {
+	       set party_id [db_string party "select primary_contact_id from im_companies where lower(company_name) like lower('$name') limit 1" -default ""]
+	    }
+	    if {$party_id ne ""} {
+    	       set email [party::email -party_id $party_id]
+	    }
     }   
     
     return true
@@ -471,6 +474,24 @@ ad_proc ::flyhh::create_participant {
 
     }
 
+}
+
+ad_proc ::flyhh::valid_roommates_p {
+    -roommates_text:required
+} {
+    Check if we have valid roommates
+} {
+    set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
+    
+    foreach roommate_text $roommates_list {
+    
+        ::flyhh::match_name_email $roommate_text roommate_name roommate_email
+        if {$roommate_email eq ""} {
+            return 0
+            ad_script_abort
+        }
+    }
+    return 1
 }
 
 
