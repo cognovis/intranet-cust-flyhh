@@ -32,6 +32,7 @@ db_foreach materials {
     SELECT m.material_id,material_name
     FROM im_materials m 
     WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Accommodation')
+    and material_status_id = 9100
 } {
     lappend material_options [list $material_name $material_id]
 }
@@ -51,6 +52,7 @@ ad_form \
     -name $form_id \
     -action $action_url \
     -mode $mode \
+    -export {return_url} \
     -form {
 
         room_id:key(acs_object_id_seq)

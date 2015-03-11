@@ -6,6 +6,6 @@
 <property name="show_context_help">@show_context_help_p;noquote@</property>
 <listtemplate name="@list_id@"></listtemplate>
 <form action='/flyhh/admin/room-one' method="get">
-<input type="hidden" name="return_url" value="@return_url;noquote@">
+<input type="hidden" name="return_url" value="/flyhh/admin/rooms-list">
 <input type="submit" value="New Room">
 </form>

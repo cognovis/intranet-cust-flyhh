@@ -40,15 +40,19 @@ template::list::create \
         }
         sleeping_spots {
             label {[::flyhh::mc room_sleeping_spots "Sleeping Spots"]}
+            html {style "text-align:center;"}
         }
         single_beds {
             label {[::flyhh::mc room_single_beds "Single Beds"]}
+            html {style "text-align:center;"}
         }
         double_beds {
             label {[::flyhh::mc room_double_beds "Double Beds"]}
+            html {style "text-align:center;"}
         }
         additional_beds {
             label {[::flyhh::mc room_additional_beds "Additional Beds"]}
+            html {style "text-align:center;"}
         }
         toilet_p {
             label {[::flyhh::mc room_toilet "Toilet ?"]}
@@ -56,6 +60,7 @@ template::list::create \
                 <if @rooms.toilet_p@ eq f><font color="red">No</font></if>
                 <else>Yes</else>
             }
+            html {style "text-align:center;"}
         }
         bath_p {
             label {[::flyhh::mc room_toilet "Toilet ?"]}
@@ -63,6 +68,7 @@ template::list::create \
                 <if @rooms.bath_p@ eq f><font color="red">No</font></if>
                 <else>Yes</else>
             }
+            html {style "text-align:center;"}
         }
         description {
             label {[::flyhh::mc room_description "Description"]}
@@ -88,6 +94,7 @@ db_foreach materials {
     SELECT m.material_id,material_name
     FROM im_materials m 
     WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type='Accommodation')
+    and material_status_id = 9100
 } {
     lappend material_options [list $material_name $material_id]
 }
@@ -145,7 +152,6 @@ db_multirow -extend {room_url} rooms $multirow $sql {
     set description [template::util::richtext::get_property html_value $description]
 }
 
-set return_url [ad_return_url] 
 # Filter (possibly) later on
 # Compile and execute the formtemplate if advanced filtering is enabled.
 eval [template::adp_compile -string {<formtemplate id="$form_id" style="tiny-plain-po"></formtemplate>}]
