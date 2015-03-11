@@ -81,3 +81,8 @@
 #lbCaption {
 	font-weight: bold;
 }
+
+.po_form_element_help {
+    margin-top: 4px; 
+    font-size: 12px;
+}

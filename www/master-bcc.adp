@@ -8,7 +8,6 @@
                <meta name="keywords"       content="Balboa, Balswing, Bal-Swing, Swing, Dance, Dancing, Camp, Lindy Hop, Charleston, NOLA, Tanzen, Swingtanzen"/>
                <title>Balboa Castle Camp Registration</title>
                <link rel="stylesheet" href="/flyhh/css/slimbox.css" type="text/css" media="screen" />
-               <link rel="stylesheet" href="/intranet/style/style.saltnpepper.css?" type="text/css" media="screen" />
                <link rel="stylesheet" href="/flyhh/css/bcc.css" type="text/css" media="screen" />
                <script type="text/javascript" src="/flyhh/js/mootools.js"></script>
                <script type="text/javascript" src="/flyhh/js/slimbox.js"></script>

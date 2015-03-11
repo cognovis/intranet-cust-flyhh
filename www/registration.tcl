@@ -281,9 +281,9 @@ if {$error_text ne ""} {
         db_1row event_participant $sql
 
         set sql "select * from flyhh_event_roommates where participant_id=:participant_id"
-        set roommates ""
+        set roommates_text ""
         db_foreach roommate $sql {
-            append roommates $roommate_email "\n"
+            append roommates_text $roommate_email "\n"
         }
 
         set form_elements [template::form::get_elements $form_id]
