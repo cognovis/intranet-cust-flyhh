@@ -36,6 +36,16 @@ db_foreach materials {
     lappend material_options [list $material_name $material_id]
 }
 
+set office_options [list]
+
+db_foreach materials {
+    SELECT office_id,office_name
+    FROM im_offices o
+    WHERE office_type_id = 175;
+} {
+    lappend office_options [list $office_name $office_id]
+}
+
 # TODO: disable cost_center_id when editing form
 ad_form \
     -name $form_id \
@@ -51,6 +61,11 @@ ad_form \
             {label {[::flyhh::mc room_type "Room Type"]}}
             {html {}}
             {options {$material_options}}
+        }
+        {room_office_id:text(select)
+            {label {[::flyhh::mc room_location "Room Location"]}}
+            {html {}}
+            {options {$office_options}}
         }
         {sleeping_spots:text(inform)
             {label {[::flyhh::mc room_sleeping_spots "Sleeping Spots"]}}
@@ -119,6 +134,7 @@ ad_form -extend -name $form_id -edit_request {
                 room_id,
                 room_name,
                 room_material_id,
+                room_office_id,
                 sleeping_spots,
                 single_beds,
                 double_beds,
@@ -130,6 +146,7 @@ ad_form -extend -name $form_id -edit_request {
                 :room_id,
                 :room_name,
                 :room_material_id,
+                :room_office_id,
                 :sleeping_spots,
                 :single_beds,
                 :double_beds,
@@ -148,7 +165,7 @@ ad_form -extend -name $form_id -edit_request {
     db_dml update_room {
         update flyhh_event_rooms set room_name = :room_name, room_material_id = :room_material_id, sleeping_spots = :sleeping_spots,
             single_beds = :single_beds, double_beds = :double_beds, additional_beds = :additional_beds, 
-            toilet_p = :toilet_p, bath_p = :bath_p, description = :description
+            toilet_p = :toilet_p, bath_p = :bath_p, description = :description, room_office_id = :room_office_id
         where room_id = :room_id
     }
     
