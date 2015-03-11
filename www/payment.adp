@@ -17,7 +17,7 @@
  <td></td>
  </tr>
  <tr valign=top><td colspan=2>
-
+     RECIPIENT: Flying Hamburger Events UG <br/>
      IBAN: DE64100100100822944102<br/>
      BIC (8-digits): PBNKDEFF<br/>
      BIC (11-digits): PBNKDEFF200<br/>
