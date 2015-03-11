@@ -73,6 +73,18 @@ if { [exists_and_not_null participant_id] } {
     set mode edit
 }
 
+set room_options [list]
+
+db_foreach rooms {
+    select room_name,room_id, office_name
+    from flyhh_event_rooms e, im_offices o, im_projects p
+    where e.room_office_id = o.office_id
+    and o.company_id = p.company_id
+    and p.project_id = :project_id
+} {
+    lappend room_options [list "$room_name ($office_name)" $room_id]
+}
+
 ad_form \
     -name $form_id \
     -action $action_url \
@@ -151,6 +163,10 @@ ad_form \
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
+	{room_id:text(select)
+	    {label {[::flyhh::mc Room "Room"]}}
+	    {options $room_options}
+	}
         {food_choice:text(select)
             {label {[::flyhh::mc Food_Choice "Food Choice"]}}
             {html {}}
@@ -427,6 +443,7 @@ ad_form -extend -name $form_id -form {
     
 
 } -after_submit {
+    db_dml update_room "update flyhh_event_participants set room_id = :room_id where participant_id = :participant_id"
     ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
 

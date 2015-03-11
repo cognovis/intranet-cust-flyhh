@@ -31,7 +31,7 @@ set new_roommate_url [export_vars -base "/flyhh/roommate-new" {participant_id re
 multirow create roomates roommate_name roommate_url room_name room_url
 
 set roommates_sql "
-	select *,ep.room_id,room_name
+	select *,ep.room_id
 	from	   flyhh_event_roommates er
 	inner join flyhh_event_participants ep on (ep.participant_id = er.participant_id)
 	left outer join flyhh_event_rooms ro on (ep.room_id = ro.room_id)
@@ -52,10 +52,13 @@ db_multirow -extend {roommate_status roommate_url room_url} roommates roommates_
             lappend status_list [::flyhh::mc Roommate_not_mutual "Roommate not mutual"]
         }
     }
-    if {$room_id eq ""} {
+    if {$roommate_room_id eq ""} {
         set room_url ""
+	set room_name ""
     } else {
-        set room_url [export_vars -base "/flyhh/admin/room-one" -url {room_id}]
+
+	set room_name [db_string room "select room_name from flyhh_event_rooms where room_id = :room_id" -default ""]
+        set room_url [export_vars -base "/flyhh/admin/room-one" -url {roommate_room_id}]
     }
     if {$room_id ne $roommate_room_id} {
         lappend status_list [::flyhh::mc Different_Rooms "Different Rooms"]
