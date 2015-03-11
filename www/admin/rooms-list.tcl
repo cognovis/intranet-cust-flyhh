@@ -63,7 +63,7 @@ template::list::create \
             html {style "text-align:center;"}
         }
         bath_p {
-            label {[::flyhh::mc room_toilet "Toilet ?"]}
+            label {[::flyhh::mc room_bath "Bath ?"]}
             display_template {
                 <if @rooms.bath_p@ eq f><font color="red">No</font></if>
                 <else>Yes</else>
