@@ -5,6 +5,7 @@ ad_page_contract {
     @author malte.sussdorff@cognovis.de
     @creation-date 2015-03-10 
 } {
+    {filter_project_id ""}
     room_id:integer,optional,notnull
     {return_url ""}
 } -properties {
@@ -14,7 +15,7 @@ ad_page_contract {
 
 set page_title "Room Form"
 set context ""
-set context_bar [ad_context_bar [list "/flyhh/admin/rooms-list" [::flyhh::mc Rooms "Rooms"]] $page_title]
+set context_bar [ad_context_bar [list "[export_vars -base "/flyhh/admin/rooms-list" -url {filter_project_id}]" [::flyhh::mc Rooms "Rooms"]] $page_title]
 
 set form_id "room_form"
 set action_url ""
@@ -100,14 +101,6 @@ ad_form \
     }
 
 
-ad_form -extend -name $form_id -validate {
-
-    {room_name 
-        {[db_string must_not_exist "select false from flyhh_event_rooms where room_name=:room_name and room_id != :room_id" -default true]}
-        {[::flyhh::mc room_name_exists "room name must be unique, given name already exists"]}}
-
-}
-
 ad_form -extend -name $form_id -edit_request {
 
     set sql "
@@ -182,4 +175,64 @@ ad_form -extend -name $form_id -edit_request {
 
 }
 
-
+if {$mode eq "display"} {
+    
+    set event_options [list [list "" ""]]
+    db_foreach events "
+        select p.project_id,project_name 
+        from im_projects p, flyhh_events e 
+        where project_status_id = [im_project_status_open] 
+        and p.project_id = e.project_id
+    " {
+        lappend event_options [list $project_name $project_id]
+    }
+    
+    ad_form \
+    -name "flyhh_event_room_filter" \
+    -action "room-one" \
+    -mode edit \
+    -method GET \
+    -export {room_id} \
+    -form {
+        {filter_project_id:text(select),optional
+            {label {[::flyhh::mc Event "Event"]}}
+            {html {}}
+            {options {$event_options}}
+            {values $filter_project_id}
+        }
+    } -on_submit {
+    
+        foreach varname {room_office_id room_material_id } {
+    
+            if { [exists_and_not_null $varname] } {
+    
+                set value [set $varname]
+                set quoted_value [ns_dbquotevalue $value]
+                append extra_where_clause "and $varname = $quoted_value" 
+    
+            }
+    
+        }
+    
+    }
+    
+    
+    # Filter (possibly) later on
+    # Compile and execute the formtemplate if advanced filtering is enabled.
+    eval [template::adp_compile -string {<formtemplate id="flyhh_event_room_filter" style="tiny-plain-po"></formtemplate>}]
+    set filter_html $__adp_output
+    
+    # Left Navbar is the filter/select part of the left bar
+    set left_navbar_html "
+        <div class='filter-block'>
+                <div class='filter-title'>
+                   [::flyhh::mc Filter_Rooms "Filter Rooms"]
+                </div>
+                    $filter_html
+              </div>
+          <hr/>
+    "
+    
+} else {
+    set left_navbar_html ""
+}

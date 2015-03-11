@@ -73,16 +73,34 @@ if { [exists_and_not_null participant_id] } {
     set mode edit
 }
 
-set room_options [list]
+set room_options [list [list "" ""]]
 
-db_foreach rooms {
-    select room_name,room_id, office_name
-    from flyhh_event_rooms e, im_offices o, im_projects p
-    where e.room_office_id = o.office_id
-    and o.company_id = p.company_id
-    and p.project_id = :project_id
-} {
-    lappend room_options [list "$room_name ($office_name)" $room_id]
+set room_sql "select room_name,e.room_id, office_name, sleeping_spots, material_name,
+(select count(*) from flyhh_event_participants ep where ep.room_id = e.room_id and p.project_id = ep.project_id) as taken_spots
+from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
+where e.room_office_id = o.office_id
+and o.company_id = p.company_id
+and e.room_material_id = m.material_id
+and p.project_id = :project_id
+"
+
+if {[exists_and_not_null participant_id]} {
+    db_1row room_id "select room_id,accommodation from flyhh_event_participants where participant_id = :participant_id"
+    if {$room_id ne ""} {
+        db_1row room_info "select room_name,e.room_id, office_name, material_name
+from flyhh_event_rooms e, im_offices o, im_materials m
+where e.room_office_id = o.office_id
+and e.room_material_id = m.material_id
+and e.room_id = :room_id"
+        lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
+    }
+    append room_sql "and e.room_material_id = $accommodation"
+}
+
+db_foreach rooms $room_sql {
+    if {$taken_spots < $sleeping_spots} {
+        lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
+    }
 }
 
 ad_form \
@@ -163,7 +181,7 @@ ad_form \
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
-	{room_id:text(select)
+	{room_id:text(select),optional
 	    {label {[::flyhh::mc Room "Room"]}}
 	    {options $room_options}
 	}

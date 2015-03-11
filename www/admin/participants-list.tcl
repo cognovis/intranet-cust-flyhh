@@ -34,6 +34,7 @@ set bulk_actions {
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
     "Send Mail" "participant-email" "E-Mail checked participants"
+    "Assign Room" "participant-room-assign" "Assign room for checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]

@@ -58,7 +58,7 @@ db_multirow -extend {roommate_status roommate_url room_url} roommates roommates_
     } else {
 
 	set room_name [db_string room "select room_name from flyhh_event_rooms where room_id = :room_id" -default ""]
-        set room_url [export_vars -base "/flyhh/admin/room-one" -url {roommate_room_id}]
+        set room_url [export_vars -base "/flyhh/admin/room-one" -url {{room_id $roommate_room_id} {filter_project_id $project_id}}]
     }
     if {$room_id ne $roommate_room_id} {
         lappend status_list [::flyhh::mc Different_Rooms "Different Rooms"]

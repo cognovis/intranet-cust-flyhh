@@ -13,7 +13,7 @@ ad_page_contract {
 } -validate {
 
     allowed_bulk_actions -requires {bulk_action} {
-        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Send Mail"] $bulk_action] } {
+        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Send Mail" "Assign Room"] $bulk_action] } {
             ad_complain "page requires an allowed bulk action"
         }
     }    
@@ -42,5 +42,8 @@ switch -exact $bulk_action {
         set mail_url [export_vars -base "[apm_package_url_from_key "intranet-mail"]mail" -url {{object_id $project_id} {party_ids $party_ids} {subject "${project_name}: "} {from_addr $event_email} return_url}]
 
         ad_returnredirect $mail_url 
+    }
+    "Assign Room" {
+        ad_returnredirect [export_vars -base "participant-room-assign" -url {{participant_ids $participant_id} project_id return_url}]
     }
 }

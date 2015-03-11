@@ -37,11 +37,13 @@ set participant_ids [db_list participant_ids "
            and p.partner_mutual_p = true
            and e.partner_mutual_p = true
            and p.event_participant_status_id = [im_category_from_category -category "Waiting List"]
+           and p.room_id is not null
         UNION
         select participant_id
           from flyhh_event_participants 
          where participant_id in ([template::util::tcl_to_sql_list $participant_id])
            and event_participant_status_id = [im_category_from_category -category "Waiting List"]
+           and room_id is not null
     "
     ]
 

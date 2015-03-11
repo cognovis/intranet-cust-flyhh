@@ -7,7 +7,7 @@ ad_page_contract {
     Display the list of rooms available in the system
     
 } {
-    project_id:integer,optional
+    {filter_project_id ""}
     room_material_id:integer,optional
     room_office_id:integer,optional
 }
@@ -26,21 +26,26 @@ template::list::create \
     -elements {
         room_name {
             label {[::flyhh::mc room_Name "Name"]}
-            display_template {
-                <a href='@rooms.room_url;noquote@'>@rooms.room_name;noquote@</a>
-            }
+            link_url_col room_url
         }
         room_type {
             label {[::flyhh::mc room_type "Room Type"]}
-            html {style "text-align:center;"}
+            display_template {
+                @rooms.room_type;noquote@
+            }
         }
         room_location {
             label {[::flyhh::mc room_location "Room Location"]}
-            html {style "text-align:center;"}
+            display_template {
+                @rooms.room_location;noquote@
+            }
         }
         sleeping_spots {
             label {[::flyhh::mc room_sleeping_spots "Sleeping Spots"]}
             html {style "text-align:center;"}
+            display_template {
+                @rooms.sleeping_spots;noquote@
+            }
         }
         single_beds {
             label {[::flyhh::mc room_single_beds "Single Beds"]}
@@ -109,13 +114,23 @@ db_foreach materials {
     lappend office_options [list $office_name $office_id]
 }
 
+set event_options [list [list "" ""]]
+db_foreach events "
+    select p.project_id,project_name 
+    from im_projects p, flyhh_events e 
+    where project_status_id = [im_project_status_open] 
+    and p.project_id = e.project_id
+" {
+    lappend event_options [list $project_name $project_id]
+}
+
+
 set extra_where_clause ""
 ad_form \
     -name $form_id \
     -action $action_url \
     -mode $form_mode \
     -method GET \
-    -export {project_id}\
     -form {
         {room_material_id:text(select),optional
             {label {[::flyhh::mc room_type "Room Type"]}}
@@ -127,7 +142,12 @@ ad_form \
             {html {}}
             {options {$office_options}}
         }
-
+        {filter_project_id:text(select),optional
+            {label {[::flyhh::mc Event "Event"]}}
+            {html {}}
+            {options {$event_options}}
+            {value $filter_project_id}
+        }
     } -on_submit {
 
         foreach varname {room_office_id room_material_id } {
@@ -144,12 +164,28 @@ ad_form \
 
     }
 
-set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location from flyhh_event_rooms where 1=1 $extra_where_clause"
+if {$filter_project_id ne ""} {
+    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location,
+    (select count(*) from flyhh_event_participants ep where ep.room_id = er.room_id and project_id = :project_id) as taken_spots
+    from flyhh_event_rooms er where 1=1 $extra_where_clause"
+} else {
+    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms where 1=1 $extra_where_clause"
+}
 
 db_multirow -extend {room_url} rooms $multirow $sql {
     # Change the sleeping spots if we have a project
-    set room_url [export_vars -base "/flyhh/admin/room-one" -url {room_id}]
+    set room_url [export_vars -base "/flyhh/admin/room-one" -url {room_id filter_project_id}]
     set description [template::util::richtext::get_property html_value $description]
+    if {$taken_spots >0} {
+        set remaining_spots [expr $sleeping_spots - $taken_spots]
+        if {$remaining_spots >0} {
+            set sleeping_spots "<font color='green'>$remaining_spots</font> / $sleeping_spots"
+        } else {
+            set sleeping_spots "<font color='red'>$remaining_spots</font> / $sleeping_spots"
+            set room_type "<strike>$room_type</strike>"   
+            set room_location "<strike>$room_location</strike>"   
+        }
+    }
 }
 
 # Filter (possibly) later on
