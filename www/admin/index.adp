@@ -6,6 +6,7 @@
 <p>
 <div>
     <a class="button" href="event-one">#intranet-cust-flyhh.Add_Event#</a>
+    <a class="button" href="rooms-list">#intranet-cust-flyhh.Rooms#</a>
 </div>
 <br>
 <br>

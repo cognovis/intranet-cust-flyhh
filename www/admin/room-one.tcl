@@ -6,6 +6,7 @@ ad_page_contract {
     @creation-date 2015-03-10 
 } {
     room_id:integer,optional,notnull
+    {return_url ""}
 } -properties {
 } -validate {
 } -errors {
@@ -13,7 +14,7 @@ ad_page_contract {
 
 set page_title "Room Form"
 set context ""
-set context_bar [ad_context_bar $page_title]
+set context_bar [ad_context_bar [list "/flyhh/admin/rooms-list" [::flyhh::mc Rooms "Rooms"]] $page_title]
 
 set form_id "room_form"
 set action_url ""
@@ -94,7 +95,7 @@ ad_form -extend -name $form_id -edit_request {
 
     set sql "
         select *
-        from flyhh_event_rooms
+        from flyhh_event_rooms where room_id = :room_id
     "
 
     db_1row room_info $sql
@@ -154,7 +155,11 @@ ad_form -extend -name $form_id -edit_request {
 
 } -after_submit {
 
-    ad_returnredirect [export_vars -base room-one {room_id}]
+    if {$return_url eq ""} {
+        ad_returnredirect [export_vars -base room-one {room_id}]    
+    } else {
+        ad_returnredirect $return_url
+    }
 
 }
 
