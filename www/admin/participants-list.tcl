@@ -183,7 +183,7 @@ ad_form \
 
         {room_p:text(select),optional
             {label {[::flyhh::mc room_p "Room Assigned"]}}
-            {options {{No 0} {Yes 1}}}
+            {options {{No 0} {Yes 1} {"Yes w/ external" 2}}}
         }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
@@ -232,7 +232,14 @@ ad_form \
 # 5. Generate SQL Query
 # ---------------------------------------------------------------
 
-if {$room_p} {lappend criteria "ep.room_id is not null"}
+ds_comment "$room_p"
+if {$room_p} {
+    if {$room_p eq 2} {
+        lappend criteria "(ep.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"
+    } else {
+        lappend criteria "ep.room_id is not null"        
+    }
+}
 
 if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
