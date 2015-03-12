@@ -15,6 +15,7 @@ ad_page_contract {
 } {
     project_id:integer,notnull
     { order_by "" }
+    { room_p 0 }
 } -properties {
 } -validate {
 
@@ -180,6 +181,10 @@ ad_form \
             {label {[::flyhh::mc Status "Status"]}} 
             {custom {category_type "Flyhh - Event Registration Status" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
+        {room_p:text(select),optional
+            {label {[::flyhh::mc room_p "Room Assigned"]}}
+            {options {{No 0} {Yes 1}}}
+        }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
             {options $order_by_options}
@@ -227,6 +232,7 @@ ad_form \
 # 5. Generate SQL Query
 # ---------------------------------------------------------------
 
+if {$room_p} {lappend criteria "ep.room_id is not null"}
 
 if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
@@ -264,6 +270,7 @@ set sql "
         party__email(person_id) as email
         $extra_select 
     from flyhh_event_participants ep 
+    left outer join (select room_name, room_id, office_name from flyhh_event_rooms r, im_offices o where r.room_office_id = o.office_id) er on (er.room_id = ep.room_id)
     $extra_from
     where project_id=:project_id
     $extra_where_clause
@@ -341,7 +348,13 @@ if { $bulk_actions ne {} } {
 db_foreach event_participants_query $sql {
 
     set participant_status_pretty [im_category_from_id  $event_participant_status_id]
-    
+
+    if {$room_id ne ""} {
+        set room_url [export_vars -base "/flyhh/admin/room-one" -url {{room_id $room_id} {filter_project_id $project_id}}]
+        set room_html "<a href='$room_url'>[flyhh_event_room_description -room_id $room_id]</a>"
+    } else {
+        set room_html ""
+    }
     if {$partner_participant_id ne ""} {
         set partner_url [export_vars -base "registration" -url {{ project_id $project_id } { participant_id $partner_participant_id }}]
         if {$partner_mutual_p} {

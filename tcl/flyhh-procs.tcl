@@ -1332,3 +1332,16 @@ ad_proc -public flyhh_participant_randomize {
       db_dml update "update flyhh_event_participants set sort_order = $ctr where participant_id = :participant_id"
     }
 }
+
+ad_proc -public flyhh_event_room_description {
+    -room_id
+} {
+    Return the room name with the location and the type of room as used in most cases
+} {
+    db_1row room_info "select room_name,e.room_id, office_name, material_name
+    from flyhh_event_rooms e, im_offices o, im_materials m
+    where e.room_office_id = o.office_id
+    and e.room_material_id = m.material_id
+    and e.room_id = :room_id"
+    return "$room_name ($office_name) - $material_name"
+}
