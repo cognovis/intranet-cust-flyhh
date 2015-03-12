@@ -95,7 +95,7 @@ if { $bulk_actions ne {} } {
     lappend column_headers_admin ""
 }
 
-set order_by_options [list [list Random random]]
+set order_by_options [list [list "Sort Order" sort_order] [list Random random]]
 
 set column_sql "
 select
@@ -231,12 +231,16 @@ ad_form \
 if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
 } else {
-    set order_by_clause "order by participant_id"
+    set order_by_clause "order by sort_order"
 }
 
 # Support for randomization
 if {$order_by == "random"} {
     set order_by_clause "order by random()"
+}
+
+if {$order_by == "sort_order"} {
+    set order_by_clause "order by sort_order"
 }
 
 set extra_where_clause [join [concat $criteria $extra_wheres] " and "]

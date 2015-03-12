@@ -1310,3 +1310,25 @@ ad_proc -public flyhh_roommate_component {
     set result [ad_parse_template -params $params "/packages/intranet-cust-flyhh/lib/roommates-list"]
     return [string trim $result]    
 }
+
+ad_proc -public flyhh_participant_randomize {
+    -only_new:boolean
+} {
+    Randomize the sort order of the participants
+} {
+    # Deal out random numbers if we only need to randomize the new entries
+
+    if {$only_new_p} {
+        set where_clause "where sort_order <> participant_id"
+        set ctr [db_string max "select max(sort_order) from flyhh_event_participants"]
+    } else {
+        set ctr 0
+        set where_clause ""        
+    }
+
+    set participant_ids [db_list participant {select participant_id from flyhh_event_participants $where_clause order by random()}]
+    foreach participant_id $participant_ids {
+      incr ctr
+      db_dml update "update flyhh_event_participants set sort_order = $ctr where participant_id = :participant_id"
+    }
+}
