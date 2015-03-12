@@ -31,19 +31,19 @@ ad_page_contract {
 # Also filter out anyone who is not on the Waiting list
 set participant_ids [db_list participant_ids "
         select e.partner_participant_id 
-          from flyhh_event_participants e, flyhh_event_participants p
+          from flyhh_event_participants e, flyhh_event_participants p left outer join flyhh_event_room_occupants ro on (p.person_id = ro.person_id and p.project_id = ro.project_id) 
          where e.participant_id in ([template::util::tcl_to_sql_list $participant_id])
            and p.participant_id = e.partner_participant_id
            and p.partner_mutual_p = true
            and e.partner_mutual_p = true
            and p.event_participant_status_id = [im_category_from_category -category "Waiting List"]
-           and (e.room_id is not null or e.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
+           and (ro.room_id is not null or p.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
         UNION
-        select participant_id
-          from flyhh_event_participants 
-         where participant_id in ([template::util::tcl_to_sql_list $participant_id])
-           and event_participant_status_id = [im_category_from_category -category "Waiting List"]
-           and (e.room_id is not null or e.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
+        select ep.participant_id
+          from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) 
+         where ep.participant_id in ([template::util::tcl_to_sql_list $participant_id])
+           and ep.event_participant_status_id = [im_category_from_category -category "Waiting List"]
+           and (ro.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
     "
     ]
 

@@ -166,7 +166,7 @@ ad_form \
 
 if {$filter_project_id ne ""} {
     set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location,
-    (select count(*) from flyhh_event_participants ep where ep.room_id = er.room_id and project_id = :filter_project_id) as taken_spots
+    (select count(*) from flyhh_event_room_occupants ro where ro.room_id = er.room_id and ro.project_id = :filter_project_id) as taken_spots
     from flyhh_event_rooms er where 1=1 $extra_where_clause"
 } else {
     set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms where 1=1 $extra_where_clause"

@@ -32,10 +32,10 @@ ad_page_contract {
 set view_name "flyhh_event_participants_list"
 set key "participant_id"
 set bulk_actions {
+    "Assign Room" "participant-room-assign" "Assign room for checked participants"
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
     "Send Mail" "participant-email" "E-Mail checked participants"
-    "Assign Room" "participant-room-assign" "Assign room for checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
 set return_url [export_vars -no_empty -base participants-list {project_id order_by}]
@@ -183,7 +183,7 @@ ad_form \
 
         {room_p:text(select),optional
             {label {[::flyhh::mc room_p "Room Assigned"]}}
-            {options {{No 0} {Yes 1} {"Yes w/ external" 2}}}
+            {options {{No 0} {"No w/o external" 3} {Yes 1} {"Yes w/ external" 2}}}
         }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
@@ -234,9 +234,11 @@ ad_form \
 
 if {$room_p} {
     if {$room_p eq 2} {
-        lappend criteria "(ep.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"
-    } else {
-        lappend criteria "ep.room_id is not null"        
+        lappend criteria "(er.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"
+    } elseif {$room_p eq 3} {
+        lappend criteria "(er.room_id is null and ep.accommodation <> (select material_id from im_materials where material_nr = 'external_accommodation'))"        
+    } {
+        lappend criteria "er.room_id is not null"        
     }
 }
 
@@ -273,10 +275,10 @@ if { ![empty_string_p $extra_from] } {
 set sql "
     select *, 
         person__name(partner_person_id) as partner_person_name, 
-        party__email(person_id) as email
+        party__email(ep.person_id) as email
         $extra_select 
-    from flyhh_event_participants ep 
-    left outer join (select room_name, room_id, office_name from flyhh_event_rooms r, im_offices o where r.room_office_id = o.office_id) er on (er.room_id = ep.room_id)
+    from flyhh_event_participants ep
+    left outer join (select ro.person_id, room_name, ro.room_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id)
     $extra_from
     where project_id=:project_id
     $extra_where_clause

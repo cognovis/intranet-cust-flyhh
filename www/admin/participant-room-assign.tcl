@@ -26,18 +26,18 @@ foreach occupant_id $occ_participant_ids {
     if {[lsearch $room_types $accommodation]<0} {
         lappend room_types $accommodation
     }
-    lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $occupant_id]
+    lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $person_id]
 }
 
 set room_options [list [list "" ""]]
 db_foreach rooms "
     select room_name,e.room_id, office_name, sleeping_spots, material_name,
-    (select count(*) from flyhh_event_participants ep where ep.room_id = e.room_id and p.project_id = ep.project_id) as taken_spots
-    from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
-    where e.room_office_id = o.office_id
-    and o.company_id = p.company_id
-    and e.room_material_id = m.material_id
-    and p.project_id = :project_id
+    (select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id) as taken_spots
+    from flyhh_event_rooms e
+    inner join im_offices o on (e.room_office_id = o.office_id)
+    inner join im_projects p on (o.company_id = p.company_id)
+    inner join im_materials m on (e.room_material_id = m.material_id)
+    where p.project_id = :project_id
     and e.room_material_id in ([template::util::tcl_to_sql_list $room_types])
 " {
     if {$taken_spots < $sleeping_spots} {
@@ -53,7 +53,7 @@ ad_form \
     -action $action_url \
     -export [list project_id return_url participant_ids] \
     -form {
-        {occupant_ids:text(checkbox),multiple,optional
+        {person_ids:text(checkbox),multiple,optional
             {label {[::flyhh::mc Occupants "Occupants"]}}
             {options $occupants}
             {html {checked 1}}
@@ -62,7 +62,19 @@ ad_form \
             {label {[::flyhh::mc Room "Room"]}}
             {options $room_options}
         }
+        {note:richtext(richtext),optional
+            {label {[::flyhh::mc note "Note"]}}
+            {html {cols 40} {rows 8} }
+        }
+    } -validate {
+        {room_id
+            {[llength $person_ids]<=[db_string open_spots "select sleeping_spots - (select count(*) from flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and person_id not in ([template::util::tcl_to_sql_list $person_ids])) as taken_spots from flyhh_event_rooms r where room_id = :room_id" -default 0]}
+            {"The room does not have enough vacancies to accommodate all selected occupants ([llength $person_ids])"}
+        }
     } -on_submit {
-            db_dml update_room "update flyhh_event_participants set room_id = :room_id where participant_id in ([template::util::tcl_to_sql_list $occupant_ids])"
+            db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id in ([template::util::tcl_to_sql_list $person_ids])"
+            foreach person_id $person_ids {
+                db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id,note) values (:room_id, :person_id, :project_id,:note) "
+            }
             ad_returnredirect $return_url
     }

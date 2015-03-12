@@ -76,7 +76,7 @@ if { [exists_and_not_null participant_id] } {
 set room_options [list [list "" ""]]
 
 set room_sql "select room_name,e.room_id, office_name, sleeping_spots, material_name,
-(select count(*) from flyhh_event_participants ep where ep.room_id = e.room_id and p.project_id = ep.project_id) as taken_spots
+(select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id) as taken_spots
 from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
 where e.room_office_id = o.office_id
 and o.company_id = p.company_id
@@ -85,7 +85,7 @@ and p.project_id = :project_id
 "
 
 if {[exists_and_not_null participant_id]} {
-    db_1row room_id "select room_id,accommodation from flyhh_event_participants where participant_id = :participant_id"
+    db_1row room_id "select room_id, accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
     if {$room_id ne ""} {
         db_1row room_info "select room_name,e.room_id, office_name, material_name
 from flyhh_event_rooms e, im_offices o, im_materials m
@@ -103,11 +103,13 @@ db_foreach rooms $room_sql {
     }
 }
 
+set room_options [lsort -unique $room_options]
+
 ad_form \
     -name $form_id \
     -action $action_url \
     -mode $mode \
-    -export project_id \
+    -export [list project_id person_id] \
     -form {
 
         participant_id:key(acs_object_id_seq)
@@ -267,11 +269,12 @@ ad_form -extend -name $form_id -form {
 
 } -edit_request {
 
-    set sql "select *
+    set sql "select ep.*, pa.*,p.*,uc.*,ro.room_id
              from flyhh_event_participants ep 
              inner join parties pa on (pa.party_id=ep.person_id) 
              inner join persons p on (p.person_id=ep.person_id) 
              inner join users_contact uc on (uc.user_id=ep.person_id)
+             left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) 
              where participant_id=:participant_id"
 
     db_1row event_participant $sql
@@ -461,7 +464,10 @@ ad_form -extend -name $form_id -form {
     
 
 } -after_submit {
-    db_dml update_room "update flyhh_event_participants set room_id = :room_id where participant_id = :participant_id"
+    set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+    db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id = :person_id"
+    db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id) values (:room_id, :person_id, :project_id)"
+
     ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
 
