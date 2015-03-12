@@ -10,6 +10,7 @@
     @context_bar;noquote@
     <p>
     <a class="button" href="registration?project_id=@project_id@">#intranet-cust-flyhh.add_participant#</a>
+    <a class="button" href="other-room-assign?project_id=@project_id@">#intranet-cust-flyhh.other_room_assign#</a>
     <p>
     <include src="/packages/intranet-cust-flyhh/lib/event-stats" event_id=@event_id@>
 	<table class="table_list_page">
