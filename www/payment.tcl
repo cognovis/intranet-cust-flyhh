@@ -54,18 +54,18 @@ if {$error_text eq ""} {
             where cost_id = :quote_id
         "
         db_dml update_cost_status $sql
-    }
+
+        # An E-Mail is send to the participant with the PDF attached and the payment 
+        # information similar to what is displayed on the Web site.
+        ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
+    } 
         
-    # An E-Mail is send to the participant with the PDF attached and the payment 
-    # information similar to what is displayed on the Web site.
-    ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
     
     # The webpage should display the?information what has been provided with the registration,
     # a link to the PDF invoice for review, the total amount, the due date (based on the time 
     # the link was clicked and the payment terms).
     
-    set invoice_pdf_link "test"
-#    set invoice_pdf_link "invoice-pdf/invoice_${participant_id}_${new_invoice_id}_${invoice_revision_id}.pdf"
+    set invoice_pdf_link [export_vars -base "invoice-pdf" -url {invoice_id participant_id}]
  
     set invoice_nr [db_string invoice_nr "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
     set full_name [im_name_from_user_id $person_id]

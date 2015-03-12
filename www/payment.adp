@@ -30,4 +30,7 @@
  </td>
  </td></tr></table>
  <div align=center><B>#intranet-cust-flyhh.lt_Full_payment_of_total#</b></div>
+<p>
+ <div align=center><a href="@invoice_pdf_link;noquote@">Download Invoice</a></div>
+ </p>
 </else>
