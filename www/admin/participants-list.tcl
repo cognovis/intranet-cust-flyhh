@@ -232,7 +232,6 @@ ad_form \
 # 5. Generate SQL Query
 # ---------------------------------------------------------------
 
-ds_comment "$room_p"
 if {$room_p} {
     if {$room_p eq 2} {
         lappend criteria "(ep.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"
