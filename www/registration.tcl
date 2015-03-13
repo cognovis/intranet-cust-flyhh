@@ -184,7 +184,7 @@ if {$error_text ne ""} {
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
-        {alternative_accommodation:text(multiselect),optional
+        {alternative_accommodation:text(multiselect),multiple,optional
             {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
@@ -209,6 +209,14 @@ if {$error_text ne ""} {
                 {html "rows 4 cols 45"}
                 {help_text {[::flyhh::mc bedmate_help "Please let us know if you are fine to share a double bed with another person (male, female), have a special someone whom you want to share your bed with or any other comments regarding accommodation."]}}
                 {html {style "width:300px;"}}
+            }
+        }
+    } else {
+        db_1row room_id "select room_id, accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
+        if {$room_id ne ""} {
+            {room_id:text(inform)
+                {label {[::flyhh::mc Room "Room"]}}
+                {value [flyhh_event_room_description -room_id $room_id]}
             }
         }
     }
@@ -323,6 +331,7 @@ if {$error_text ne ""} {
             -accepted_terms_p $accepted_terms_p \
             -course $course \
             -accommodation $accommodation \
+            -alternative_accommodation $alternative_accommodation \
             -food_choice $food_choice \
             -bus_option $bus_option \
             -level "" \
@@ -337,6 +346,7 @@ if {$error_text ne ""} {
             -ha_state $ha_state \
             -ha_postal_code $ha_postal_code \
             -ha_country_code $ha_country_code
+
             
         # Deal with the comments as notes
         set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
@@ -394,35 +404,6 @@ if {$error_text ne ""} {
                 "]
         }
         
-        set alternative_accommodation_ids [element get_values $form_id alternative_accommodation]
-
-        if {[exists_and_not_null alternative_accommodation_ids]} {
-            # Store the alternatives in a note
-            set alt_accom_text "[::flyhh::mc alt_accom_text "ALTERNATIVE ACCOMMODATION<ul>"]"
-        
-            foreach accommodation_id $alternative_accommodation_ids {
-                set material_name [db_string mat_name "select material_name from im_materials where material_id = :accommodation_id"]
-                append alt_accom_text "<li>$material_name</li>"
-            }
-            append alt_accom_text "</ul>"
-            set alt_accom_text [list [string trim $alt_accom_text] "text/html"]
-
-            set alt_accommodation_note_id [db_exec_plsql create_note "
-            SELECT im_note__new(
-                NULL,
-                'im_note',
-                now(),
-                :person_id,
-                '[ad_conn peeraddr]',
-                null,
-                :alt_accom_text,
-                :participant_id,
-                [im_note_type_accommodation],
-                [im_note_status_active]
-            )
-            "] 
-        }
-
         if {$inviter_text eq ""} {
             # When you submit the registration and the dance partner did not register, send the dance partner an E-Mail (text
             # does not matter now) with a link to the registration for the event and the partner who asked them to join, so this
@@ -431,20 +412,20 @@ if {$error_text ne ""} {
             ::flyhh::match_name_email "$partner_text" partner_name partner_email
             
             if {$partner_email ne ""} {
-		# Check if the partner is already registered
-		set partner_registered_p [db_string parnter "select 1 from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and email = :partner_email" -default 0]
-		if {!$partner_registered_p} {
-		    ::flyhh::send_invite_partner_mail \
-			-participant_id $participant_id \
-			-participant_person_name "$first_names $last_name" \
-			-participant_email $email \
-			-event_id $event_id \
-			-event_name $event_name \
-			-from_addr $event_email \
-			-partner_email $partner_email \
-			-project_id $project_id
-		}
-	    }
+            		# Check if the partner is already registered
+            		set partner_registered_p [db_string parnter "select 1 from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and email = :partner_email" -default 0]
+            		if {!$partner_registered_p} {
+            		    ::flyhh::send_invite_partner_mail \
+            			-participant_id $participant_id \
+            			-participant_person_name "$first_names $last_name" \
+            			-participant_email $email \
+            			-event_id $event_id \
+            			-event_name $event_name \
+            			-from_addr $event_email \
+            			-partner_email $partner_email \
+            			-project_id $project_id
+            		}
+        	    }
         }    
     } -after_submit {
 	set from_addr "$event_email"

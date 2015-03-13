@@ -85,7 +85,7 @@ and p.project_id = :project_id
 "
 
 if {[exists_and_not_null participant_id]} {
-    db_1row room_id "select room_id, accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
+    db_1row room_id "select room_id, accommodation, alternative_accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
     if {$room_id ne ""} {
         db_1row room_info "select room_name,e.room_id, office_name, material_name
 from flyhh_event_rooms e, im_offices o, im_materials m
@@ -94,7 +94,11 @@ and e.room_material_id = m.material_id
 and e.room_id = :room_id"
         lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
     }
-    append room_sql "and e.room_material_id = $accommodation"
+    set accommodation_ids [list $accommodation]
+    foreach alt_accommodation_id $alternative_accommodation {
+        lappend accommodation_ids $alt_accommodation_id
+    }
+    append room_sql "and e.room_material_id in ([template::util::tcl_to_sql_list $accommodation_ids])"
 }
 
 db_foreach rooms $room_sql {
@@ -183,10 +187,16 @@ ad_form \
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
         }
-	{room_id:text(select),optional
-	    {label {[::flyhh::mc Room "Room"]}}
-	    {options $room_options}
-	}
+        {alternative_accommodation:text(multiselect),multiple,optional
+            {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
+            {html {}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {help_text {[::flyhh::mc alt_accomm_help "Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp."]}}
+        }
+        	{room_id:text(select),optional
+        	    {label {[::flyhh::mc Room "Room"]}}
+        	    {options $room_options}
+        	}
         {food_choice:text(select)
             {label {[::flyhh::mc Food_Choice "Food Choice"]}}
             {html {}}
@@ -266,7 +276,6 @@ ad_form -extend -name $form_id -form {
 
     }
 
-
 } -edit_request {
 
     set sql "select ep.*, pa.*,p.*,uc.*,ro.room_id
@@ -338,6 +347,7 @@ ad_form -extend -name $form_id -form {
             -accepted_terms_p $accepted_terms_p \
             -course $course \
             -accommodation $accommodation \
+            -alternative_accommodation $alternative_accommodation \
             -food_choice $food_choice \
             -bus_option $bus_option \
             -level "" \
@@ -445,6 +455,7 @@ ad_form -extend -name $form_id -form {
                 -accepted_terms_p $accepted_terms_p \
                 -course $course \
                 -accommodation $accommodation \
+                -alternative_accommodation $alternative_accommodation \
                 -food_choice $food_choice \
                 -bus_option $bus_option \
                 -level "" \

@@ -382,6 +382,16 @@ db_foreach event_participants_query $sql {
         }
     }
 
+    # Resolve the alternative accommodation into a string
+    set alterantive_accommodation_html ""
+    if {[llength $alternative_accommodation]>0} {
+        append alterantive_accommodation_html "<ul>"
+        foreach accommodation_material_id $alternative_accommodation {
+            append alterantive_accommodation_html "<li>[im_material_name -material_id $accommodation_material_id]</li>"
+        }
+        append alterantive_accommodation_html "</ul>"
+    }
+    
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"
     foreach column_var $column_vars {

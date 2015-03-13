@@ -375,6 +375,7 @@ ad_proc ::flyhh::create_participant {
     -accepted_terms_p:required
     -course:required
     -accommodation:required
+    -alternative_accommodation:required
     -food_choice:required
     -bus_option:required
     -level:required
@@ -472,6 +473,7 @@ ad_proc ::flyhh::create_participant {
 
         db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
 
+        db_dml upda_alt_accom "update flyhh_event_participants set alternative_accommodation = :alternative_accommodation where participant_id = :participant_id"
     }
 
 }
@@ -504,6 +506,7 @@ ad_proc ::flyhh::update_participant {
     -accepted_terms_p:required
     -course:required
     -accommodation:required
+    -alternative_accommodation:required
     -food_choice:required
     -bus_option:required
     -level:required
@@ -618,6 +621,7 @@ ad_proc ::flyhh::update_participant {
         }
 
         db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
+        db_dml upda_alt_accom "update flyhh_event_participants set alternative_accommodation = :alternative_accommodation where participant_id = :participant_id"
 
         ::flyhh::update_event_stats -project_id $project_id -delta_items $delta_items
 
@@ -1331,6 +1335,25 @@ ad_proc -public flyhh_participant_randomize {
       incr ctr
       db_dml update "update flyhh_event_participants set sort_order = $ctr where participant_id = :participant_id"
     }
+}
+
+ad_proc -public flyhh_migrate_alternative_accommodation {
+    {-delete_note:boolean}
+} {
+    Migrate the alternativ accommodation from notes
+} {
+    db_foreach notes {select note, note_id, object_id as participant_id from im_notes where note like '\{ALTERNATIVE ACCOMMODATION%' or note like '\{Alternative Unterkünfte%'} {
+     set material_ids [list]
+     if {[string match "*2p Room*" $note]} {lappend material_ids 33309}
+     if {[string match "*2p with*" $note]} {lappend material_ids 39602}
+     if {[string match "*3-4 People*" $note]} {lappend material_ids 33308}
+     if {[string match "*4+ Room*" $note]} {lappend material_ids 33306}
+     if {[string match "*External Accommodation*" $note]} {lappend material_ids 39697}
+     db_dml update "update flyhh_event_participants set alternative_accommodation = :material_ids where participant_id = :participant_id"
+     if {$delete_note_p} {
+         db_dml delete "delete from im_notes where note_id = :note_id"
+     }
+    } 
 }
 
 ad_proc -public flyhh_event_room_description {
