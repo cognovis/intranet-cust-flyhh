@@ -32,7 +32,7 @@ db_multirow -extend {roommate_status roommate_url room_url room_name} roommates 
         db_1row participant_info "select participant_id as roommate_participant_id, room_id as roommate_room_id from flyhh_event_participants ep 
         left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where ep.project_id = :project_id and ep.person_id = :roommate_person_id"
     }
-    if {$roommate_participant_id eq ""} {
+    if {![exists_and_not_null roommate_participant_id]} {
         set roommate_url ""
     } else {
         set roommate_url [export_vars -base "/flyhh/admin/registration" -url {project_id {participant_id $roommate_participant_id}}]
@@ -40,16 +40,15 @@ db_multirow -extend {roommate_status roommate_url room_url room_name} roommates 
             lappend status_list [::flyhh::mc Roommate_not_mutual "Roommate not mutual"]
         }
     }
-    if {$roommate_room_id eq ""} {
+    if {![exists_and_not_null roommate_room_id]} {
         set room_url ""
         	set room_name ""
     } else {
         	set room_name [db_string room "select room_name from flyhh_event_rooms where room_id = :roommate_room_id" -default ""]
         set room_url [export_vars -base "/flyhh/admin/room-one" -url {{room_id $roommate_room_id} {filter_project_id $project_id}}]
-    }
-    
-    if {$room_id ne $roommate_room_id} {
-        lappend status_list [::flyhh::mc Different_Rooms "Different Rooms"]
+        if {$room_id ne $roommate_room_id} {
+            lappend status_list [::flyhh::mc Different_Rooms "Different Rooms"]
+        }
     }
     
     if {$status_list ne ""} {
