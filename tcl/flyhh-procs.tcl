@@ -1345,7 +1345,7 @@ ad_proc -public flyhh_migrate_alternative_accommodation {
     db_foreach notes {select note, note_id, object_id as participant_id from im_notes where note like '\{ALTERNATIVE ACCOMMODATION%' or note like '\{Alternative Unterkünfte%'} {
      set material_ids [list]
      if {[string match "*2p Room*" $note]} {lappend material_ids 33309}
-     if {[string match "*2p with*" $note]} {lappend material_ids 39602}
+     if {[string match "*2P with*" $note]} {lappend material_ids 39602}
      if {[string match "*3-4 People*" $note]} {lappend material_ids 33308}
      if {[string match "*4+ Room*" $note]} {lappend material_ids 33306}
      if {[string match "*External Accommodation*" $note]} {lappend material_ids 39697}
