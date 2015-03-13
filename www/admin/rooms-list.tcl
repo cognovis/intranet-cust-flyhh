@@ -10,6 +10,7 @@ ad_page_contract {
     {filter_project_id ""}
     room_material_id:integer,optional
     room_office_id:integer,optional
+    {orderby ""}
 }
 
 set show_context_help_p 0
@@ -27,18 +28,23 @@ template::list::create \
         room_name {
             label {[::flyhh::mc room_Name "Name"]}
             link_url_col room_url
+	    orderby room_name
         }
         room_type {
             label {[::flyhh::mc room_type "Room Type"]}
             display_template {
                 @rooms.room_type;noquote@
             }
+            orderby_asc {room_type asc, room_name asc}
+            orderby_desc {room_type desc, room_name asc}
         }
         room_location {
             label {[::flyhh::mc room_location "Room Location"]}
             display_template {
                 @rooms.room_location;noquote@
             }
+            orderby_asc {room_location asc, room_type asc, room_name asc}
+            orderby_desc {room_location desc, room_type asc,room_name asc}
         }
         sleeping_spots {
             label {[::flyhh::mc room_sleeping_spots "Sleeping Spots"]}
@@ -81,7 +87,20 @@ template::list::create \
                 @rooms.description;noquote@
             }
         }
+	delete {
+	    label {[::flyhh::mc room_delete "Delete Room"]}
+	    display_template {
+		<if @rooms.delete_url@ ne "">
+		<a href='@rooms.delete_url;noquote@'>[_ intranet-cust-flyhh.room_delete]</a>
+		</if>
+	    }
+	}
+    } \
+    -orderby {
+	default_value room_name asc
     }
+
+
 
 # ---------------------------------------------------------------
 # Filter with Dynamic Fields
@@ -167,14 +186,18 @@ ad_form \
 if {$filter_project_id ne ""} {
     set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location,
     (select count(*) from flyhh_event_room_occupants ro where ro.room_id = er.room_id and ro.project_id = :filter_project_id) as taken_spots
-    from flyhh_event_rooms er where 1=1 $extra_where_clause"
+    from flyhh_event_rooms er where 1=1 $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
 } else {
-    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms where 1=1 $extra_where_clause"
+    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms where 1=1 $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
 }
 
-db_multirow -extend {room_url} rooms $multirow $sql {
+db_multirow -extend {room_url delete_url} rooms $multirow $sql {
     # Change the sleeping spots if we have a project
     set room_url [export_vars -base "/flyhh/admin/room-one" -url {room_id filter_project_id}]
+    set delete_url ""
+    if {![db_string used "select 1 from flyhh_event_room_occupants where room_id = :room_id limit 1" -default 0]} {
+	set delete_url [export_vars -base "room-delete" -url {room_id {return_url [util_get_current_url]}}]
+    } 
     set description [template::util::richtext::get_property html_value $description]
     if {$taken_spots >0} {
         set remaining_spots [expr $sleeping_spots - $taken_spots]
