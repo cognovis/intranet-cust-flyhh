@@ -123,7 +123,13 @@ ad_form -extend -name $form_id -edit_request {
             NULL                        -- context_id
         )" -default $room_id]
         
+ 	foreach bed_type {single_beds additional_beds double_beds} {
+	    if {[set $bed_type] eq ""} {set $bed_type 0}
+	}
         set sleeping_spots [expr $single_beds + $additional_beds + $double_beds * 2]
+	foreach bed_type {single_beds additional_beds double_beds} {
+	    if {[set $bed_type] eq 0} {set $bed_type ""}
+	}
         db_dml insert_room {
             insert into flyhh_event_rooms (
                 room_id,
@@ -155,7 +161,14 @@ ad_form -extend -name $form_id -edit_request {
 
 } -edit_data {
 
-    set sleeping_spots [expr $single_beds + $additional_beds + $double_beds * 2]
+ 	foreach bed_type {single_beds additional_beds double_beds} {
+	    if {[set $bed_type] eq ""} {set $bed_type 0}
+	}
+        set sleeping_spots [expr $single_beds + $additional_beds + $double_beds * 2]
+	foreach bed_type {single_beds additional_beds double_beds} {
+	    if {[set $bed_type] eq 0} {set $bed_type ""}
+	}
+
 
     db_dml update_room {
         update flyhh_event_rooms set room_name = :room_name, room_material_id = :room_material_id, sleeping_spots = :sleeping_spots,
