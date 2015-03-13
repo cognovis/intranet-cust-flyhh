@@ -68,7 +68,7 @@ template::list::create \
         toilet_p {
             label {[::flyhh::mc room_toilet "Toilet ?"]}
             display_template {
-                <if @rooms.toilet_p@ eq f><font color="red">No</font></if>
+                <if @rooms.toilet_p@ ne t><font color="red">No</font></if>
                 <else>Yes</else>
             }
             html {style "text-align:center;"}
@@ -76,7 +76,7 @@ template::list::create \
         bath_p {
             label {[::flyhh::mc room_bath "Bath ?"]}
             display_template {
-                <if @rooms.bath_p@ eq f><font color="red">No</font></if>
+                <if @rooms.bath_p@ ne t><font color="red">No</font></if>
                 <else>Yes</else>
             }
             html {style "text-align:center;"}
