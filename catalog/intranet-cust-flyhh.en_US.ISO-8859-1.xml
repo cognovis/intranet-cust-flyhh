@@ -12,6 +12,7 @@
   <msg key="Address_Line_1">Address Line 1</msg>
   <msg key="alt_accom_text">ALTERNATIVE ACCOMMODATION&lt;ul&gt;</msg>
   <msg key="alt_accomm_help">Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp.</msg>
+  <msg key="Alternativ_Accommodation">Alternativ Accommodation</msg>
   <msg key="Alternative_Accommodation">Alternative Accommodation</msg>
   <msg key="Bank_Info">Bank Info</msg>
   <msg key="Basic_Info_Section">Basic Info</msg>
@@ -52,16 +53,29 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="Country">Country</msg>
   <msg key="Course">Course</msg>
   <msg key="Course_Registration_Section">Course Information</msg>
+  <msg key="Different_Rooms">Different Rooms</msg>
   <msg key="Enable_Event">Enable?</msg>
+  <msg key="Event">Event</msg>
   <msg key="Event_E-Mail">Sender E-Mail</msg>
+  <msg key="Event_Facebook_url">Facebook URL</msg>
+  <msg key="event_fb_id_ht">Please enter the Facebook URL to your Event. If unsure, open your event in facebook and copy the URL</msg>
   <msg key="Event_Info">Event Info</msg>
   <msg key="Event_Name">Name</msg>
   <msg key="Event_Preference_Registration_Section">Other Information</msg>
   <msg key="Event_Start_date">Start Date</msg>
   <msg key="Event_URL">URL</msg>
+  <msg key="facebook_event_url">Facebook Event URL</msg>
+  <msg key="facebook_orga_url">Facebook Organization URL</msg>
+  <msg key="fb_orga_ht">Please enter the Facebook URL to your Organization where people can follow you for updates</msg>
   <msg key="Filter_Participants">Filter Participants</msg>
+  <msg key="Filter_Rooms">Filter Rooms</msg>
   <msg key="Food_Choice">Food Choice</msg>
   <msg key="get_reg_link_body">Dear %first_names%, &lt;p&gt;You are almost done!&lt;br /&gt;To register please click the following link:&lt;/p&gt;&lt;p&gt; &lt;a href='%registration_url%'&gt;Register for %event_name%&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Your %event_name% Crew.&lt;/p&gt;</msg>
+  <msg key="intranet-cust-flyhh.lt_to_recieve_updates">To receive updates give us a like:&lt;br /&gt; %facebook_orga_url%</msg>
+  <msg key="intranet-cust-flyhh.lt_to_see_coming">To see who else is coming and coordinate ride shares and such, join the event:&lt;br /&gt; %facebook_event_url%</msg>
+  <msg key="invalid_roommate">Your list does not contain E-Mail addresses or names we can use. Please correct</msg>
+  <msg key="invoice_email_body">Dear %first_names%,&lt;br /&gt;&lt;p&gt;Attached you will find your invoice. Please check that everything is okay and let us know if changes are needed.&lt;/p&gt;&lt;p&gt;We can't wait to meet you at the castle!&lt;/p&gt;</msg>
+  <msg key="invoice_email_subject">Invoice for %event_name%</msg>
   <msg key="L/F">L/F</msg>
   <msg key="Lead_or_Follow">Lead/Follow</msg>
   <msg key="Lead_or_follow">Lead/Follow</msg>
@@ -75,9 +89,12 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="lt_Please_make_your_init">Please make your initial payment of at least %due_now_pretty% %currency% to our bank account within the next 3 days.</msg>
   <msg key="lt_Please_provide_us_wit">Please provide us with your first and lastname and click submit to receive your registration link via E-Mail</msg>
   <msg key="lt_Registration_link_for">Registration link for %event_name%</msg>
+  <msg key="lt_scc_promo">And to check out the second week of dancing at the Sodom &amp; Gomorrha of Swing visit:&lt;br/&gt;http://www.swingcastlecamp.de&lt;/p&gt;</msg>
   <msg key="lt_THANK_YOU_FOR_YOUR_RE">THANK YOU FOR YOUR REGISTRATION!</msg>
   <msg key="lt_There_was_an_error_pr">There was an error processing your request:</msg>
   <msg key="lt_To_complete_the_regis">To complete the registration and reserve your spot, please click below for the payment information:</msg>
+  <msg key="lt_to_recieve_updates">To receive updates give us a like:&lt;br /&gt; %facebook_orga_url%</msg>
+  <msg key="lt_to_see_coming">To see who else is coming and coordinate ride shares and such, join the event:&lt;br /&gt; %facebook_event_url%</msg>
   <msg key="lt_Transfer_note_invoice">Transfer note: %invoice_nr% - %full_name%</msg>
   <msg key="lt_Viewing_stats_for_eve">Viewing stats for event:</msg>
   <msg key="lt_We_have_reserved_a_sp">We have reserved a spot for you at %event_name%.</msg>
@@ -102,7 +119,16 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="material_39606">Tap Track</msg>
   <msg key="material_39607">Evening Classes Only</msg>
   <msg key="material_39697">External Accommodation</msg>
+  <msg key="material_40464">One Way Bus Castle =&gt; Berlin</msg>
   <msg key="Name">Name</msg>
+  <msg key="No_Roommates">No Roommates</msg>
+  <msg key="Note">Note</msg>
+  <msg key="note">Note</msg>
+  <msg key="Occupant">Occupant</msg>
+  <msg key="Occupants">Occupants</msg>
+  <msg key="Order_by">Order by</msg>
+  <msg key="other_room_assign">Assign others to the rooms for %project_name%
+</msg>
   <msg key="participant">participant</msg>
   <msg key="Participant_Email">E-Mail</msg>
   <msg key="Participant_First_Name">First Name</msg>
@@ -112,6 +138,7 @@ To complete the registration and reserve your spot, please click below for the p
   <msg key="Partner_Mail_Subject">Invitation to register for %event_name%</msg>
   <msg key="partner_text_help">Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate. This does not apply to Solo / Tap classes</msg>
   <msg key="partner_text_present_help">Your partner invited you to the event, so you are unable to change the course, role and partner.</msg>
+  <msg key="partner_text_validation_error">partner text must be an email address, full name, or both</msg>
   <msg key="payment_full_body">Thank you for the payment of %currency% %payment_amount%. You have now fully paid for %event_name% and your invoice &lt;a href='%invoice_url%'&gt;%invoice_nr%&lt;/a&gt; is settled.</msg>
   <msg key="payment_full_subject">Payment received for %event_name% - You are fully registered</msg>
   <msg key="Payment_Information">Payment Information</msg>
@@ -130,9 +157,26 @@ You can register by followining the link below:
   <msg key="Project_Cost_Center">Project Cost Center</msg>
   <msg key="Provider_Company">Provider Company:</msg>
   <msg key="Reg.ID">Reg.ID</msg>
+  <msg key="Room">Room</msg>
+  <msg key="room_additional_beds">Additional Beds</msg>
+  <msg key="room_additional_beds_help">This is the number of additional beds/mattresses which might be moved into this room</msg>
+  <msg key="room_bath">Bath/Shower ?</msg>
+  <msg key="room_delete">Delete Room</msg>
+  <msg key="room_description">Description</msg>
+  <msg key="room_double_beds">Double Beds</msg>
+  <msg key="room_location">Room Location</msg>
+  <msg key="room_Name">Name</msg>
+  <msg key="room_p">Room Assigned</msg>
+  <msg key="room_single_beds">Single Beds</msg>
+  <msg key="room_sleeping_spots">Sleeping Spots</msg>
+  <msg key="room_toilet">Toilet ?</msg>
+  <msg key="room_type">Room Type</msg>
+  <msg key="Roommate">Roommate</msg>
   <msg key="Roommate(s)">Roommate(s)</msg>
+  <msg key="Roommate_not_mutual">Roommate not mutual</msg>
   <msg key="Roommates">Roommates</msg>
   <msg key="roommates_text_help">Comma-separated list of email addresses</msg>
+  <msg key="Rooms">Rooms</msg>
   <msg key="Skills">Skills</msg>
   <msg key="skills_help">Please provide us with some of your skills</msg>
   <msg key="State">State</msg>

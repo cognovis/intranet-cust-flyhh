@@ -250,7 +250,7 @@ ad_proc ::flyhh::send_invoice_mail {
     -from_addr
     {-recipient_id ""}
     {-cc_addr ""}
-    {-project_id ""}
+    -project_id
 } {
 
     Copied im_invoice_send_invoice_mail and modified it in two ways:
@@ -267,15 +267,16 @@ ad_proc ::flyhh::send_invoice_mail {
     } 
 
     db_1row get_recipient_info "select first_names, last_name, email as to_addr from cc_users where user_id = :recipient_id"
+    db_1row event_info "select project_cost_center_id, p.project_id, event_name, event_url, event_email, facebook_event_url,facebook_orga_url from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
 
     # Get the type information so we can get the strings
     set invoice_type_id [db_string type "select cost_type_id from im_costs where cost_id = :invoice_id"]
 
     set recipient_locale [lang::user::locale -user_id $recipient_id]
-    set subject [lang::util::localize "#intranet-invoices.invoice_email_subject_${invoice_type_id}#" $recipient_locale]
-    set body [lang::util::localize "#intranet-invoices.invoice_email_body_${invoice_type_id}#" $recipient_locale]
+    set subject "[lang::util::localize "#intranet-cust-flyhh.invoice_email_subject#" $recipient_locale]"
+    set body "[lang::util::localize "#intranet-cust-flyhh.invoice_email_body#" $recipient_locale]"
 
-    acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender -object_id $project_id
+    acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender -object_id $project_id -mime_type "text/html"
 
 }
 

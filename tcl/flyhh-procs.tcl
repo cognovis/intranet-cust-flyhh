@@ -103,7 +103,9 @@ if {$course ne ""} {
     append body "<li>[_ intranet-cust-flyhh.Course]: $course</li>"
 }
 if {$accommodation ne ""} {
-    append body "<li>[_ intranet-cust-flyhh.Accommodation]: $accommodation</li>"
+    set room_id [db_string room "select room_id from flyhh_event_room_occupants where person_id = :person_id and project_id = :project_id" -default ""]
+    if {$room_id ne ""} {append accommodation "<br />&nbsp; - (Assigned Room: [flyhh_event_room_description -room_id $room_id])"}
+    append body "<li>[_ intranet-cust-flyhh.Accommodation]: $accommodation </li>"
 }
 if {$food_choice ne ""} {
     append body "<li>[_ intranet-cust-flyhh.Food_Choice]: $food_choice</li>"
@@ -112,8 +114,17 @@ if {$bus_option ne ""} {
     append body "<li>[_ intranet-cust-flyhh.Bus_Option]: $bus_option</li>"
 }
 
+append body "</ul>"
+append body "<p>[_ intranet-cust-flyhh.lt_to_recieve_updates]</p>"
+append body "<p>[_ intranet-cust-flyhh.lt_to_see_coming]</p>"
+
+ # ---------------------------------------------------------------
+ # EVIL HACK HARDCODED
+ # ---------------------------------------------------------------
+if {$project_id eq 39650} {
+    append body "<p>[_ intranet-cust-flyhh.lt_scc_promo]"
+}
 append body "
-</ul>
 [_ intranet-cust-flyhh.lt_To_complete_the_regis]
 <p>
 <a href='$link_to_payment_page'>[_ intranet-cust-flyhh.Payment_Information]</a>
@@ -1343,7 +1354,7 @@ ad_proc -public flyhh_migrate_alternative_accommodation {
 } {
     Migrate the alternativ accommodation from notes
 } {
-    db_foreach notes {select note, note_id, object_id as participant_id from im_notes where note like '\{ALTERNATIVE ACCOMMODATION%' or note like '\{Alternative Unterkünfte%'} {
+    db_foreach notes {select note, note_id, object_id as participant_id from im_notes where note like '\{ALTERNATIVE ACCOMMODATION%' or note like '\{Alternative Unterk?nfte%'} {
      set material_ids [list]
      if {[string match "*2p Room*" $note]} {lappend material_ids 33309}
      if {[string match "*2P with*" $note]} {lappend material_ids 39602}
