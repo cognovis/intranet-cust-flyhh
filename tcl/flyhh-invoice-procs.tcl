@@ -69,7 +69,7 @@ ad_proc ::flyhh::create_invoice {
     set user_id [ad_conn user_id]
     set peeraddr [ad_conn peeraddr]
 
-    set delivery_date [db_string start_date "select start_date from flyhh_events where project_id = :project_id" -default ""]
+    set delivery_date [db_string start_date "select start_date from im_projects where project_id = :project_id" -default ""]
 
     db_transaction {
         set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]

@@ -19,7 +19,7 @@ if {$token ne $check_token} {
 
 if {$error_text eq ""} {
     
-    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
+    db_1row event_info "select project_cost_center_id, p.project_id, f.* from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
     
     if {$event_participant_status_id eq "[::flyhh::status_id_from_name "Confirmed"]"} {
         ::flyhh::set_participant_status \

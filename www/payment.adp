@@ -34,3 +34,6 @@
  <div align=center><a href="@invoice_pdf_link;noquote@">Download Invoice</a></div>
  </p>
 </else>
+<div align=center>
+<div class="fb-like" data-href="@facebook_event_url;noquote@" data-layout="button" data-action="like" data-show-faces="true" data-share="true"></div>
+</div>

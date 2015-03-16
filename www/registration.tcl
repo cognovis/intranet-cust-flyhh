@@ -25,7 +25,7 @@ set event_name [db_string project "select event_name from flyhh_events where eve
 if {$event_name eq ""} {
     set error_text "Illegal Event - $event_id is not an Event we know of"
 } else {
-    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email from flyhh_events f, im_projects p where event_id = :event_id and p.project_id = f.project_id"
+    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email, facebook_event_url,facebook_orga_url from flyhh_events f, im_projects p where event_id = :event_id and p.project_id = f.project_id"
 
     switch $project_cost_center_id {
         34915 {

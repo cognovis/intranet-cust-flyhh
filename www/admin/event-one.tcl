@@ -44,11 +44,25 @@ ad_form \
         {event_url:text
             {label {[::flyhh::mc Event_URL "URL"]}}}
 
+        {facebook_event_url:text,optional
+            {label {[::flyhh::mc facebook_event_url "Facebook Event URL"]}}
+            {help_text {[::flyhh::mc event_fb_id_ht "Please enter the Facebook URL to your Event. If unsure, open your event in facebook and copy the URL"]}}
+        }
+        
+        {facebook_orga_url:text,optional
+            {label {[::flyhh::mc facebook_orga_url "Facebook Organization URL"]}}
+            {help_text {[::flyhh::mc fb_orga_ht "Please enter the Facebook URL to your Organization where people can follow you for updates"]}}
+        }
+                
         {event_email:text
-            {label {[::flyhh::mc Event_E-Mail "Sender E-Mail"]}}}
+            {label {[::flyhh::mc Event_E-Mail "Sender E-Mail"]}}
+        }
 
-        {start_date:text
-            {label {[::flyhh::mc Event_Start_date "Start Date"]}}}
+        {start_date:date(date)
+            {label {[::flyhh::mc Event_Start_date "Start Date"]}}
+            {format "YYYY-MM-DD"} 
+            {after_html {<input type="button" style="height:23px; width:23px; background: url('/resources/acs-templating/calendar.gif');" onclick ="return showCalendarWithDateWidget('start_date', 'y-m-d');" >}}
+        }
 
         {project_cost_center_id:text(generic_sql)
             {label {[::flyhh::mc Project_Cost_Center "Project Cost Center"]}}
@@ -129,14 +143,15 @@ ad_form -extend -name $form_id -edit_request {
     }
 
     set sql "
-        select evt.*,p.project_id,p.project_cost_center_id
+        select evt.*,p.project_id,p.project_cost_center_id,to_char(p.start_date,'YYYY-MM-DD') as ansi_start_date
         from flyhh_events evt
         inner join im_projects p on (p.project_id = evt.project_id)
         where event_id = :event_id
     "
 
     db_1row event_info $sql
-
+    set start_date [template::util::date::from_ansi $ansi_start_date "YYYY-MM-DD"]
+    
 } -new_data {
 
     db_transaction {
@@ -241,7 +256,9 @@ ad_form -extend -name $form_id -edit_request {
 } -after_submit {
 
     # Update url and e-mail
-    db_dml update "update flyhh_events set event_url = :event_url, event_email = :event_email, start_date=:start_date where event_id = :event_id"
+    db_dml update "update flyhh_events set event_url = :event_url, event_email = :event_email, facebook_event_url = :facebook_event_url, facebook_orga_url = :facebook_orga_url where event_id = :event_id"
+    set start_date_sql [template::util::date get_property sql_date $start_date]
+    db_dml update "update im_projects set start_date = $start_date_sql where project_id = (select project_id from flyhh_events where event_id = :event_id)"
 
     ad_returnredirect [export_vars -base event-one {event_id}]
 
