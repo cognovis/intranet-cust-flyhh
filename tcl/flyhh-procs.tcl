@@ -1330,7 +1330,7 @@ ad_proc -public flyhh_participant_randomize {
         set where_clause ""        
     }
 
-    set participant_ids [db_list participant {select participant_id from flyhh_event_participants $where_clause order by random()}]
+    set participant_ids [db_list participant "select participant_id from flyhh_event_participants $where_clause order by random()"]
     foreach participant_id $participant_ids {
       incr ctr
       db_dml update "update flyhh_event_participants set sort_order = $ctr where participant_id = :participant_id"
