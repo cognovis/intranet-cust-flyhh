@@ -605,12 +605,13 @@ ad_proc ::flyhh::update_participant {
 
         set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
 
+	db_dml delete_roommates "delete from flyhh_event_roommates where participant_id = :participant_id"
+
         foreach roommate_text $roommates_list {
 
             ::flyhh::match_name_email $roommate_text roommate_name roommate_email
 
             # TODO: updating roommates is not done yet
-            continue
             db_exec_plsql insert_roommate "select flyhh_event_roommate__new(
                 :participant_id,
                 :project_id,

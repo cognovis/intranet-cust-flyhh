@@ -288,11 +288,8 @@ ad_form -extend -name $form_id -form {
 
     db_1row event_participant $sql
 
-    set sql "select * from flyhh_event_roommates where participant_id=:participant_id"
-    set roommates ""
-    db_foreach roommate $sql {
-        append roommates $roommate_email "\n"
-    }
+    set roommates [db_list roommates "select roommate_email from flyhh_event_roommates where participant_id=:participant_id"]
+    set roommates_text [join $roommates ", "]
 
     set form_elements [template::form::get_elements $form_id]
     foreach element $form_elements {
@@ -475,9 +472,11 @@ ad_form -extend -name $form_id -form {
     
 
 } -after_submit {
-    set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
-    db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id = :person_id"
-    db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id) values (:room_id, :person_id, :project_id)"
+    if {$room_id ne ""} {
+	set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+	db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id = :person_id"
+	db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id) values (:room_id, :person_id, :project_id)"
+    }
 
     ad_returnredirect [export_vars -base registration {project_id participant_id}]
 }
