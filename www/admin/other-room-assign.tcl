@@ -17,8 +17,8 @@ if {$room_p} {
 } else {
     set extra_where_clause "and room_id is null"
 }
-set sql "select	r.object_id_two as person_id, room_id
-        from	 acs_rels r 
+set sql "select	p.person_id, room_id
+        from	 persons p, acs_rels r
         left outer join flyhh_event_room_occupants ro on (ro.person_id = r.object_id_two and ro.project_id = r.object_id_one)
         where   r.object_id_one=:project_id and
                 r.rel_type = 'im_biz_object_member' and
@@ -32,11 +32,13 @@ set sql "select	r.object_id_two as person_id, room_id
                         m.container_id = m.group_id and
                         mr.member_state != 'approved'
                 ) and r.object_id_two not in (select person_id from flyhh_event_participants where project_id = :project_id)
+                and p.person_id = r.object_id_two
                 $extra_where_clause
                 order by im_name_from_id(object_id_two)
         "
 
 db_foreach person $sql {
+    ds_comment "$person_id"
     if {$room_id eq ""} {
         lappend occupants [list "[person::name -person_id $person_id]" $person_id]
     } else {
