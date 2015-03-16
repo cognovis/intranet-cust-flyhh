@@ -22,11 +22,13 @@ set occ_participant_ids [lsort -unique $occ_participant_ids]
 set occupants [list]
 set room_types [list]
 foreach occupant_id $occ_participant_ids {
-    db_1row occupant_info "select person_id,accommodation, material_name as acc_name from flyhh_event_participants ep, im_materials m where participant_id = :occupant_id and ep.accommodation = m.material_id"
-    if {[lsearch $room_types $accommodation]<0} {
-        lappend room_types $accommodation
+
+    if {[db_0or1row occupant_info "select person_id,accommodation, material_name as acc_name from flyhh_event_participants ep, im_materials m where participant_id = :occupant_id and ep.accommodation = m.material_id"]} {
+	if {[lsearch $room_types $accommodation]<0} {
+	    lappend room_types $accommodation
+	}
+	lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $person_id]
     }
-    lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $person_id]
 }
 
 set room_options [list [list "" ""]]
