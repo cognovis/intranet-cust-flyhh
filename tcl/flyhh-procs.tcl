@@ -68,15 +68,17 @@ ad_proc -public ::flyhh::send_confirmation_mail {participant_id} {
             *, 
             party__email(person_id) as email, 
             person__name(person_id) as name,
-            im_name_from_id(course) as course,
-            im_name_from_id(accommodation) as accommodation,
-            im_name_from_id(food_choice) as food_choice,
-            im_name_from_id(bus_option) as bus_option
+            (select material_name from im_materials where material_id = p.course) as course,
+            (select material_name from im_materials where material_id = p.accommodation) as accommodation,
+            (select material_name from im_materials where material_id = p.food_choice) as food_choice,
+            (select material_name from im_materials where material_id = p.bus_option) as bus_option
         from flyhh_event_participants p, flyhh_events e
         where participant_id=:participant_id
         and e.project_id = p.project_id
     "
     db_1row participant_info $sql
+
+    set locale [lang::user::locale -user_id $person_id]
 
     # The payment page checks that the logged in user and the participant_id are 
     # the same (so you can?t confirm on behalf of someone else). We could make it
@@ -89,45 +91,45 @@ ad_proc -public ::flyhh::send_confirmation_mail {participant_id} {
     set from_addr "$event_email"
     set to_addr ${email}
     set mime_type "text/html"
-    set subject "[_ intranet-cust-flyhh.confirm_mail_subject]"
+    set subject "[lang::util::localize #intranet-cust-flyhh.confirm_mail_subject# $locale]"
     set body "
 Hi $name,
 <p>
-[_ intranet-cust-flyhh.lt_We_have_reserved_a_sp]
+[lang::util::localize #intranet-cust-flyhh.lt_We_have_reserved_a_sp# $locale]
 </p>
-[_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
+[lang::util::localize #intranet-cust-flyhh.lt_Heres_what_you_have_s# $locale]
 <ul>
 "
 
 if {$course ne ""} {
-    append body "<li>[_ intranet-cust-flyhh.Course]: $course</li>"
+    append body "<li>[lang::util::localize #intranet-cust-flyhh.Course# $locale]: $course</li>"
 }
 if {$accommodation ne ""} {
-    set room_id [db_string room "select room_id from flyhh_event_room_occupants where person_id = :person_id and project_id = :project_id" -default ""]
-    if {$room_id ne ""} {append accommodation "<br />&nbsp; - (Assigned Room: [flyhh_event_room_description -room_id $room_id])"}
-    append body "<li>[_ intranet-cust-flyhh.Accommodation]: $accommodation </li>"
+#    set room_id [db_string room "select room_id from flyhh_event_room_occupants where person_id = :person_id and project_id = :project_id" -default ""]
+#    if {$room_id ne ""} {append accommodation "<br />&nbsp; - (Assigned Room: [flyhh_event_room_description -room_id $room_id])"}
+    append body "<li>[lang::util::localize #intranet-cust-flyhh.Accommodation# $locale]: $accommodation </li>"
 }
 if {$food_choice ne ""} {
-    append body "<li>[_ intranet-cust-flyhh.Food_Choice]: $food_choice</li>"
+    append body "<li>[lang::util::localize #intranet-cust-flyhh.Food_Choice# $locale]: $food_choice</li>"
 }
 if {$bus_option ne ""} {
-    append body "<li>[_ intranet-cust-flyhh.Bus_Option]: $bus_option</li>"
+    append body "<li>[lang::util::localize #intranet-cust-flyhh.Bus_Option# $locale]: $bus_option</li>"
 }
 
 append body "</ul>"
-append body "<p>[_ intranet-cust-flyhh.lt_to_recieve_updates]</p>"
-append body "<p>[_ intranet-cust-flyhh.lt_to_see_coming]</p>"
+append body "<p>[lang::util::localize #intranet-cust-flyhh.lt_to_recieve_updates# $locale]</p>"
+append body "<p>[lang::util::localize #intranet-cust-flyhh.lt_to_see_coming# $locale]</p>"
 
  # ---------------------------------------------------------------
  # EVIL HACK HARDCODED
  # ---------------------------------------------------------------
 if {$project_id eq 39650} {
-    append body "<p>[_ intranet-cust-flyhh.lt_scc_promo]"
+    append body "<p>[lang::util::localize #intranet-cust-flyhh.lt_scc_promo# $locale]"
 }
 append body "
-[_ intranet-cust-flyhh.lt_To_complete_the_regis]
+[lang::util::localize #intranet-cust-flyhh.lt_To_complete_the_regis# $locale]
 <p>
-<a href='$link_to_payment_page'>[_ intranet-cust-flyhh.Payment_Information]</a>
+<a href='$link_to_payment_page'>[lang::util::localize #intranet-cust-flyhh.Payment_Information# $locale]</a>
 </p>"
 
     acs_mail_lite::send \
