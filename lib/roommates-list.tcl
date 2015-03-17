@@ -17,23 +17,32 @@ set new_roommate_url [export_vars -base "/flyhh/roommate-new" {participant_id re
 multirow create roomates roommate_name roommate_url room_name room_url
 
 set roommates_sql "
-	select *
+	select roommate_person_id, ep.participant_id as roommate_participant_id, ro.room_id as roommate_room_id, roommate_name,er.project_id
 	from	   flyhh_event_roommates er
-	inner join flyhh_event_participants ep on (ep.participant_id = er.participant_id)
-	where  ep.participant_id = :participant_id
+	left outer join flyhh_event_participants ep on (ep.person_id = er.roommate_person_id and ep.project_id = er.project_id)
+        left outer join flyhh_event_room_occupants ro on (er.roommate_person_id = ro.person_id and er.project_id = ro.project_id)
+	where  er.participant_id = :participant_id
     "
 
-set room_id [db_string room_id "select room_id from flyhh_event_room_occupants ro, flyhh_event_participants ep where ep.person_id = ro.person_id and ep.project_id = ro.project_id and ep.participant_id = :participant_id" -default ""]
+db_1row room_id "select room_id,ep.person_id from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where ep.participant_id = :participant_id"
 
 db_multirow -extend {roommate_status roommate_url room_url room_name} roommates roommates_query $roommates_sql {
     set status_list [list]
-
-    if {$roommate_person_id ne ""} {
-        db_1row participant_info "select participant_id as roommate_participant_id, room_id as roommate_room_id from flyhh_event_participants ep 
-        left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where ep.project_id = :project_id and ep.person_id = :roommate_person_id"
+    if {$roommate_person_id eq ""} {continue} ; # Can't work withtout the person_id
+    if {![exists_and_not_null roommate_participant_id]} {
+	# try if they registered in the meantime
+	if {[db_0or1row room_id "select room_id as roommate_room_id,ep.participant_id as roommate_participant_id from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where ep.person_id = :roommate_person_id and ep.project_id = :project_id"]} {
+	    db_dml update "update flyhh_event_roommates set roommate_room_id = :roommate_room_id, roommate_participant_id = :roommate_participant_id where participant_id = :participant_id"
+	}
     }
     if {![exists_and_not_null roommate_participant_id]} {
-        set roommate_url ""
+	set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:roommate_person_id" -default ""]
+        if {$company_id eq ""} {
+            set roommate_url [export_vars -base "/intranet/users/view" -url {{user_id $roommate_person_id}}]            
+        } {
+            set roommate_url [export_vars -base "/intranet/companies/view" -url {company_id}]            
+        }
+
     } else {
         set roommate_url [export_vars -base "/flyhh/admin/registration" -url {project_id {participant_id $roommate_participant_id}}]
         if {![db_string roommate_mutual_p "select 1 from flyhh_event_roommates where participant_id = :roommate_participant_id and roommate_person_id = :person_id" -default 0]} {
