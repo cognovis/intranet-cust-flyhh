@@ -164,14 +164,15 @@ ad_proc ::flyhh::create_company_if {
     set company_id ""
     if { $existing_user_p } {
 
-        set sql "select company_id from im_companies where company_path = :company_path" 
+        set sql "select company_id from im_companies where lower(company_path) = lower(:company_path)" 
         set company_id [db_string company_id_by_path $sql -default ""]
 
         if { $company_id eq {} } {
 
-            set sql "select company_id from im_companies where company_name = :company_name" 
+            set sql "select company_id from im_companies where lower(company_name) = lower(:company_name)" 
             set company_id [db_string company_id_by_name $sql -default ""]
 
+            # We found the company by name, update the company_path to have the user_id in front
             if { $company_id ne {} } {
                 set sql "update im_companies set company_path = :company_path where company_id = :company_id"
                 db_dml update $sql
@@ -1368,6 +1369,33 @@ ad_proc -public flyhh_migrate_alternative_accommodation {
          db_dml delete "delete from im_notes where note_id = :note_id"
      }
     } 
+}
+
+ad_proc -public flyhh_migrate_companies {
+    
+} {
+    Migrate and merge companies
+} {
+    db_foreach select "select company_id, company_name, company_path,main_office_id from im_companies where company_path like '3%' or company_path like '4%'" {
+        set path_elements [split $company_path "_"]
+        set old_company_path [join [lrange $path_elements 1 end] "_"]
+        set old_company_id [db_string company_id "select company_id from im_companies where company_path = :old_company_path" -default ""]
+        if {$old_company_id ne ""} {
+            # Update collmex_id      
+            set collmex_id [db_string collmex "select collmex_id from im_companies where company_id = :company_id" -default ""]
+            if {$collmex_id eq ""} {
+                set collmex_id [db_string collmex "select collmex_id from im_companies where company_id = :old_company_id" -default ""]
+                db_dml update "update im_companies set collmex_id = :collmex_id where company_id = :company_id"
+            }
+            
+            # Migrate users
+            catch {db_dml update_users "update acs_rels set object_id_one = :company_id where rel_type = 'im_company_employee_rel' and object_id_one = :old_company_id"}
+
+            # Migrate invoices
+            db_dml update "update im_costs set customer_id = :company_id where customer_id = :old_company_id"
+            
+        }
+    }
 }
 
 ad_proc -public flyhh_event_room_description {
