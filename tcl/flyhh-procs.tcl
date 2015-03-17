@@ -542,7 +542,7 @@ ad_proc ::flyhh::update_participant {
 } {
 
     set sql "
-        select course,accommodation,food_choice,bus_option,event_participant_status_id
+        select course,accommodation,food_choice,bus_option,event_participant_status_id,person_id
         from flyhh_event_participants
         where participant_id=:participant_id
     "
@@ -581,6 +581,28 @@ ad_proc ::flyhh::update_participant {
 
     set partner_participant_id [db_string partner_participant_id "select participant_id from flyhh_event_participants where person_id = :partner_person_id and project_id=:project_id" -default ""]
     
+    set office_id [db_string select "select main_office_id from im_companies where primary_contact_id = $old(person_id)"]
+    ::flyhh::set_user_contact_info \
+        -email $email \
+        -cell_phone $cell_phone \
+        -ha_line1 $ha_line1 \
+        -ha_city  $ha_city \
+        -ha_state $ha_state \
+        -ha_postal_code $ha_postal_code \
+        -ha_country_code $ha_country_code
+        
+        
+    db_dml update_office "
+        update im_offices set
+            phone=:cell_phone,
+            address_line1=:ha_line1,
+            address_city=:ha_city,
+            address_state=:ha_state,
+            address_postal_code=:ha_postal_code,
+            address_country_code=lower(:ha_country_code)
+        where office_id=:office_id
+    "
+
     db_transaction {
 
         db_exec_plsql insert_participant "select flyhh_event_participant__update(
@@ -607,19 +629,10 @@ ad_proc ::flyhh::update_participant {
             :payment_term
 
         )"
-
-        ::flyhh::set_user_contact_info \
-            -email $email \
-            -cell_phone $cell_phone \
-            -ha_line1 $ha_line1 \
-            -ha_city  $ha_city \
-            -ha_state $ha_state \
-            -ha_postal_code $ha_postal_code \
-            -ha_country_code $ha_country_code
-
+        
         set roommates_list [lsearch -all -inline -not [split $roommates_text ",|\t\n\r"] {}]
 
-	db_dml delete_roommates "delete from flyhh_event_roommates where participant_id = :participant_id"
+	    db_dml delete_roommates "delete from flyhh_event_roommates where participant_id = :participant_id"
 
         foreach roommate_text $roommates_list {
 
@@ -1158,33 +1171,39 @@ ad_proc ::flyhh::record_after_confirmation_edit {
 
     }
 
-    set invoice_type_id 3725  ;# Intranet Cost Type (3725 = Customer Invoice Correction)
-
-    set new_invoice_id \
-        [::flyhh::create_invoice \
-            -company_id $company_id \
-            -company_contact_id $company_contact_id \
-            -participant_id $participant_id \
-            -project_id $project_id \
-            -payment_method_id $payment_method_id \
-            -payment_term_id $payment_term_id \
-            -invoice_type_id $invoice_type_id \
-            -delta_items $delta_items]
-
-    if { $invoice_id ne {} } {
-        # add relationship between original invoice and correction invoice 
-        set rel_id [db_exec_plsql create_rel "
-            select acs_rel__new (
-                 null,                      -- rel_id
-                 'im_invoice_invoice_rel',  -- rel_type
-                 :invoice_id,               -- object_id_one
-                 :new_invoice_id,           -- object_id_two
-                 null,                      -- context_id
-                 null,                      -- creation_user
-                 null                       -- creation_ip
-            )"]
+    if {$delta_items ne ""} {
+        # We need to generate a correction invoice
+        set invoice_type_id 3725  ;# Intranet Cost Type (3725 = Customer Invoice Correction)
+        set new_invoice_id \
+             [::flyhh::create_invoice \
+                 -company_id $company_id \
+                 -company_contact_id $company_contact_id \
+                 -participant_id $participant_id \
+                 -project_id $project_id \
+                 -payment_method_id $payment_method_id \
+                 -payment_term_id $payment_term_id \
+                 -invoice_type_id $invoice_type_id \
+                 -delta_items $delta_items]
+         
+        if { $invoice_id ne {} } {
+             # add relationship between original invoice and correction invoice 
+             set rel_id [db_exec_plsql create_rel "
+                 select acs_rel__new (
+                      null,                      -- rel_id
+                      'im_invoice_invoice_rel',  -- rel_type
+                      :invoice_id,               -- object_id_one
+                      :new_invoice_id,           -- object_id_two
+                      null,                      -- context_id
+                      null,                      -- creation_user
+                      null                       -- creation_ip
+                 )"]
+        }
+    } else {
+        #No new invoice created, but trigger new PDF creation for the old invoice
+        if {$invoice_id ne ""} {
+            db_dml update "update acs_objects set last_modified = now(), modifying_user = [ad_conn user_id] where object_id = :invoice_id"
+        }
     }
-
 }
 
 ad_proc -private ::flyhh::set_to_cancelled_helper {
