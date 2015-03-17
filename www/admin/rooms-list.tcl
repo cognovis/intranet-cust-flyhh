@@ -218,13 +218,13 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
     set occupants [list]    
     if {$filter_project_id ne ""} {
         # Set the occupants
-        db_foreach occupant "select im_name_from_id(ro.person_id) as occupant_name, ro.person_id,ep.participant_id from flyhh_event_room_occupants ro, flyhh_event_participants ep
-        where ep.project_id = ro.project_id and ep.person_id = ro.person_id and ro.room_id = :room_id and ro.project_id = :filter_project_id 
+        db_foreach occupant "select im_name_from_id(ro.person_id) as occupant_name, ro.person_id,ep.participant_id from flyhh_event_room_occupants ro left outer join flyhh_event_participants ep on (ep.project_id = ro.project_id and ep.person_id = ro.person_id)
+        where ro.room_id = :room_id and ro.project_id = :filter_project_id 
         order by im_name_from_id(ro.person_id)" {
             if {$participant_id eq ""} {
                 set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id" -default ""]
                 if {$company_id eq ""} {
-                    set occupant_url [export_vars -base "/intranet/user/view" -url {{user_id $person_id}}]            
+                    set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]            
                 } {
                     set occupant_url [export_vars -base "/intranet/companies/view" -url {company_id}]            
                 }

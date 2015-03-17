@@ -55,7 +55,7 @@ db_multirow -extend {occupant_name partner_name occupant_url partner_url} occupa
     if {$participant_id eq ""} {
         set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id" -default ""]
         if {$company_id eq ""} {
-            set occupant_url [export_vars -base "/intranet/user/view" -url {{user_id $person_id}}]            
+            set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]            
         } {
             set occupant_url [export_vars -base "/intranet/companies/view" -url {company_id}]            
         }
