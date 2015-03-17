@@ -581,7 +581,6 @@ ad_proc ::flyhh::update_participant {
 
     set partner_participant_id [db_string partner_participant_id "select participant_id from flyhh_event_participants where person_id = :partner_person_id and project_id=:project_id" -default ""]
     
-    set office_id [db_string select "select main_office_id from im_companies where primary_contact_id = $old(person_id)"]
     ::flyhh::set_user_contact_info \
         -email $email \
         -cell_phone $cell_phone \
@@ -591,6 +590,7 @@ ad_proc ::flyhh::update_participant {
         -ha_postal_code $ha_postal_code \
         -ha_country_code $ha_country_code
         
+    set office_id [db_string select "select max(main_office_id) from im_companies where primary_contact_id = $old(person_id)"]
         
     db_dml update_office "
         update im_offices set
