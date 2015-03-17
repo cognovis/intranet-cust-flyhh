@@ -487,7 +487,7 @@ ad_proc ::flyhh::create_participant {
 
         db_exec_plsql status_automaton "select flyhh_event_participant__status_automaton(:participant_id)"
 
-        db_dml upda_alt_accom "update flyhh_event_participants set alternative_accommodation = :alternative_accommodation where participant_id = :participant_id"
+        db_dml upda_alt_accom "update flyhh_event_participants set alternative_accommodation = :alternative_accommodation, sort_order = :participant_id where participant_id = :participant_id"
     }
 
 }
