@@ -291,6 +291,10 @@ ad_form -extend -name $form_id -form {
     set roommates [db_list roommates "select roommate_email from flyhh_event_roommates where participant_id=:participant_id"]
     set roommates_text [join $roommates ", "]
 
+    set company_id [db_string company_id "select	max(r.object_id_one)
+from acs_rels r
+where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -default ""]
+
     set form_elements [template::form::get_elements $form_id]
     foreach element $form_elements {
         if { [info exists $element] } {

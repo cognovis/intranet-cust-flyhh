@@ -72,7 +72,7 @@ ad_proc ::flyhh::create_invoice {
     set delivery_date [db_string start_date "select start_date from im_projects where project_id = :project_id" -default ""]
 
     db_transaction {
-        set invoice_nr [im_next_invoice_nr -cost_type_id [im_cost_type_invoice]]
+        set invoice_nr [im_next_invoice_nr -cost_type_id $invoice_type_id]
         set invoice_id [db_exec_plsql create_invoice "
             select im_invoice__new (
                 null,                       -- invoice_id
