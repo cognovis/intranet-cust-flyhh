@@ -182,12 +182,12 @@ if {$error_text ne ""} {
         {accommodation:text(select)
             {label {[::flyhh::mc Accommodation "Accommodation"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {options {[flyhh_accommodation_options -project_id $project_id -locale $locale]}}
         }
         {alternative_accommodation:text(multiselect),multiple,optional
             {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {options {[flyhh_accommodation_options -project_id $project_id -locale $locale]}}
             {help_text {[::flyhh::mc alt_accomm_help "Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp."]}}
         }
         {food_choice:text(select)
@@ -209,14 +209,6 @@ if {$error_text ne ""} {
                 {html "rows 4 cols 45"}
                 {help_text {[::flyhh::mc bedmate_help "Please let us know if you are fine to share a double bed with another person (male, female), have a special someone whom you want to share your bed with or any other comments regarding accommodation."]}}
                 {html {style "width:300px;"}}
-            }
-        }
-    } else {
-        db_1row room_id "select room_id, accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
-        if {$room_id ne ""} {
-            {room_id:text(inform)
-                {label {[::flyhh::mc Room "Room"]}}
-                {value [flyhh_event_room_description -room_id $room_id]}
             }
         }
     }

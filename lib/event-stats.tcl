@@ -25,7 +25,12 @@ template::list::create \
             }
         }
         occupants {
-            label "Occupants"
+            label "Assigned"
+            html {style "text-align:center;"}
+        }
+
+        num_confirmed {
+            label "Confirmed"
             html {style "text-align:center;"}
         }
 
@@ -34,10 +39,6 @@ template::list::create \
             html {style "text-align:center;"}
         }
 
-        num_confirmed {
-            label "Confirmed"
-            html {style "text-align:center;"}
-        }
 
         num_registered {
             label "Registered"
@@ -51,7 +52,8 @@ set sql "
     select num_confirmed, num_registered, capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name,
     (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500 and person_id not in (select person_id from flyhh_event_room_occupants where project_id = :project_id)) as num_waitlist,
     (select sum(er.sleeping_spots) from flyhh_event_rooms er where er.room_material_id = em.material_id) as capacity,
-    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants 
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants,
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants ep where er.room_material_id = em.material_id and ro.room_id = er.room_id and ep.person_id = ro.person_id and ep.project_id = ro.project_id and ro.project_id =:project_id and ep.event_participant_status_id in (82501,82502,82503,82504)) as confirmed_occupants 
     from flyhh_event_materials em 
     inner join im_materials m 
     on (em.material_id = m.material_id)
@@ -67,6 +69,7 @@ set sql "
 db_multirow stats $multirow $sql {
     if {$free_capacity eq ""} {set free_capacity $capacity}
     if {$free_confirmed_capacity eq ""} {set free_confirmed_capacity $capacity}
+    if {$confirmed_occupants ne ""} {set num_confirmed $confirmed_occupants}
     if {$planned_capacity eq "999"} {
         set free_capacity "Endless"
         set free_confirmed_capacity "Endless"

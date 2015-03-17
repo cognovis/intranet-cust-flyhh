@@ -1290,6 +1290,50 @@ ad_proc -public flyhh_material_options {
     
 }
 
+ad_proc -public flyhh_accommodation_options {
+    -project_id:required
+    -mandatory:boolean
+    { -company_id "" }
+    { -locale ""}
+} {
+    set material_options [list]
+    if {!$mandatory_p} {
+        lappend material_options [list "" ""]
+    }
+    
+    if {$company_id eq ""} {
+        set company_id [im_company_internal]
+    }
+    if {$locale eq ""} {
+        set locale [lang::user::locale]
+    }    
+    
+    db_foreach materials "select m.material_id,
+    (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500 and person_id not in (select person_id from flyhh_event_room_occupants where project_id = :project_id)) as num_waitlist,
+    (select sum(er.sleeping_spots) from flyhh_event_rooms er where er.room_material_id = em.material_id) as capacity,
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants,
+    material_name,p.price,p.currency 
+    FROM flyhh_event_materials em
+    INNER JOIN flyhh_events e on (em.event_id = e.event_id)
+    INNER JOIN im_materials m on (em.material_id = m.material_id)
+    INNER JOIN im_timesheet_prices p on (em.material_id = p.material_id)
+    WHERE em.material_id in (select distinct room_material_id from flyhh_event_rooms) 
+    and em.event_id = e.event_id 
+    and e.project_id = :project_id 
+    and p.material_id = m.material_id 
+    and p.company_id = :company_id 
+    order by material_nr" {
+        
+        # Limit to 10% overcapacity before not allowing this anymore.
+        if {[expr $capacity * 1.1 - $occupants - $num_waitlist]>0} {
+            set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
+            set material_display "$material_name ($currency $price)"
+            lappend material_options [list $material_display $material_id]
+        }
+    }
+    return $material_options
+}
+
 ad_proc -public ::flyhh::cleanup_text {} {
     Cleanup the text for roommates and partners
 } {

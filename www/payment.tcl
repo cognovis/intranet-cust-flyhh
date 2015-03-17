@@ -65,8 +65,8 @@ if {$error_text eq ""} {
 
         # An E-Mail is send to the participant with the PDF attached and the payment 
         # information similar to what is displayed on the Web site.
-    } 
         ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
+    } 
         
     
     # The webpage should display the?information what has been provided with the registration,
