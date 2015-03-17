@@ -190,11 +190,11 @@ ad_form \
     }
 
 if {$filter_project_id ne ""} {
-    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location,
+    set sql "select *,material_name as room_type, im_name_from_id(room_office_id) as room_location,
     (select count(*) from flyhh_event_room_occupants ro where ro.room_id = er.room_id and ro.project_id = :filter_project_id) as taken_spots
-    from flyhh_event_rooms er where 1=1 $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
+    from flyhh_event_rooms er, im_materials m where m.material_id = er.room_material_id $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
 } else {
-    set sql "select *,im_name_from_id(room_material_id) as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms where 1=1 $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
+    set sql "select *,material_name as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms ro,im_materials m where m.material_id = ro.room_material_id $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
 }
 
 db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
