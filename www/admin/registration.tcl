@@ -353,7 +353,7 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
             -bus_option $bus_option \
             -level "" \
             -lead_p $lead_p \
-            -payment_type 1000 \
+            -payment_type 804 \
             -payment_term "80107" \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
@@ -461,7 +461,7 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
                 -bus_option $bus_option \
                 -level "" \
                 -lead_p $lead_p \
-                -payment_type 1000 \
+                -payment_type 804 \
                 -payment_term "80107" \
                 -partner_text $partner_text \
                 -roommates_text $roommates_text \

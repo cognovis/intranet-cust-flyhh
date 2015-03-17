@@ -336,7 +336,7 @@ if {$error_text ne ""} {
             -bus_option $bus_option \
             -level "" \
             -lead_p $lead_p \
-            -payment_type 1000 \
+            -payment_type 804 \
             -payment_term "80107" \
             -partner_text $partner_text \
             -roommates_text $roommates_text \
