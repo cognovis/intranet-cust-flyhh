@@ -386,7 +386,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
             -to_addr $to_addr \
             -subject $subject \
             -body $body \
-            -mime_type text_html \
+            -mime_type "text/html" \
             -object_id $project_id        
         }
     }
