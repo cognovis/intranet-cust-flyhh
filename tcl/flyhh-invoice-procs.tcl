@@ -346,7 +346,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         set cost_status_partially_paid [im_cost_status_partially_paid]
         
         # Format the amounts
-        set locale [lang::user::locale -user_id $party_id]
+        set locale [lang::user::site_wide_locale -user_id $party_id]
         set payment_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $payment_amount+0] 2] "" $locale]
         set paid_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $paid_amount+0] 2] "" $locale]
         set open_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $open_amount+0] 2] "" $locale]
