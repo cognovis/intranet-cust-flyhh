@@ -16,6 +16,7 @@ ad_page_contract {
     project_id:integer,notnull
     { order_by "" }
     { room_p 0 }
+    { international_p 0 }
 } -properties {
 } -validate {
 
@@ -185,6 +186,10 @@ ad_form \
             {label {[::flyhh::mc room_p "Room Assigned"]}}
             {options {{No 0} {"No w/o external" 3} {Yes 1} {"Yes w/ external" 2}}}
         }
+        {international_p:text(select),optional
+            {label {[::flyhh::mc international_p "International?"]}}
+            {options {{No 0} {Yes 1}}}
+        }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
             {options $order_by_options}
@@ -242,6 +247,10 @@ if {$room_p} {
     }
 }
 
+if {$international_p} {
+    lappend criteria "ha_country_code != 'de'"
+}
+
 if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
 } else {
@@ -273,14 +282,16 @@ if { ![empty_string_p $extra_from] } {
 }
 
 set sql "
-    select *, 
+    select ep.*,er.*,uc.ha_country_code, 
         person__name(partner_person_id) as partner_person_name, 
         party__email(ep.person_id) as email
         $extra_select 
     from flyhh_event_participants ep
-    left outer join (select ro.person_id, room_name, ro.room_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id)
+    left outer join (select ro.person_id, room_name, ro.room_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
+   users_contact uc
     $extra_from
     where project_id=:project_id
+    and uc.user_id = ep.person_id
     $extra_where_clause
     $order_by_clause
 "

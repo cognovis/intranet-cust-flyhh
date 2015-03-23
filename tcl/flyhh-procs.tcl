@@ -1084,15 +1084,18 @@ ad_proc ::flyhh::record_after_confirmation_edit {
 
     set sql "
         select 
-            project_id,
-            person_id as company_contact_id,
-            payment_type as payment_method_id,
-            payment_term as payment_term_id,
-            company_id,
-            quote_id,
-            invoice_id
-        from flyhh_event_participants
+            ep.project_id,
+            ep.person_id as company_contact_id,
+            ep.payment_type as payment_method_id,
+            ep.payment_term as payment_term_id,
+            ep.company_id,
+            ep.quote_id,
+            ep.invoice_id,
+            c.amount,
+            c.paid_amount
+        from flyhh_event_participants ep, im_costs c
         where participant_id=:participant_id
+        and invoice_id = cost_id
     "
 
     db_1row participant_info $sql
@@ -1125,9 +1128,16 @@ ad_proc ::flyhh::record_after_confirmation_edit {
             if { $element eq {course} } {
 
                 # If the price of the new material is lower then the old material, just change the registration
-                # information, do not change the invoice. We do not offer refunds on classes.
+                # information, do not change the invoice. We do not offer refunds on classes. (actually we do, but this needs to be handled
+		# at another time.
 
-                if { $new_price <= $old_price } {}
+                if { $new_price <= $old_price } {
+		    # Now check if we have received a payment. If not, don't assume we will get one.
+		    if {$paid_amount == ""} {
+			lappend delta_items [list -1.0 1.0 $old(course)]
+			lappend delta_items [list 1.0 1.0 $new(course)]
+		    }
+		}
 
                 # If the price of the new material is higher then the old material, create a correction invoice with a credit line for
                 # the old material and a debit line for the new material. The resulting invoice should therefore show
@@ -1198,6 +1208,7 @@ ad_proc ::flyhh::record_after_confirmation_edit {
                       null                       -- creation_ip
                  )"]
         }
+
     } else {
         #No new invoice created, but trigger new PDF creation for the old invoice
         if {$invoice_id ne ""} {
