@@ -126,13 +126,13 @@ from flyhh_event_materials em, im_materials m where event_id = :event_id and em.
                 }
             }
         }
-        set capacity_lead "[expr $num_lead_confirmed + $num_lead_pending_payment] / $capacity"
-        set capacity_follow "[expr $num_follow_confirmed + $num_follow_pending_payment] / $capacity"
+        set capacity_lead "[expr $num_lead_confirmed + $num_lead_pending_payment + $num_lead_registered] / $capacity"
+        set capacity_follow "[expr $num_follow_confirmed + $num_follow_pending_payment + $num_follow_registered] / $capacity"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>Lead</td><td class='list-table'>$capacity_lead</td><td class='list-table'>$num_lead_waitlist</td><td class='list-table'>$num_lead_confirmed</td><td class='list-table'>$num_lead_pending_payment</td><td class='list-table'>$num_lead_registered</td></tr>"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>Follow</td><td class='list-table'>$capacity_follow</td><td class='list-table'>$num_follow_waitlist</td><td class='list-table'>$num_follow_confirmed</td><td class='list-table'>$num_follow_pending_payment</td><td class='list-table'>$num_follow_registered</td></tr>"
         
     } else {
-        set capacity "[expr $num_confirmed + $num_pending_payment] / $capacity"
+        set capacity "[expr $num_confirmed + $num_pending_payment + $num_registered] / $capacity"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'>$capacity</td><td class='list-table'>$num_waitlist</td><td class='list-table'>$num_confirmed</td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_registered</td></tr>"
     }
 }

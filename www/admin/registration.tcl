@@ -476,9 +476,9 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
     
 
 } -after_submit {
+    set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
+    db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id = :person_id"
     if {$room_id ne ""} {
-	set person_id [db_string person_id "select person_id from flyhh_event_participants where participant_id = :participant_id"]
-	db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id = :person_id"
 	db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id) values (:room_id, :person_id, :project_id)"
     }
 
