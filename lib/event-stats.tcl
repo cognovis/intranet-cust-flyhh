@@ -70,11 +70,6 @@ db_multirow stats $multirow $sql {
     if {$free_capacity eq ""} {set free_capacity $capacity}
     if {$free_confirmed_capacity eq ""} {set free_confirmed_capacity $capacity}
     if {$confirmed_occupants ne ""} {set num_confirmed $confirmed_occupants}
-    if {$planned_capacity eq "999"} {
-        set free_capacity "Endless"
-        set free_confirmed_capacity "Endless"
-        set capacity "Endless"
-    }
 }
 
 # ---------------------------------------------------------------
