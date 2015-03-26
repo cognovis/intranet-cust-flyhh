@@ -28,17 +28,25 @@ template::list::create \
             label "Assigned"
             html {style "text-align:center;"}
         }
+        other_occupants {
+            label "Others"
+            html {style "text-align:center;"}
+        }
 
         num_confirmed {
             label "Confirmed"
             html {style "text-align:center;"}
         }
 
-        num_waitlist {
-            label "Waitlist"
+        num_pending_payment {
+            label "Pending Payment"
             html {style "text-align:center;"}
         }
 
+        num_partially_paid {
+            label "Partially Paid"
+            html {style "text-align:center;"}
+        }
 
         num_registered {
             label "Registered"
@@ -49,10 +57,14 @@ template::list::create \
 
 
 set sql "
-    select num_confirmed, num_registered, capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name,
-    (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500 and person_id not in (select person_id from flyhh_event_room_occupants where project_id = :project_id)) as num_waitlist,
+    select capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82501) as num_confirmed,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82502) as num_pending_payment,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82503) as num_partially_paid,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82504) as num_registered,
     (select sum(er.sleeping_spots) from flyhh_event_rooms er where er.room_material_id = em.material_id) as capacity,
     (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants,
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id and ro.person_id not in (select person_id from flyhh_event_participants where project_id = :project_id)) as other_occupants,
     (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants ep where er.room_material_id = em.material_id and ro.room_id = er.room_id and ep.person_id = ro.person_id and ep.project_id = ro.project_id and ro.project_id =:project_id and ep.event_participant_status_id in (82501,82502,82503,82504)) as confirmed_occupants 
     from flyhh_event_materials em 
     inner join im_materials m 
@@ -66,10 +78,12 @@ set sql "
     and mt.material_type_id = 9002
     order by material_type,material_name
 "
+
 db_multirow stats $multirow $sql {
     if {$free_capacity eq ""} {set free_capacity $capacity}
     if {$free_confirmed_capacity eq ""} {set free_confirmed_capacity $capacity}
-    if {$confirmed_occupants ne ""} {set num_confirmed $confirmed_occupants}
+#    set other_occupants [expr $capacity - $confirmed_occupants]
+#    if {$confirmed_occupants ne ""} {set num_confirmed $confirmed_occupants}
 }
 
 # ---------------------------------------------------------------

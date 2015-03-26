@@ -184,7 +184,7 @@ ad_form \
 
         {room_p:text(select),optional
             {label {[::flyhh::mc room_p "Room Assigned"]}}
-            {options {{No 0} {"No w/o external" 3} {Yes 1} {"Yes w/ external" 2}}}
+            {options {{No 0} {"No w/o external" 3} {Yes 1} {"Yes w/ external" 2} {"Wrong Type" 4}}}
         }
         {international_p:text(select),optional
             {label {[::flyhh::mc international_p "International?"]}}
@@ -238,12 +238,11 @@ ad_form \
 # ---------------------------------------------------------------
 
 if {$room_p} {
-    if {$room_p eq 2} {
-        lappend criteria "(er.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"
-    } elseif {$room_p eq 3} {
-        lappend criteria "(er.room_id is null and ep.accommodation <> (select material_id from im_materials where material_nr = 'external_accommodation'))"        
-    } {
-        lappend criteria "er.room_id is not null"        
+    switch $room_p {
+	2 {lappend criteria "(er.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))"}
+	3 {lappend criteria "(er.room_id is null and ep.accommodation <> (select material_id from im_materials where material_nr = 'external_accommodation'))"}
+	4 {lappend criteria "(er.room_material_id != ep.accommodation)"}
+        default {lappend criteria "er.room_id is not null"}
     }
 }
 
@@ -287,7 +286,7 @@ set sql "
         party__email(ep.person_id) as email
         $extra_select 
     from flyhh_event_participants ep
-    left outer join (select ro.person_id, room_name, ro.room_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
+    left outer join (select ro.person_id, room_name, ro.room_id, r.room_material_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
    users_contact uc
     $extra_from
     where project_id=:project_id
