@@ -12,5 +12,12 @@
     <listtemplate name="@list_id@"></listtemplate>
 </td>
 </tr>
+<tr>
+<td colspan=2>
+<table class="list-table" cellpadding="3" cellspacing="1">
+@table_header_html;noquote@
+@bus_body_html;noquote@
+</td>
+</tr>
 </table>
 </p>
