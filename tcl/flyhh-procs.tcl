@@ -1057,7 +1057,7 @@ ad_proc ::flyhh::after_confirmation_edit_p {
         select category_id 
         from im_categories 
         where category_type='Flyhh - Event Registration Status' 
-        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused', 'Cancelled')
+        and category in ('Pending Payment','Partially Paid', 'Registered', 'Refused')
     "
     set restrict_edit_list [db_list_of_lists restrict_edit_list $sql]
 
