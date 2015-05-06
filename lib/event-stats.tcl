@@ -99,7 +99,7 @@ set bgcolor(1) " class=rowodd "
 
 set table_body_html ""
 # First the materials where lead/follow matters
-db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9004 and em.capacity != 0" {
+db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9004 and em.capacity != 0 order by material_type_id, material_name" {
     incr ctr
     if {![string match "*solo*" $material_nr]} {
         # This is a material with Lead & Follow
@@ -157,7 +157,7 @@ from flyhh_event_materials em where event_id = :event_id and em.material_id = :m
 
 set bus_body_html ""
 # First the materials where lead/follow matters
-db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9008 and em.capacity != 0" {
+db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9008 and em.capacity != 0 order by material_type_id, material_name" {
     incr ctr
 	db_1row stats "select
 (select count(*) from flyhh_event_participants ep where bus_option = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500) as num_waitlist,
