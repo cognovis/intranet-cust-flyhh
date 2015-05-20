@@ -1342,6 +1342,7 @@ ad_proc -public flyhh_accommodation_options {
     and e.project_id = :project_id 
     and p.material_id = m.material_id 
     and p.company_id = :company_id 
+    and em.capacity > 0
     and em.material_id in (select material_id from im_materials where material_type_id = 9002)
     order by material_nr" {
         
