@@ -282,9 +282,14 @@ if { ![empty_string_p $extra_from] } {
 }
 
 set sql "
-    select ep.*,er.*,uc.ha_country_code, 
+    select 
+    (select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::confirmed] and c.cost_id = f.quote_id and f.participant_id = ep.participant_id) as days_since_confirmation,
+    (select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::pending_payment] and c.cost_id = f.invoice_id and f.participant_id = ep.participant_id) as days_since_invoice,
+    ep.*,er.*,uc.ha_country_code, 
         person__name(partner_person_id) as partner_person_name, 
-        party__email(ep.person_id) as email
+        party__email(ep.person_id) as email,
+        (select effective_date::date from im_costs where cost_id = quote_id) as confirmation_date,
+        (select effective_date::date from im_costs where cost_id = invoice_id) as accepted_date
         $extra_select 
     from flyhh_event_participants ep
     left outer join (select ro.person_id, room_name, ro.room_id, r.room_material_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
@@ -402,7 +407,29 @@ db_foreach event_participants_query $sql {
         }
         append alterantive_accommodation_html "</ul>"
     }
-    
+
+    # Format the days since
+    if {$event_participant_status_id == [flyhh::status::confirmed]} {
+	set days_since_html "$days_since_confirmation"
+    } else {
+	set days_since_html ""
+    }
+
+    if {$days_since_confirmation > 14 && $event_participant_status_id == [flyhh::status::confirmed]} {
+	set days_since_html "<font color=orange>$days_since_confirmation</font>"
+    }
+    if {$days_since_confirmation > 28 && $event_participant_status_id == [flyhh::status::confirmed]} {
+	set days_since_html "<font color=red>$days_since_confirmation</font>"
+    }
+
+    if {$days_since_invoice > 28 && $event_participant_status_id == [flyhh::status::pending_payment]} {
+	append days_since_html "<font color=red>$days_since_invoice </font>"
+    } elseif {$days_since_invoice > 14  && $event_participant_status_id == [flyhh::status::pending_payment]} {
+	append days_since_html "<font color=orange>$days_since_invoice </font>"
+    } elseif {$event_participant_status_id == [flyhh::status::pending_payment]} {
+	append days_since_html "$days_since_invoice"
+    }
+
     # Append together a line of data based on the "column_vars" parameter list
     set row_html "<tr$bgcolor([expr $ctr % 2])>\n"
     foreach column_var $column_vars {
