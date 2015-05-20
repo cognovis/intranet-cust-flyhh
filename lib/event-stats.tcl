@@ -57,12 +57,13 @@ template::list::create \
 
 
 set sql "
-    select capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name,
+    select capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name, em.material_id,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82501) as num_confirmed,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82502) as num_pending_payment,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82503) as num_partially_paid,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82504) as num_registered,
     (select sum(er.sleeping_spots) from flyhh_event_rooms er where er.room_material_id = em.material_id) as capacity,
+    (select coalesce(1,0) from im_materials where parent_material_id = em.material_id) as has_children_p,
     (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants,
     (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id and ro.person_id not in (select person_id from flyhh_event_participants where project_id = :project_id)) as other_occupants,
     (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants ep where er.room_material_id = em.material_id and ro.room_id = er.room_id and ep.person_id = ro.person_id and ep.project_id = ro.project_id and ro.project_id =:project_id and ep.event_participant_status_id in (82501,82502,82503,82504)) as confirmed_occupants 
@@ -80,6 +81,15 @@ set sql "
 "
 
 db_multirow stats $multirow $sql {
+    # Check if we have a category which has children
+    if {$has_children_p eq 1} {
+	
+	set material_ids [db_list materials "select material_id from im_materials where parent_material_id = :material_id"]
+	set child_occupants [db_string childs "select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants p where p.accommodation in ([template::util::tcl_to_sql_list $material_ids]) and p.person_id = ro.person_id and ro.room_id = er.room_id and ro.project_id =:project_id" -default 0]
+	set other_occupants [expr $other_occupants + $child_occupants]
+ds_comment "$material_id :: $child_occupants :: $material_ids"
+    }
+	
     if {$free_capacity eq ""} {set free_capacity $capacity}
     if {$free_confirmed_capacity eq ""} {set free_confirmed_capacity $capacity}
 #    set other_occupants [expr $capacity - $confirmed_occupants]
