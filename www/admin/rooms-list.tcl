@@ -222,7 +222,7 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
         where ro.room_id = :room_id and ro.project_id = :filter_project_id 
         order by im_name_from_id(ro.person_id)" {
             if {$participant_id eq ""} {
-                set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id" -default ""]
+                set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id order by company_id desc limit 1" -default ""]
                 if {$company_id eq ""} {
                     set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]            
                 } {

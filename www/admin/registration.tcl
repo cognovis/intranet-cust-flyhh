@@ -101,7 +101,9 @@ and e.room_id = :room_id"
     
     # Get the possible accomodation_ids due to parent
     db_foreach parent_ids "select parent_material_id from im_materials where material_id in ([template::util::tcl_to_sql_list $accommodation_ids])" {
-	lappend accommodation_ids $parent_material_id
+	if {$parent_material_id ne ""} {
+	    lappend accommodation_ids $parent_material_id
+	}
     }
     append room_sql "and e.room_material_id in ([template::util::tcl_to_sql_list $accommodation_ids])"
 }
