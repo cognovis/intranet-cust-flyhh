@@ -13,7 +13,7 @@ ad_page_contract {
 } -validate {
 
     allowed_bulk_actions -requires {bulk_action} {
-        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Send Mail" "Assign Room"] $bulk_action] } {
+        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Set to Waitlist" "Send Mail" "Assign Room"] $bulk_action] } {
             ad_complain "page requires an allowed bulk action"
         }
     }    
@@ -22,6 +22,24 @@ ad_page_contract {
 switch -exact $bulk_action {
    "Set to Confirmed" { 
         rp_internal_redirect participant-confirm.tcl
+    }
+   "Set to Waitlist" { 
+       db_transaction {
+
+	   foreach id $participant_id {
+
+	       # Check if the participant is currently cancelled. Otherwise ignore.
+	       set cancelled_p [db_string cancelled "select 1 from flyhh_event_participants where participant_id = :participant_id and event_participant_status_id = [::flyhh::status::cancelled]" -default 0]
+	       if {$cancelled_p} {
+		   db_dml update_status "
+            update flyhh_event_participants 
+            set event_participant_status_id=[::flyhh::status::waiting_list]
+            where participant_id=:participant_id 
+        "
+	       }
+	   }
+       }
+       ad_returnredirect $return_url
     }
    "Set to Cancelled" { 
 

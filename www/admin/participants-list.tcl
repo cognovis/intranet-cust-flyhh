@@ -36,6 +36,7 @@ set bulk_actions {
     "Assign Room" "participant-room-assign" "Assign room for checked participants"
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
+    "Set to Waitlist" "participant-waitlist" "Put checked participants onto Waiting List"
     "Send Mail" "participant-email" "E-Mail checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"

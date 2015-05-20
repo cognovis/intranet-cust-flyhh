@@ -110,6 +110,7 @@ db_foreach material_id $sql {
 
     }
 
+
     set varname "capacity.${material_id}"
 
     lappend elements \
@@ -138,7 +139,7 @@ ad_form -extend -name $form_id -edit_request {
     "
 
     db_foreach material_capacity $sql {
-        set varname capacity.$material_id
+        set varname capacity.${material_id}
         set $varname $capacity
     }
 

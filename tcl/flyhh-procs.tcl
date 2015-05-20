@@ -1,5 +1,15 @@
 namespace eval ::flyhh {;}
 
+namespace eval ::flyhh::status {
+    ad_proc -public waiting_list {} {} {return 82500}
+    ad_proc -public confirmed {} {} {return 82501}
+    ad_proc -public pending_payment {} {} {return 82502}
+    ad_proc -public partially_paid {} {} {return 82503}
+    ad_proc -public registered {} {} {return 82504}
+    ad_proc -public refused {} {} {return 82505}
+    ad_proc -public cancelled {} {} {return 82506}
+}
+
 ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {
 
  Simple parsing function to extract name and email from
