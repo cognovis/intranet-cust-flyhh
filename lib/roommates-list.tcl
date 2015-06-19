@@ -36,7 +36,7 @@ db_multirow -extend {roommate_status roommate_url room_url room_name} roommates 
 	}
     }
     if {![exists_and_not_null roommate_participant_id]} {
-	set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:roommate_person_id" -default ""]
+	set company_id [db_string company_id "select max(company_id) from im_companies where primary_contact_id =:roommate_person_id" -default ""]
         if {$company_id eq ""} {
             set roommate_url [export_vars -base "/intranet/users/view" -url {{user_id $roommate_person_id}}]            
         } {

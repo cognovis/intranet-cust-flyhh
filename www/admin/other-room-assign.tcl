@@ -48,7 +48,7 @@ db_foreach person $sql {
 }
         
 
-set room_options [list [list "" ""]]
+set room_options [list [list "" ""] [list "Remove" "-1"]]
 db_foreach rooms "
     select room_name,e.room_id, office_name, sleeping_spots, material_name,
     (select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id) as taken_spots
@@ -86,14 +86,16 @@ ad_form \
         }
     } -validate {
         {room_id
-            {[llength $person_ids]<=[db_string open_spots "select sleeping_spots - (select count(*) from flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and person_id not in ([template::util::tcl_to_sql_list $person_ids])) as taken_spots from flyhh_event_rooms r where room_id = :room_id" -default 0]}
+            {[llength $person_ids]<=[db_string open_spots "select sleeping_spots - (select count(*) from flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and person_id not in ([template::util::tcl_to_sql_list $person_ids])) as taken_spots from flyhh_event_rooms r where room_id = :room_id" -default 0] || $room_id == "-1"}
             {"The room does not have enough vacancies to accommodate all selected occupants ([llength $person_ids])"}
         }
     } -on_submit {
             db_dml delete_occupants "delete from flyhh_event_room_occupants where project_id = :project_id and person_id in ([template::util::tcl_to_sql_list $person_ids])"
+	if {$room_id ne "-1"} {
             foreach person_id $person_ids {
                 db_dml insert_occupant "insert into flyhh_event_room_occupants (room_id, person_id,project_id,note) values (:room_id, :person_id, :project_id,:note) "
             }
+	}
             ad_returnredirect $return_url
     }
     
