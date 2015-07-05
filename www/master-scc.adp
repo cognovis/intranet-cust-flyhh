@@ -41,20 +41,25 @@
 		            />
 		        </a>		<div id="sidebar">
 		
-    		        <ul id="navigation">
-			<li id="welcome"><a href="index.php"><i>Welcome</i></a></li>
-			<li id="location"><a href="location.php"><i>Location</i></a></li>
-			<li id="instructors"><a href="instructors.php"><i>Instructors</i></a></li>
-			<li id="classes"><a href="classes.php"><i>Classes</i></a></li>
-			<li id="evenings"><a href="evenings.php"><i>Evenings</i></a></li>
-			<li id="accomodation"><a href="accommodation.php"><i>Eat and Sleep</i></a></li>
-			<li id="travel"><a href="travel.php"><i>Travel</i></a></li>
-			<li id="register"><a href="register.php"><i>Register</i></a></li>
-			<li id="faq"><a href="faq.php"><i>FAQ</i></a></li>
-			<li id="newsletter"><a href="newsletter.php"><i>Newsletter</i></a></li>
-			<li id="about"><a href="about.php"><i>About</i></a></li>
-			<li id="contact"><a href="contact.php"><i>Contact</i></a></li>
-			</ul>
+    		          <ul id="navigation">
+			    <li id="welcome"><a href="http://swingcastlecamp.de/fullweek/index.php">WELCOME</a></li>
+			    <li id="location"><a href="http://swingcastlecamp.de/fullweek/location.php">LOCATION</a></li>
+			    <li id="instructors"><a href="http://swingcastlecamp.de/fullweek/instructors.php">INSTRUCTORS</a></li>
+			    <li id="classes"><a href="http://swingcastlecamp.de/fullweek/classes.php">CLASSES</a></li>
+			    <li id="evenings"><a href="http://swingcastlecamp.de/fullweek/evenings.php">EVENINGS</a></li>
+			    <li id="music"><a href="http://swingcastlecamp.de/fullweek/music.php">MUSIC</a></li>
+			    <li id="schedule"><a href="http://swingcastlecamp.de/fullweek/schedule.php">SCHEDULE</a></li>
+			    <li id="accomodation"><a href="http://swingcastlecamp.de/fullweek/accommodation.php">EAT & SLEEP</a></li>
+			    <li id="travel"><a href="http://swingcastlecamp.de/fullweek/travel.php">TRAVEL</a></li>
+			    <li id="costs"><a href="http://swingcastlecamp.de/fullweek/costs.php">COSTS</a></li>
+			    <li id="register"><a href="http://swingcastlecamp.de/fullweek/register.php">REGISTER</a></li>
+			    <li id="faq"><a href="http://swingcastlecamp.de/fullweek/faq.php">FAQ</a></li>
+			    <li id="contact"><a href="http://swingcastlecamp.de/fullweek/contact.php">CONTACT</a></li>
+			    <li id="newslettert"><a href="http://swingcastlecamp.de/fullweek/newsletter.php">NEWSLETTER</a></li>
+			    <li id="datenschutz"><a href="http://swingcastlecamp.de/fullweek/terms.php">TERMS & CONDITIONS</a></li>
+			    <li id="datenschutz"><a href="http://swingcastlecamp.de/fullweek/datenschutz.php">DATENSCHUTZ</a></li>
+			    <li id="impressum"><a href="http://swingcastlecamp.de/fullweek/impressum.php">IMPRESSUM</a></li>
+			    </ul>
 			</div>			
 		
 		    <div id="content">

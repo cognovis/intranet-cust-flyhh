@@ -29,7 +29,11 @@ if {$event_name eq ""} {
 
     switch $project_cost_center_id {
         34915 {
-            set adp_master "master-scc"
+	    if {$event_id eq 48362} {
+		set adp_master "master-wscc"
+	    } else {
+		set adp_master "master-scc"
+	    }
         }
         default {
             set adp_master "master-bcc"

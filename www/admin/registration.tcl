@@ -76,12 +76,11 @@ if { [exists_and_not_null participant_id] } {
 set room_options [list [list "" ""]]
 
 set room_sql "select room_name,e.room_id, office_name, sleeping_spots, material_name,
-(select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id) as taken_spots
+(select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id and p.project_id = :project_id) as taken_spots
 from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
 where e.room_office_id = o.office_id
 and o.company_id = p.company_id
 and e.room_material_id = m.material_id
-and p.project_id = :project_id
 "
 
 if {[exists_and_not_null participant_id]} {
@@ -100,11 +99,11 @@ and e.room_id = :room_id"
     }
     
     # Get the possible accomodation_ids due to parent
-    db_foreach parent_ids "select parent_material_id from im_materials where material_id in ([template::util::tcl_to_sql_list $accommodation_ids])" {
-	if {$parent_material_id ne ""} {
-	    lappend accommodation_ids $parent_material_id
-	}
-    }
+    #db_foreach parent_ids "select parent_material_id from im_materials where material_id in ([template::util::tcl_to_sql_list $accommodation_ids])" {
+    #if {$parent_material_id ne ""} {
+    #lappend accommodation_ids $parent_material_id
+#}
+#}
     append room_sql "and e.room_material_id in ([template::util::tcl_to_sql_list $accommodation_ids])"
 }
 

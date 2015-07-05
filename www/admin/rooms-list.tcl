@@ -221,17 +221,19 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
         db_foreach occupant "select im_name_from_id(ro.person_id) as occupant_name, ro.person_id,ep.participant_id from flyhh_event_room_occupants ro left outer join flyhh_event_participants ep on (ep.project_id = ro.project_id and ep.person_id = ro.person_id)
         where ro.room_id = :room_id and ro.project_id = :filter_project_id 
         order by im_name_from_id(ro.person_id)" {
-            if {$participant_id eq ""} {
+
                 set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id order by company_id desc limit 1" -default ""]
                 if {$company_id eq ""} {
                     set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]            
                 } {
                     set occupant_url [export_vars -base "/intranet/companies/view" -url {company_id}]            
                 }
-            } else {
-                set occupant_url [export_vars -base "/flyhh/admin/registration" -url {participant_id project_id}]
+            set occupant "<a href='$occupant_url'>$occupant_name</a>"
+            if {$participant_id ne ""} {
+                set registration_url [export_vars -base "/flyhh/admin/registration" -url {participant_id project_id}]
+		append occupant " (<a href='$registration_url'>$participant_id</a>)"
             }
-            lappend occupants "<a href='$occupant_url'>$occupant_name</a>"
+	    lappend occupants $occupant
         }
     }
     if {$occupants ne ""} {
