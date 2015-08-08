@@ -17,6 +17,7 @@ ad_page_contract {
     { order_by "" }
     { room_p 0 }
     { international_p 0 }
+    { notes_p 0 }
 } -properties {
 } -validate {
 
@@ -51,6 +52,7 @@ set locale [lang::user::locale]
 # User id already verified by filters
 
 set show_context_help_p 0
+set notes ""
 set filter_admin_html ""
 set user_id [ad_maybe_redirect_for_registration]
 set admin_p [im_is_user_site_wide_or_intranet_admin $user_id]
@@ -163,6 +165,12 @@ ad_form \
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
         }
+        {bus_option:text(select),optional
+            {label {[::flyhh::mc Bus "Bus"]}}
+            {html {}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Bus Options" -locale $locale]}}
+        }
+
 
 #        {level:text(im_category_tree),optional
 #            {label {[::flyhh::mc Level "Level"]}} 
@@ -191,6 +199,10 @@ ad_form \
             {label {[::flyhh::mc international_p "International?"]}}
             {options {{No 0} {Yes 1}}}
         }
+	{notes_p:text(select),optional
+            {label {[::flyhh::mc notes_p "Notes?"]}}
+            {options {{No 0} {Yes 1}}}
+        }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
             {options $order_by_options}
@@ -206,7 +218,7 @@ ad_form \
 #            if { $num == 16 } { lappend criteria "mismatch_level_p" }
 #        }
 
-        foreach varname {lead_p course event_participant_status_id validation_status_id} {
+        foreach varname {lead_p course bus_option event_participant_status_id validation_status_id} {
 
             if { [exists_and_not_null $varname] } {
 
@@ -249,6 +261,12 @@ if {$room_p} {
 
 if {$international_p} {
     lappend criteria "ha_country_code != 'de'"
+}
+
+# Find out if the participant has provided a note
+if {$notes_p} {
+    lappend criteria "(select count(*) from im_notes where object_id = ep.participant_id) >0"
+    lappend extra_selects "(select array_agg(note) from im_notes where object_id = ep.participant_id) as notes"
 }
 
 if {$view_order_by_clause != ""} {
