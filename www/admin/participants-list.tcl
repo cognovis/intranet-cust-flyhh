@@ -245,6 +245,37 @@ ad_form \
 
     }
 
+# ---------------------------------------------------------------
+# Support for exporting table to excel
+# ---------------------------------------------------------------
+
+# List to store the view_type_options
+set view_type_options [list [list HTML ""]]
+set view_type_options [concat $view_type_options [list [list Excel xls]] [list [list Openoffice ods]] [list [list PDF pdf]]]
+
+ad_form -extend -name $form_id -form {
+    {view_type:text(select),optional {label "#intranet-openoffice.View_type#"} {options $view_type_options}}
+}
+
+# Create a ns_set with all local variables in order
+# to pass it to the SQL query
+set form_vars [ns_set create]
+foreach varname [info locals] {
+
+    # Don't consider variables that start with a "_", that
+    # contain a ":" or that are array variables:
+    if {"_" == [string range $varname 0 0]} { continue }
+    if {[regexp {:} $varname]} { continue }
+    if {[array exists $varname]} { continue }
+
+    # Get the value of the variable and add to the form_vars set
+    if {[set $varname] eq ""} {
+	set value ""
+    } else {
+	set value [expr "\$$varname"]
+    }
+    ns_set put $form_vars $varname $value
+}
 
 # ---------------------------------------------------------------
 # 5. Generate SQL Query
@@ -385,6 +416,10 @@ if { $bulk_actions ne {} } {
     append table_body_html "<form id=\"${bulk_actions_form_id}\" action=\"participants-bulk\" method=\"post\">"
     append table_body_html "<input type=hidden name=\"project_id\" value=\"${project_id}\">"
     append table_body_html "<input type=hidden name=\"return_url\" value=\"${return_url}\">"
+}
+if {[lsearch [list xls pdf ods] $view_type] > -1} {
+    intranet_openoffice::spreadsheet -view_name $view_name -sql $sql -output_filename "participant-list.$view_type" -table_name "$page_title" -variable_set $form_vars
+        ad_script_abort
 }
 
 db_foreach event_participants_query $sql {

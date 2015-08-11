@@ -218,3 +218,14 @@ foreach object_type $object_types {
 
 
 }
+
+ad_proc -public -callback flyhh_participants_index_filter {
+    {-form_id:required}
+} {
+    This callback is executed after we generated the filter ad_form
+    
+    This allows you to extend in the uplevel the form with any additional filters you might want to add.
+
+    @param form_id ID of the form to which we want to append filter elements
+} - 
+
