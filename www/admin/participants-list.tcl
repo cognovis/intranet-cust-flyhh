@@ -18,6 +18,7 @@ ad_page_contract {
     { room_p 0 }
     { international_p 0 }
     { notes_p 0 }
+    { view_type "HTML" }
 } -properties {
 } -validate {
 
