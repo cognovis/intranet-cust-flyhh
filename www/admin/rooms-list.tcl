@@ -8,6 +8,7 @@ ad_page_contract {
     
 } {
     {filter_project_id ""}
+    {participant_filter "all"}
     room_material_id:integer,optional
     room_office_id:integer,optional
     {orderby ""}
@@ -151,6 +152,7 @@ db_foreach events "
 
 
 set extra_where_clause ""
+set occ_extra_where_clause ""
 ad_form \
     -name $form_id \
     -action $action_url \
@@ -173,6 +175,12 @@ ad_form \
             {options {$event_options}}
             {value $filter_project_id}
         }
+        {participant_filter:text(select),optional
+            {label {[::flyhh::mc Participant "Participant"]}}
+            {html {}}
+            {options {{"Yes" "t"} {"No" "f"} {"All" "all"}}}
+            {value $participant_filter}
+        }
     } -on_submit {
 
         foreach varname {room_office_id room_material_id } {
@@ -186,6 +194,18 @@ ad_form \
             }
 
         }
+
+	switch $participant_filter {
+	    "t" {
+		append occ_extra_where_clause "and participant_id is not null" 
+	    }
+	    "f" {
+		append occ_extra_where_clause "and participant_id is null" 
+	    }
+            default {
+		# Show all
+            }
+	}
 
     }
 
@@ -219,7 +239,7 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
     if {$filter_project_id ne ""} {
         # Set the occupants
         db_foreach occupant "select im_name_from_id(ro.person_id) as occupant_name, ro.person_id,ep.participant_id from flyhh_event_room_occupants ro left outer join flyhh_event_participants ep on (ep.project_id = ro.project_id and ep.person_id = ro.person_id)
-        where ro.room_id = :room_id and ro.project_id = :filter_project_id 
+        where ro.room_id = :room_id and ro.project_id = :filter_project_id $occ_extra_where_clause
         order by im_name_from_id(ro.person_id)" {
 
                 set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id order by company_id desc limit 1" -default ""]
