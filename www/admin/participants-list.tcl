@@ -39,6 +39,7 @@ set bulk_actions {
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
     "Set to Waitlist" "participant-waitlist" "Put checked participants onto Waiting List"
+    "Set to Checked-In" "participant-checked_in" "Mark checked participants as checked in"
     "Send Mail" "participant-email" "E-Mail checked participants"
 }
 set bulk_actions_form_id "flyhh_event_participants_form"
@@ -335,7 +336,7 @@ set sql "
     select 
     (select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::confirmed] and c.cost_id = f.quote_id and f.participant_id = ep.participant_id) as days_since_confirmation,
     (select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::pending_payment] and c.cost_id = f.invoice_id and f.participant_id = ep.participant_id) as days_since_invoice,
-    ep.*,er.*,uc.ha_country_code, 
+    ep.*,er.*,uc.ha_country_code,uc.ha_city,
         person__name(partner_person_id) as partner_person_name, 
         party__email(ep.person_id) as email,
         (select effective_date::date from im_costs where cost_id = quote_id) as confirmation_date,

@@ -8,6 +8,7 @@ namespace eval ::flyhh::status {
     ad_proc -public registered {} {} {return 82504}
     ad_proc -public refused {} {} {return 82505}
     ad_proc -public cancelled {} {} {return 82506}
+    ad_proc -public checked_in {} {} {return 82507}
 }
 
 ad_proc -public ::flyhh::match_name_email {text nameVar emailVar} {

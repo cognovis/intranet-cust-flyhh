@@ -13,7 +13,7 @@ ad_page_contract {
 } -validate {
 
     allowed_bulk_actions -requires {bulk_action} {
-        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Set to Waitlist" "Send Mail" "Assign Room"] $bulk_action] } {
+        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Set to Waitlist" "Send Mail" "Assign Room" "Set to Checked-In"] $bulk_action] } {
             ad_complain "page requires an allowed bulk action"
         }
     }    
@@ -54,6 +54,21 @@ switch -exact $bulk_action {
         }       
 	ad_returnredirect $return_url
     }
+    "Set to Checked-In" {
+	db_transaction {
+
+	    foreach id $participant_id {
+		
+		db_dml update_status "
+                 update flyhh_event_participants 
+                 set event_participant_status_id=[::flyhh::status::checked_in]
+                 where participant_id=:participant_id 
+                "
+	    }
+	    ad_returnredirect $return_url
+	}
+    }
+
     "Send Mail" {
         db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email, project_name from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
         set party_ids [db_list party_ids "select person_id from flyhh_event_participants where participant_id in ([template::util::tcl_to_sql_list $participant_id])"]
