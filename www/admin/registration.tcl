@@ -75,8 +75,9 @@ if { [exists_and_not_null participant_id] } {
 
 set room_options [list [list "" ""]]
 
+ds_comment "Project :: $project_id"
 set room_sql "select room_name,e.room_id, office_name, sleeping_spots, material_name,
-(select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id and p.project_id = :project_id) as taken_spots
+(select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and ro.project_id = :project_id) as taken_spots
 from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
 where e.room_office_id = o.office_id
 and o.company_id = p.company_id
@@ -109,7 +110,8 @@ and e.room_id = :room_id"
 
 db_foreach rooms $room_sql {
     if {$taken_spots < $sleeping_spots} {
-        lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
+	set available_spots [expr $sleeping_spots - $taken_spots]
+        lappend room_options [list "$room_name ($office_name) - $material_name ($available_spots free)" $room_id]
     }
 }
 
