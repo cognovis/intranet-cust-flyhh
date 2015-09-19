@@ -334,6 +334,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         inner join flyhh_events e on (e.project_id = cst.project_id)
         inner join parties p on (reg.person_id = p.party_id)
         where payment_id=:payment_id
+        and event_participant_status_id not in ([flyhh::status::cancelled],[flyhh::status::refused],[flyhh::status::waiting_list])
     "
 
     set exists_p [db_0or1row check_payment_event $sql]

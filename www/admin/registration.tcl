@@ -8,6 +8,7 @@ ad_page_contract {
     @cvs-id $Id$
 } {
     participant_id:integer,optional,notnull
+    person_id:integer,optional,notnull
     project_id:integer,notnull
     token:optional,notnull
     {inviter_text:trim,notnull ""}
@@ -75,7 +76,6 @@ if { [exists_and_not_null participant_id] } {
 
 set room_options [list [list "" ""]]
 
-ds_comment "Project :: $project_id"
 set room_sql "select room_name,e.room_id, office_name, sleeping_spots, material_name,
 (select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and ro.project_id = :project_id) as taken_spots
 from flyhh_event_rooms e, im_offices o, im_projects p, im_materials m
@@ -85,27 +85,28 @@ and e.room_material_id = m.material_id
 "
 
 if {[exists_and_not_null participant_id]} {
-    db_1row room_id "select room_id, accommodation, alternative_accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"
-    if {$room_id ne ""} {
-        db_1row room_info "select room_name,e.room_id, office_name, material_name
+    if {[db_0or1row room_id "select room_id, accommodation, alternative_accommodation from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) where participant_id = :participant_id"]} {
+	if {$room_id ne ""} {
+	    db_1row room_info "select room_name,e.room_id, office_name, material_name
 from flyhh_event_rooms e, im_offices o, im_materials m
 where e.room_office_id = o.office_id
 and e.room_material_id = m.material_id
 and e.room_id = :room_id"
-        lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
-    }
-    set accommodation_ids [list $accommodation]
-    foreach alt_accommodation_id $alternative_accommodation {
-        lappend accommodation_ids $alt_accommodation_id
-    }
+	    lappend room_options [list "$room_name ($office_name) - $material_name" $room_id]
+	}
+	set accommodation_ids [list $accommodation]
+	foreach alt_accommodation_id $alternative_accommodation {
+	    lappend accommodation_ids $alt_accommodation_id
+	}
     
-    # Get the possible accomodation_ids due to parent
-    #db_foreach parent_ids "select parent_material_id from im_materials where material_id in ([template::util::tcl_to_sql_list $accommodation_ids])" {
-    #if {$parent_material_id ne ""} {
-    #lappend accommodation_ids $parent_material_id
-#}
-#}
-    append room_sql "and e.room_material_id in ([template::util::tcl_to_sql_list $accommodation_ids])"
+	# Get the possible accomodation_ids due to parent
+	#db_foreach parent_ids "select parent_material_id from im_materials where material_id in ([template::util::tcl_to_sql_list $accommodation_ids])" {
+	#if {$parent_material_id ne ""} {
+	#lappend accommodation_ids $parent_material_id
+	#}
+	#}
+	append room_sql "and e.room_material_id in ([template::util::tcl_to_sql_list $accommodation_ids])"
+    }
 }
 
 db_foreach rooms $room_sql {
@@ -271,19 +272,26 @@ ad_form -extend -name $form_id -form {
             ad_returnredirect [export_vars -base registration { project_id { participant_id $exists_participant_id } }]
             return
         }
+    }
 
-        # If a registered user who already has information in the system registers for a new event, pre fill the known information.
-        set sql "
+
+    if {![info exists person_id]} {set person_id $user_id}
+
+    # If a registered user who already has information in the system registers for a new event, pre fill the known information.
+    set sql "
             select first_names, last_name, email 
             from parties pa 
             inner join persons p on (p.person_id=pa.party_id) 
             left outer join users_contact uc on (uc.user_id=pa.party_id)
-            where person_id=:user_id"
-        db_1row user_info $sql
+            where person_id=:person_id"
+    db_1row user_info $sql
 
-
-    }
-
+    # Now find out the company information
+    set company_id [db_string company_id "select max(object_id_one) from acs_rels where object_id_two = 33114 and rel_type = 'im_company_employee_rel'" -default ""]
+    
+    # Get address information
+    db_0or1row addresses "select * from users_contact where user_id = :person_id"
+    
 } -edit_request {
 
     set sql "select ep.*, pa.*,p.*,uc.*,ro.room_id

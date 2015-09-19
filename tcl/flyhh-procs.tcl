@@ -1192,7 +1192,9 @@ ad_proc ::flyhh::record_after_confirmation_edit {
 
     }
 
-    if {$delta_items ne ""} {
+    if {0} {
+	# THIS CODE DOES NOT WORK CORRECTLY ANYMORE
+
         # We need to generate a correction invoice
         set invoice_type_id 3725  ;# Intranet Cost Type (3725 = Customer Invoice Correction)
         set new_invoice_id \

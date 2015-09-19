@@ -56,7 +56,6 @@ switch -exact $bulk_action {
     }
     "Set to Checked-In" {
 	db_transaction {
-
 	    foreach id $participant_id {
 		
 		db_dml update_status "
