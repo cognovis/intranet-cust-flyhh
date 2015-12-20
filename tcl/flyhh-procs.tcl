@@ -1304,7 +1304,7 @@ ad_proc -public flyhh_material_options {
         set locale [lang::user::locale]
     }
     
-    db_foreach materials "SELECT m.material_id,material_name,p.price,p.currency FROM im_timesheet_prices p,im_materials m, flyhh_event_materials f,flyhh_events e WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and p.material_id = m.material_id and p.company_id = :company_id order by material_nr" {
+    db_foreach materials "SELECT m.material_id,material_name,itp.price,itp.currency FROM im_timesheet_prices itp,im_materials m, flyhh_event_materials f,flyhh_events e, im_projects p WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and itp.material_id = m.material_id and itp.company_id = :company_id and p.project_id = e.project_id and (itp.task_type_id is null or itp.task_type_id = p.project_type_id) order by material_nr" {
         set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
         set material_display "$material_name ($currency $price)"
         lappend material_options [list $material_display $material_id]
@@ -1341,10 +1341,12 @@ ad_proc -public flyhh_accommodation_options {
     INNER JOIN flyhh_events e on (em.event_id = e.event_id)
     INNER JOIN im_materials m on (em.material_id = m.material_id)
     INNER JOIN im_timesheet_prices p on (em.material_id = p.material_id)
+    INNER JOIN im_projects pr on (pr.project_id = e.project_id)
     WHERE em.event_id = e.event_id 
     and e.project_id = :project_id 
     and p.material_id = m.material_id 
     and p.company_id = :company_id 
+    and (p.task_type_id is null or p.task_type_id = pr.project_type_id)
     and em.capacity > 0
     and em.material_id in (select material_id from im_materials where material_type_id = 9002)
     order by material_nr" {

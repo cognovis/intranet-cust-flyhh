@@ -48,7 +48,7 @@ template::list::create \
     }
 
 
-set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
+set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id) where prj.project_status_id = 76"
 db_multirow events $multirow $sql
 
 

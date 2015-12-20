@@ -96,6 +96,13 @@ set sql "
     where material_type in ('Accommodation', 'Course Income', 'Bus Options', 'Food Choice')
 "
 
+if {[exists_and_not_null event_id]} {
+    db_1row project_id "select p.project_id, project_type_id from flyhh_events fe, im_projects p where fe.project_id = p.project_id and fe.event_id = :event_id"
+    append sql "and (itp.task_type_id is null or itp.task_type_id = :project_type_id)"
+}
+
+append sql "order by mt.material_type_id,itp.uom_id,material_name"
+
 set section ""
 
 db_foreach material_id $sql {
@@ -115,7 +122,7 @@ db_foreach material_id $sql {
 
     lappend elements \
         [list ${varname}:text,optional \
-            [list label [::flyhh::mc material_${material_id} ${material_name}]] \
+            [list label "${material_name}"] \
             [list html "size 15"] \
             [list help_text "[format "%.2f" ${price}] $currency / ${uom_name}"]]
 
