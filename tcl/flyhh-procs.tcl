@@ -1282,6 +1282,7 @@ ad_proc -public flyhh_event_participant_permissions {user_id participant_id view
 
 ad_proc -public im_note_type_skill {} { return 11515 }
 ad_proc -public im_note_type_accommodation {} { return 11516 }
+ad_proc -public im_note_type_instrument {} { return 11517 }
 
 ad_proc -public flyhh_material_options {
     -project_id:required

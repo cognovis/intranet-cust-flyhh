@@ -8,6 +8,7 @@ ad_page_contract {
     @cvs-id $Id$
 } {
     event_id:integer,optional,notnull
+    project_type_id:integer,optional,notnull
 } -properties {
 } -validate {
 } -errors {
@@ -34,7 +35,6 @@ ad_form \
     -form {
 
         event_id:key(acs_object_id_seq)
-
         {-section event_info 
             {legendtext {[::flyhh::mc Event_Info "Event Info"]}}}
 
@@ -62,6 +62,11 @@ ad_form \
             {label {[::flyhh::mc Event_Start_date "Start Date"]}}
             {format "YYYY-MM-DD"} 
             {after_html {<input type="button" style="height:23px; width:23px; background: url('/resources/acs-templating/calendar.gif');" onclick ="return showCalendarWithDateWidget('start_date', 'y-m-d');" >}}
+        }
+	
+	{project_type_id:text(im_category_tree)
+	    {label {Project Type}} 
+	    {custom {category_type "Intranet Project Type" translate_p 1 package_key "intranet-cust-flyhh"}}
         }
 
         {project_cost_center_id:text(generic_sql)
@@ -97,9 +102,10 @@ set sql "
 "
 
 if {[exists_and_not_null event_id]} {
-    db_1row project_id "select p.project_id, project_type_id from flyhh_events fe, im_projects p where fe.project_id = p.project_id and fe.event_id = :event_id"
-    append sql "and (itp.task_type_id is null or itp.task_type_id = :project_type_id)"
+    db_0or1row project_id "select p.project_id, project_type_id from flyhh_events fe, im_projects p where fe.project_id = p.project_id and fe.event_id = :event_id"
 }
+
+append sql "and (itp.task_type_id is null or itp.task_type_id = :project_type_id)"
 
 append sql "order by mt.material_type_id,itp.uom_id,material_name"
 
@@ -232,6 +238,8 @@ ad_form -extend -name $form_id -edit_request {
         set sql "delete from flyhh_event_materials where event_id=:event_id"
 
         db_dml delete_old_capacity_rows $sql
+
+	db_dml update_project "update im_projects set project_type_id = :project_type_id where project_id = (select project_id from flyhh_events where event_id = :event_id)"
 
         # The form has an input field (named capacity.material_id) 
         # for each material of the following types: Course Income,

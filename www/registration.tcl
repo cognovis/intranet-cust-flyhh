@@ -148,6 +148,7 @@ if {$error_text ne ""} {
                 {label {[::flyhh::mc Course "Course"]}}
                 {html {}}
                 {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
+		{help_text {[::flyhh::mc course_help "If you look for the party pass, choose Evening Classes only"]}}
             }
             {lead_p:text(select)
                 {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
@@ -236,6 +237,11 @@ if {$error_text ne ""} {
                 {label {[::flyhh::mc Skills "Skills"]}}
                 {html "rows 4 cols 45"}
                 {help_text {[::flyhh::mc skills_help "Please provide us with some of your skills"]}}
+            }
+            {instruments:text(textarea),optional
+                {label {[::flyhh::mc Instruments "Which instruments would you like to play at the castle?"]}}
+                {html "rows 4 cols 45"}
+                {help_text {[::flyhh::mc instruments_help "Please provide us with instruments you would like to play at the castle. Mandatory if you are interested in the Musicians Track (only at SCC)."]}}
             }
             {comments:text(textarea),optional
                 {label {[::flyhh::mc Comments "Further Comments"]}}
@@ -359,6 +365,23 @@ if {$error_text ne ""} {
                     :skills,
                     :participant_id,
                     [im_note_type_skill],
+                    [im_note_status_active]
+                )
+                "]
+        }
+        if {$instruments ne ""} {
+            set instruments [list [string trim $instruments] "text/plain"]
+            set instrument_note_id [db_exec_plsql create_note "
+                SELECT im_note__new(
+                    NULL,
+                    'im_note',
+                    now(),
+                    :person_id,
+                    '[ad_conn peeraddr]',
+                    null,
+                    :instruments,
+                    :participant_id,
+                    [im_note_type_instrument],
                     [im_note_status_active]
                 )
                 "]

@@ -49,3 +49,5 @@ SELECT im_category_new (82534, 'I only lead', 'Flyhh - Primary Role');
 
 SELECT im_category_new (82540, 'I like to be pushed hard', 'Flyhh - Border Level');
 SELECT im_category_new (82541, 'I would prefer to dance in my own pace', 'Flyhh - Border Level');
+
+SELECT im_category_new (11517, 'Instruments', 'Intranet Notes Type');
