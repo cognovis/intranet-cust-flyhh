@@ -447,9 +447,9 @@ if {$error_text ne ""} {
         	    }
         }    
     } -after_submit {
-	# Redirect to the level check if necessary
-
-	if {1} {
+	# Redirect to the level check if necessary, based on course material
+	set no_level_ids [list 39604 39607 48377]
+	if {[lsearch $no_level_ids $course]<0} {
 	    set level_token [ns_sha1 "${email}${participant_id}"] 
    	    ad_returnredirect [export_vars -base level {participant_id email level_token token}]
 	} else {

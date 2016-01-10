@@ -96,6 +96,8 @@ div.form-item-wrapper label {
   display:inline;
 }
 </style>
+<center><h2>Please fill out the questionaire with regards to the @course_name;noquote@ course you signed up for </h2></center>
+<p>&nbsp;</p>
 <div style="width:620px;">
     <formtemplate id="@form_id@" style="standard"></formtemplate>
 </div>

@@ -25,6 +25,8 @@ if {$level_token ne $check_token} {
 
 db_1row participant_info "select ep.*, first_names, event_id from persons p, flyhh_event_participants ep, flyhh_events e where ep.participant_id = :participant_id and e.project_id = ep.project_id and ep.person_id = p.person_id"
 
+set course_name [im_material_name -material_id $course]
+
 # Check if the Project ID is valid
 set event_name [db_string project "select event_name from flyhh_events where event_id = :event_id" -default ""]
 if {$event_name eq ""} {
