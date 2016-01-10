@@ -76,8 +76,8 @@ if {$error_text ne ""} {
     set participant_id [db_string registration_exists $sql -default ""]
 
     if { [exists_and_not_null participant_id] } {
-#        set mode display
-	set mode edit
+        set mode display
+#	set mode edit
     } else {
         set mode edit
         unset participant_id

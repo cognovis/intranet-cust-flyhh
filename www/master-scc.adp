@@ -53,7 +53,7 @@ padding: 0 !important;
 <link rel='shortlink' href='http://www.swingcastlecamp.de/?p=47' />
 <link rel="alternate" type="application/json+oembed" href="http://www.swingcastlecamp.de/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fwww.swingcastlecamp.de%2Fregister%2F" />
 <link rel="alternate" type="text/xml+oembed" href="http://www.swingcastlecamp.de/wp-json/oembed/1.0/embed?url=http%3A%2F%2Fwww.swingcastlecamp.de%2Fregister%2F&#038;format=xml" />
-<script type='text/javascript' data-cfasync='false'>var _mmunch = {'front': false, 'page': false, 'post': false, 'category': false, 'author': false, 'search': false, 'attachment': false, 'tag': false};_mmunch['page'] = true; _mmunch['pageData'] = {"ID":47,"post_name":"register","post_title":"Register","post_type":"page","post_author":"1","post_status":"publish"};</script><script data-cfasync="false" src="//s3.amazonaws.com/mailmunch/static/site.js" id="mailmunch-script" data-mailmunch-site-id="145223" async></script><style type="text/css" id="custom-background-css">
+<script type='text/javascript' data-cfasync='false'>var _mmunch = {'front': false, 'page': false, 'post': false, 'category': false, 'author': false, 'search': false, 'attachment': false, 'tag': false};_mmunch['page'] = true; _mmunch['pageData'] = {"ID":47,"post_name":"register","post_title":"Register","post_type":"page","post_author":"1","post_status":"publish"};</script><style type="text/css" id="custom-background-css">
 body.custom-background { background-image: url('http://demo.swingcastlecamp.de/wp-content/uploads/2015/11/Floortilesmall3.jpg'); background-repeat: repeat; background-position: top left; background-attachment: scroll; }
 </style>
 <link rel="icon" href="http://www.swingcastlecamp.de/wp-content/uploads/2015/11/cropped-logo-pur-32x32.jpg" sizes="32x32" />
@@ -89,9 +89,9 @@ body.custom-background { background-image: url('http://demo.swingcastlecamp.de/w
 	    </header>
 
 	  <div class="entry-content">
-	    <div class='mailmunch-forms-before-post' style='display: none !important;'></div><p>Registration will open January 17th 2016 at noon (12:00 GMT+1)</p><div class='mailmunch-forms-in-post-middle' style='display: none !important;'></div>
-	    <div class='mailmunch-forms-after-post' style='display: none !important;'></div></div><!-- .entry-content -->
                 <slave>
+</div><!-- .entry-content -->
+
 	  <footer class="entry-meta">
 	    </footer><!-- .entry-meta -->
 	  </article><!-- #post -->

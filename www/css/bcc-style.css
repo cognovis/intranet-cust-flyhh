@@ -1,0 +1,61 @@
+/*
+ Theme Name:   Twenty Twelve Child
+ Theme URI:    http://example.com/twenty-fifteen-child/
+ Description:  Twenty Twelve Child Theme
+ Author:       Malte Sussdorff
+ Author URI:   http://example.com
+ Template:     twentytwelve
+ Version:      1.0.0
+ License:      GNU General Public License v2 or later
+ License URI:  http://www.gnu.org/licenses/gpl-2.0.html
+ Tags:         light, dark, two-columns, right-sidebar, responsive-layout, accessibility-ready
+ Text Domain:  twenty-twelve-child
+*/
+
+@import url("../twentytwelve/style.css");
+ 
+/* Body background color */
+.site {background-color: #d1ab92;}
+
+.site-content article {
+    border-bottom: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.site-info {text-align:center;}
+
+/* Drop down menu & Mouse over color */
+.main-navigation li ul li a {background: none repeat scroll 0 0 #DECDC0;}
+.main-navigation li ul li a:hover {background: none repeat scroll 0 0 #6E6E6E; color: #D0B39D;}
+
+.main-navigation div.nav-menu > ul {
+    border-bottom: 1px solid #585858;
+    border-top: 1px solid #585858;
+}
+
+hr {border: none; height: 1px; color: #585858; background: #585858;}
+
+footer[role="contentinfo"] {
+	border-top: 1px solid #585858;
+}
+
+/* Post text link & Mouse over color */
+.entry-content a{color:#610B21;}
+.entry-content a:hover{color:#610B21;}
+ 
+/* Post comment link & Mouse over color */
+.entry-meta a{color:#610B21;}
+.entry-meta a:hover{color:#610B21;}
+
+.entry-content td,
+.comment-content td {
+	border-top: 1px solid #585858;
+	padding: 6px 10px 6px 0;
+}
+
+.entry-content table,
+.comment-content table {
+	border-bottom: 1px solid #585858;
+	font-size: 14px;
+}
