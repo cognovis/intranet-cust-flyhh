@@ -47,6 +47,14 @@ if {$token ne $check_token} {
     set error_text "Illegal Token - You should not edit the link!"
 }
 
+# Get all the other events which are currently active to provide links
+set other_events_html ""
+db_foreach other_events "select event_id,event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open] and event_id <> :event_id" {
+    set token [ns_sha1 "${email}${event_id}"]
+    append other_events_html "<li><b>$event_name: <a href='[export_vars -base "/flyhh/registration" -url {token email event_id}]'>Sign me up!</a></b></li>"
+}
+
+
 ############ CHANGE THIS #####################
 
 if {$error_text ne ""} {

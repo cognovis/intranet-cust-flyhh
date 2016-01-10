@@ -106,6 +106,12 @@ div.form-item-wrapper label {
 </div>
 <if @mode@ eq "display">
 
+<if @other_events_html@ ne "">
+<h3>Can't get enough dancing? Sign up for our other events as well:</h3>
+<ul>
+@other_events_html;noquote@
+</ul>
+</if>
 <div class="fb-like" data-href="@facebook_event_url;noquote@" data-layout="standard" data-action="like" data-show-faces="true" data-share="true"></div>
 <div class="fb-follow" data-href="@facebook_orga_url;noquote@" data-colorscheme="light" data-layout="standard" data-show-faces="true"></div>
 

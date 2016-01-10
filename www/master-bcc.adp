@@ -68,6 +68,14 @@ body.custom-background { background-image: url('http://demo.balboacastlecamp.de/
 <link rel="apple-touch-icon-precomposed" href="http://www.balboacastlecamp.de/wp-content/uploads/2015/11/cropped-bcc16_flyerdatumneu-180x180.jpg" />
 <meta name="msapplication-TileImage" content="http://www.balboacastlecamp.de/wp-content/uploads/2015/11/cropped-bcc16_flyerdatumneu-270x270.jpg" />
 </head>
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/de_DE/sdk.js#xfbml=1&version=v2.0";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
 
 <body class="page page-id-14 page-template-default custom-background full-width custom-font-enabled single-author">
 <div id="page" class="hfeed site">
