@@ -76,7 +76,8 @@ if {$error_text ne ""} {
     set participant_id [db_string registration_exists $sql -default ""]
 
     if { [exists_and_not_null participant_id] } {
-        set mode display
+#        set mode display
+	set mode edit
     } else {
         set mode edit
         unset participant_id
@@ -148,15 +149,10 @@ if {$error_text ne ""} {
                 {html {}}
                 {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
             }
-    
             {lead_p:text(select)
                 {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
                 {options {{"" ""} {Lead t} {Follow f}}}
             }
-	    {level:text(im_category_tree),optional
-		{label {[::flyhh::mc Level "Level"]}} 
-		{custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}
-	    }
             {partner_text:text,optional
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {help_text {[::flyhh::mc partner_text_help "Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate"]}}
@@ -176,11 +172,6 @@ if {$error_text ne ""} {
                 {mode display}
                 {options {{"" ""} {Lead t} {Follow f}}}
             }    
-	    {level:text(im_category_tree)
-		{label {[::flyhh::mc Level "Level"]}} 
-		{mode display}
-		{custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}
-	    }
             {partner_text:text(inform)
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {value "${inviter_text}"}
@@ -277,7 +268,7 @@ if {$error_text ne ""} {
         if {$inviter_text ne ""} {
             # Load the data from the partner
             ::flyhh::match_name_email $inviter_text partner_name partner_email
-            db_1row default_to_partner "select course,lead_p,level,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email) limit 1"
+            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email) limit 1"
             if {$lead_p == t} {set lead_p f} else {set lead_p t}
         }
         set ha_country_code [lindex [split $email "."] end]
@@ -433,11 +424,17 @@ if {$error_text ne ""} {
         	    }
         }    
     } -after_submit {
-	set from_addr "$event_email"
-	set to_addr ${email}
-	set mime_type "text/html"
-	set subject "Thank you for registering for $event_name"
-	set body "Hi $first_names,
+	# Redirect to the level check if necessary
+
+	if {1} {
+	    set level_token [ns_sha1 "${email}${participant_id}"] 
+   	    ad_returnredirect [export_vars -base level {participant_id email level_token token}]
+	} else {
+	    set from_addr "$event_email"
+	    set to_addr ${email}
+	    set mime_type "text/html"
+	    set subject "Thank you for registering for $event_name"
+	    set body "Hi $first_names,
          <p>
          Thanks for registering to $event_name. We have received your registration and will send you a confirmation E-Mail once we have found a spot for you. This is NOT a confirmation, please wait with booking flights and travel arrangements until we can confirm we found a place for you.
          [_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
@@ -476,7 +473,8 @@ if {$error_text ne ""} {
 	    -object_id $project_id
 	
 
-        ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
+	    ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
+	}
     }
 
 }
