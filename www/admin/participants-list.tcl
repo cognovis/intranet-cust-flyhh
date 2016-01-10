@@ -172,11 +172,9 @@ ad_form \
             {html {}}
             {options {[flyhh_material_options -project_id $project_id -material_type "Bus Options" -locale $locale]}}
         }
-
-
-#        {level:text(im_category_tree),optional
-#            {label {[::flyhh::mc Level "Level"]}} 
-#            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
+        {level:text(im_category_tree),optional
+            {label {[::flyhh::mc Level "Level"]}} 
+            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
 
 #        {validation_mask:text(multiselect),optional,multiple
 #            {label {[::flyhh::mc Validation "Validation"]}} 

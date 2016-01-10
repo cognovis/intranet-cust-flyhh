@@ -152,7 +152,11 @@ if {$error_text ne ""} {
             {lead_p:text(select)
                 {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
                 {options {{"" ""} {Lead t} {Follow f}}}
-            }    
+            }
+	    {level:text(im_category_tree),optional
+		{label {[::flyhh::mc Level "Level"]}} 
+		{custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}
+	    }
             {partner_text:text,optional
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {help_text {[::flyhh::mc partner_text_help "Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate"]}}
@@ -172,6 +176,11 @@ if {$error_text ne ""} {
                 {mode display}
                 {options {{"" ""} {Lead t} {Follow f}}}
             }    
+	    {level:text(im_category_tree)
+		{label {[::flyhh::mc Level "Level"]}} 
+		{mode display}
+		{custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}
+	    }
             {partner_text:text(inform)
                 {label {[::flyhh::mc Partner "Partner"]}}
                 {value "${inviter_text}"}
@@ -268,7 +277,7 @@ if {$error_text ne ""} {
         if {$inviter_text ne ""} {
             # Load the data from the partner
             ::flyhh::match_name_email $inviter_text partner_name partner_email
-            db_1row default_to_partner "select course,lead_p,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email) limit 1"
+            db_1row default_to_partner "select course,lead_p,level,accommodation from flyhh_event_participants e, parties p where project_id = :project_id and e.person_id = p.party_id and lower(p.email)=lower(:partner_email) limit 1"
             if {$lead_p == t} {set lead_p f} else {set lead_p t}
         }
         set ha_country_code [lindex [split $email "."] end]

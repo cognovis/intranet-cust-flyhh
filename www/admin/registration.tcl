@@ -183,6 +183,9 @@ ad_form \
             {label {[::flyhh::mc Lead_or_Follow "Lead/Follow"]}}
             {options {{"" ""} {Lead t} {Follow f}}}
         }    
+        {level:text(im_category_tree),optional
+            {label {[::flyhh::mc Level "Level"]}} 
+            {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
         {partner_text:text,optional
             {label {[::flyhh::mc Partner "Partner"]}}
             {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
@@ -367,7 +370,7 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
             -alternative_accommodation $alternative_accommodation \
             -food_choice $food_choice \
             -bus_option $bus_option \
-            -level "" \
+            -level $level \
             -lead_p $lead_p \
             -payment_type 804 \
             -payment_term "80107" \
