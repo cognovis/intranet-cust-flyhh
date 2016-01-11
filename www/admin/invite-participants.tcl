@@ -47,7 +47,7 @@ ad_form \
 	{subject:text(text)
 	    {label "[_ acs-mail-lite.Subject]"}
 	    {html {size 55}}
-	    {value "Invitation to our Events"}
+	    {value "Personal invitation to pre-register for Castle Camps 2016 (SCC and BCC)"}
 	}
 	{content_body:text(richtext),optional
 	    {label "[_ acs-mail-lite.Message]"}
