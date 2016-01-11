@@ -14,7 +14,6 @@ ad_page_contract {
 } -properties {
 }
 
-
 set adp_master "master-bcc"
 set locale "en_US"
 # check that the token is correct
@@ -218,6 +217,21 @@ ad_form \
 	}
 	append body "</ul>"
 
+	# Cross Promotion for the other events
+	# Get all the other events which are currently active to provide links
+	set other_events_html ""
+	db_foreach other_events "select event_id as other_event_id,event_name as other_event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open] and event_id <> :event_id" {
+	    set other_token [ns_sha1 "${email}${other_event_id}"]
+	    append other_events_html "<li><b>$other_event_name: <a href='[export_vars -base "[ad_url]/flyhh/registration" -url {{token $other_token} email {event_id $other_event_id}}]'>Sign me up!</a></b></li>"
+	}
+
+	if {$other_events_html ne ""} {
+	    append body "<h3>Can't get enough dancing? Sign up for our other events as well:</h3>
+<ul>
+$other_events_html
+</ul>"
+	}
+
 	acs_mail_lite::send \
 	    -send_immediately \
 	    -from_addr $from_addr \
@@ -229,5 +243,6 @@ ad_form \
 	
 
         ad_returnredirect [export_vars -base registration {event_id participant_id email token}]
+
     }
 

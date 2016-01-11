@@ -49,9 +49,9 @@ if {$token ne $check_token} {
 
 # Get all the other events which are currently active to provide links
 set other_events_html ""
-db_foreach other_events "select event_id,event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open] and event_id <> :event_id" {
-    set token [ns_sha1 "${email}${event_id}"]
-    append other_events_html "<li><b>$event_name: <a href='[export_vars -base "/flyhh/registration" -url {token email event_id}]'>Sign me up!</a></b></li>"
+db_foreach other_events "select event_id as other_event_id,event_name as other_event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open] and event_id <> :event_id" {
+    set other_token [ns_sha1 "${email}${other_event_id}"]
+    append other_events_html "<li><b>$other_event_name: <a href='[export_vars -base "[ad_url]/flyhh/registration" -url {{token $other_token} email {event_id $other_event_id}}]'>Sign me up!</a></b></li>"
 }
 
 
@@ -473,35 +473,44 @@ if {$error_text ne ""} {
         <ul>
          "
 
-	if {$course ne ""} {
-	    append body "<li>[_ intranet-cust-flyhh.Course]: [db_string material_course "select material_name from im_materials where material_id = $course" -default ""]"
-	    if {$lead_p} {append body " (LEAD)</li>"} else {append body " (FOLLOW)</li>"}
-	}
-	if {$accommodation ne ""} {
-	    append body "<li>[_ intranet-cust-flyhh.Accommodation]: [db_string material_course "select material_name from im_materials where material_id = $accommodation" -default ""]</li>"
-	}
-	if {$food_choice ne ""} {
-	    append body "<li>[_ intranet-cust-flyhh.Food_Choice]: [db_string material_course "select material_name from im_materials where material_id = $food_choice" -default ""]</li>"
-	}
-	if {$bus_option ne ""} {
-	    append body "<li>[_ intranet-cust-flyhh.Bus_Option]: [db_string material_course "select material_name from im_materials where material_id = $bus_option" -default ""]</li>"
-	}
-	if {$partner_text ne ""} {
-	    append body "<li>[::flyhh::mc Partner "Partner"]: $partner_text</li>"
-	} 
-	if {$roommates_text ne ""} {
-	    append body "<li>[::flyhh::mc Roommates "Roommates"]: $roommates_text</li>"
-	} 
-	append body "</ul>"
+	    if {$course ne ""} {
+		append body "<li>[_ intranet-cust-flyhh.Course]: [db_string material_course "select material_name from im_materials where material_id = $course" -default ""]"
+		if {$lead_p} {append body " (LEAD)</li>"} else {append body " (FOLLOW)</li>"}
+	    }
+	    if {$accommodation ne ""} {
+		append body "<li>[_ intranet-cust-flyhh.Accommodation]: [db_string material_course "select material_name from im_materials where material_id = $accommodation" -default ""]</li>"
+	    }
+	    if {$food_choice ne ""} {
+		append body "<li>[_ intranet-cust-flyhh.Food_Choice]: [db_string material_course "select material_name from im_materials where material_id = $food_choice" -default ""]</li>"
+	    }
+	    if {$bus_option ne ""} {
+		append body "<li>[_ intranet-cust-flyhh.Bus_Option]: [db_string material_course "select material_name from im_materials where material_id = $bus_option" -default ""]</li>"
+	    }
+	    if {$partner_text ne ""} {
+		append body "<li>[::flyhh::mc Partner "Partner"]: $partner_text</li>"
+	    } 
+	    if {$roommates_text ne ""} {
+		append body "<li>[::flyhh::mc Roommates "Roommates"]: $roommates_text</li>"
+	    } 
+	    append body "</ul>"
 
-	acs_mail_lite::send \
-	    -send_immediately \
-	    -from_addr $from_addr \
-	    -to_addr $to_addr \
-	    -subject $subject \
-	    -body $body \
-	    -mime_type $mime_type \
-	    -object_id $project_id
+	    # Cross Promotion for the SCC Weekend
+	    if {$other_events_html ne ""} {
+		append body "<h3>Can't get enough dancing? Sign up for our other events as well:</h3>
+<ul>
+$other_events_html
+</ul>"
+	    }
+
+
+	    acs_mail_lite::send \
+		-send_immediately \
+		-from_addr $from_addr \
+		-to_addr $to_addr \
+		-subject $subject \
+		-body $body \
+		-mime_type $mime_type \
+		-object_id $project_id
 	
 
 	    ad_returnredirect [export_vars -base registration {event_id participant_id email token}]

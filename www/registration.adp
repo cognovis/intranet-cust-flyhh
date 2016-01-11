@@ -43,9 +43,15 @@ legend span {
 	     width: 16em;
 }
 
-.margin-form .form-item-wrapper .form-widget, .margin-form .form-button, .margin-form .form-help-text {
+.margin-form .form-item-wrapper .form-widget, .margin-form .form-button {
 	     display: block;
 	     margin-left: 17em;
+}
+
+.margin-form .form-help-text {
+		font-size: 70%;
+		display: block;
+		margin-left: 25em;
 }
 
 .margin-form .form-button {
