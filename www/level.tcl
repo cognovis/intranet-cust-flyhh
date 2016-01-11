@@ -226,7 +226,7 @@ ad_form \
 	}
 
 	if {$other_events_html ne ""} {
-	    append body "<h3>Can't get enough dancing? Sign up for our other events as well:</h3>
+	    append body "<h3>Can't get enough dancing? Sign up for our other events to stay even longer at the castle:</h3>
 <ul>
 $other_events_html
 </ul>"

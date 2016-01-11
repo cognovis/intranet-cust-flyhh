@@ -113,7 +113,7 @@ div.form-item-wrapper label {
 <if @mode@ eq "display">
 
 <if @other_events_html@ ne "">
-<h3>Can't get enough dancing? Sign up for our other events as well:</h3>
+<h3>Can't get enough dancing? Sign up for our other events to stay even longer at the castle:</h3>
 <ul>
 @other_events_html;noquote@
 </ul>
