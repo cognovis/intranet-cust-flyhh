@@ -467,7 +467,7 @@ if {$error_text ne ""} {
 	    set subject "Thank you for registering for $event_name"
 	    set body "Hi $first_names,
          <p>
-         Thanks for registering to $event_name. We have received your registration and will send you a confirmation E-Mail once we have found a spot for you. This is NOT a confirmation, please wait with booking flights and travel arrangements until we can confirm we found a place for you.
+         Thanks for registering to $event_name. We have received your registration and will send you a confirmation E-Mail once we have found a spot for you. This is NOT a confirmation, please wait with booking flights and travel arrangements until we can confirm we actually have a place.
          [_ intranet-cust-flyhh.lt_Heres_what_you_have_s]
         </p>
         <ul>
