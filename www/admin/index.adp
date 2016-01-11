@@ -7,6 +7,7 @@
 <div>
     <a class="button" href="event-one">#intranet-cust-flyhh.Add_Event#</a>
     <a class="button" href="rooms-list">#intranet-cust-flyhh.Rooms#</a>
+    <a class="button" href="invite-participants">#intranet-cust-flyhh.Invite_Participants#</a>
 </div>
 <br>
 <br>
