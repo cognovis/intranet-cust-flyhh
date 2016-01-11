@@ -43,7 +43,9 @@ footer[role="contentinfo"] {
 /* Post text link & Mouse over color */
 .entry-content a{color:#610B21;}
 .entry-content a:hover{color:#610B21;}
- 
+.margin-form .form-help-text a{color:#610B21;}
+
+
 /* Post comment link & Mouse over color */
 .entry-meta a{color:#610B21;}
 .entry-meta a:hover{color:#610B21;}

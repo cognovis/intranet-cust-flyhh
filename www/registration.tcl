@@ -263,7 +263,7 @@ if {$error_text ne ""} {
         {accepted_terms_p:boolean(checkbox)
             {label {[::flyhh::mc Terms_and_Conditions "Terms & Conditions"]}}
             {options {{{[::flyhh::mc accepted_conditions "I have read and accept the terms and conditions for this event"]} t}}}
-            {help_text {You can find the terms at <a href='${event_url}/terms.php'>${event_url}/terms.php</A>}}
+            {help_text {You can find the terms at <a href='${event_url}/general-info/terms-conditions/'>${event_url}/terms.php</A>}}
         }
     } -new_request {
         # If a registered user who already has information in the system registers for a new event, pre fill the known information.
