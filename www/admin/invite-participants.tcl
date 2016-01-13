@@ -62,6 +62,7 @@ ad_form \
 	}
 	foreach email $to_addr {
 	    set link_html ""
+	    set email [string trim $email]
 	    set first_names [db_string first_names "select first_names from persons pe, parties pa where pa.party_id = pe.person_id and pa.email = :email" -default ""]
 
 	    # Invite for each selected event

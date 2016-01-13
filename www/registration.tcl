@@ -62,6 +62,7 @@ if {$error_text ne ""} {
 } else {
     set form_id "registration_form"
     set action_url ""
+    set email [string trim $email]
     
     set user_id [party::get_by_email -email $email]
     set ha_country_code [lindex [split $email "."] end]
