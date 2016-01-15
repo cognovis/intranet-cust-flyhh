@@ -186,7 +186,7 @@ ad_form \
 	append body "<li>[::flyhh::mc dance_frequency "How often do you dance socially"]: [im_category_from_id $dance_frequency_id]</li>"
 	append body "<li>[::flyhh::mc dance_duration "Since when are you dancing"]: [im_category_from_id $dance_duration_id]</li>"
 	if {$dance_local_classes ne ""} {
-	    append body "<li>[::flyhh::mc dance_local_classes "How often do you take local classes? Enter the level and the name of the local teacher"]</li>"
+	    append body "<li>[::flyhh::mc dance_local_classes "How often do you take local classes? Enter the level and the name of the local teacher"]: $dance_local_classes</li>"
 	}
 	if {$dance_teaching ne ""} {
 	    append body "<li>[::flyhh::mc dance_teaching "Do you teach dancing? What type of dance and where?"]: $dance_teaching</li>"

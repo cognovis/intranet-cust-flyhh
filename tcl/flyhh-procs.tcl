@@ -1505,3 +1505,15 @@ ad_proc -public flyhh_event_room_description {
 	return ""
     }
 }
+
+ad_proc -public flyhh_level_component {
+    -participant_id:required
+    {-return_url ""}
+} {
+    Component to display the level information
+} {
+    set params [list  [list participant_id $participant_id]  [list return_url ""]  ]
+
+    set result [ad_parse_template -params $params "/packages/intranet-cust-flyhh/lib/level-info"]
+    return [string trim $result]    
+}
