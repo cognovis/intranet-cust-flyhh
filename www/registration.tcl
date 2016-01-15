@@ -197,6 +197,7 @@ if {$error_text ne ""} {
             {label {[::flyhh::mc Accommodation "Accommodation"]}}
             {html {}}
             {options {[flyhh_accommodation_options -project_id $project_id -locale $locale]}}
+            {help_text {[::flyhh::mc accomm_help "In case you choose a double room you have to provide a roommate with whom you are willing to share a (140cm wide) mattress. We can't guarantee any twin beds will be available!"]}}
         }
         {alternative_accommodation:text(multiselect),multiple,optional
             {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
