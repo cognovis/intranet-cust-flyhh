@@ -69,7 +69,7 @@ ad_form \
 	    {help_text {[::flyhh::mc level_references_help "For advanced class we ask you to provide us two names (with E-Mail) of participants, for master track we ask you to provide one of our teachers as reference"]}}
         }
     } -on_request {
-	db_0or1row level_info "select * from flyhh_event_participant_level where participant_id = :participant_id"
+	db_0or1row level_info "select * from flyhh_event_participant_level epl where epl.participant_id = :participant_id"
         set form_elements [template::form::get_elements $form_id]
         foreach element $form_elements {
             if { [info exists $element] } {
@@ -77,5 +77,9 @@ ad_form \
                 template::element::set_value $form_id $element $value
             }
         }
+	db_0or1row level_info "select * from flyhh_event_participants ep, flyhh_events e, parties p where e.project_id = ep.project_id and ep.participant_id = :participant_id and ep.person_id = p.party_id"
+	set level_token [ns_sha1 "${email}${participant_id}"]
+	set token [ns_sha1 "${email}${event_id}"]
+	set level_url [export_vars -base "[ad_url]/flyhh/level" -url {participant_id email level_token token}]
     }
 
