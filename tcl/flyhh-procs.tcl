@@ -1353,7 +1353,7 @@ ad_proc -public flyhh_accommodation_options {
     order by material_nr" {
         
         # Limit to 10% overcapacity before not allowing this anymore.
-ns_log Notice "CAPA $capacity :: $occupants :: $num_waitlist"
+#ns_log Notice "CAPA $capacity :: $occupants :: $num_waitlist"
 #        if {[expr $capacity * 1.1 - $occupants - $num_waitlist]>0} {
             set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
             set material_display "$material_name ($currency $price)"

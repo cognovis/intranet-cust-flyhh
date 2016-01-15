@@ -3,10 +3,15 @@ ad_page_contract {
 } {
 }
 
-# Get the event_options
+# Get the current event_options
 set event_options [list]
-db_foreach events "select event_id as event_id,event_name as event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open]" {
+db_foreach events "select event_id as event_id,event_name as event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id = [im_project_status_open] order by event_name" {
     lappend event_options [list $event_name $event_id]
+}
+
+set past_event_options [list]
+db_foreach events "select p.project_id, event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id != [im_project_status_open]" {
+    lappend past_event_options [list $event_name $project_id]
 }
 
 set content "Dear @first_names@,<p>
@@ -39,10 +44,14 @@ ad_form \
 	    {options  $event_options }
 	    {html {checked 1}}
 	}
-	{to_addr:text(text)
+	{to_addr:text(text),optional
 	    {label "[_ acs-mail-lite.Recipients]:"} 
 	    {html {size 56}}
 	    {help_text "[_ acs-mail-lite.cc_help]"}
+	}
+	{past_project_ids:text(checkbox),multiple,optional
+	    {label "[_ intranet-cust-flyhh.Participants_from_past_events]:"} 
+	    {options  $past_event_options }
 	}
 	{subject:text(text)
 	    {label "[_ acs-mail-lite.Subject]"}
@@ -60,6 +69,16 @@ ad_form \
 	    db_1row event_info "select event_name from flyhh_events where event_id = :event_id"
 	    set event($event_id) $event_name
 	}
+
+	foreach past_project_id $past_project_ids {
+	    db_foreach project_info "select email from parties p, flyhh_event_participants ep where ep.person_id = p.party_id and ep.project_id = :past_project_id" {
+		lappend to_addr "$email"
+	    }
+	}
+	
+	set to_addr [lsort -unique $to_addr]
+
+	db_1row context "select project_id as context_id, event_email from flyhh_events where event_id = [lindex $event_ids 0]" 
 	foreach email $to_addr {
 	    set link_html ""
 	    set email [string trim $email]
@@ -74,9 +93,17 @@ ad_form \
 	    eval [template::adp_compile  -string "$content_body"]
 	    set body $__adp_output
 
-	    # send the E-mail
-	    acs_mail_lite::send -send_immediately -to_addr $email -from_addr "info@flying-hamburger.de" -subject $subject -body $body -mime_type "text/html"
-	    util_user_message -html -message "E-Mail send to $first_names at $email<br />"
+	    if {$first_names ne ""} {
+		ns_log Notice "Invitation send to $email :: $first_names :: $event_id"
+	    
+		# send the E-mail
+		acs_mail_lite::send -send_immediately -to_addr $email -from_addr "$event_email" -subject $subject -body $body -mime_type "text/html" -object_id $context_id
+	    
+		util_user_message -html -message "E-Mail send to $first_names at $email<br />"
+	    } else {
+		ns_log notice "No invitation sen to User::${email}::"
+		util_user_message -html -message "NO E-Mail send to $email .. MISSING FIRST NAME!!!!<br />"
+	    }
 	}
     } -after_submit {
 	rp_internal_redirect "/packages/intranet-cust-flyhh/www/admin/index"
