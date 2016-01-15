@@ -188,7 +188,7 @@ ad_form \
             {custom {category_type "Flyhh - Event Participant Level" translate_p 1 package_key "intranet-cust-flyhh"}}}
         {partner_text:text,optional
             {label {[::flyhh::mc Partner "Partner"]}}
-            {help_text "email address, name, or both<br>(email is preferred as we can notify your partner to register)"}
+            {help_text {[::flyhh::mc partner_text_help "Please provide us with the email address of your partner so we can inform her/him and make sure both of you get the partner rebate"]}}
             {html {size 45}}
         }
                 
@@ -353,8 +353,8 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
 } -validate {
 
     {partner_text
-        {[::flyhh::match_name_email $partner_text partner_name partner_email] || $partner_text eq ""}
-        {[::flyhh::mc partner_text_validation_error "partner text must be an email address, full name, or both"]}}
+        {[util_email_valid_p $partner_text] eq 1 || $partner_text eq ""}
+        {[::flyhh::mc partner_text_validation_error "partner text must be an email address"]}}
 
 } -new_data {
         
