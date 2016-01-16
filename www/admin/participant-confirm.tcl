@@ -27,6 +27,7 @@ ad_page_contract {
     }
 }
 
+
 # Get the list of partners for the participants who are not confirmed yet and append them. 
 # Also filter out anyone who is not on the Waiting list
 set participant_ids [db_list participant_ids "
@@ -47,6 +48,8 @@ set participant_ids [db_list participant_ids "
     "
     ]
 
+db_1row event_info "select project_cost_center_id, p.project_id, f.* from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
+
 db_transaction {
 
     foreach id $participant_ids {
@@ -54,7 +57,7 @@ db_transaction {
         ::flyhh::set_participant_status \
             -participant_id $id \
             -from_status "Waiting List" \
-            -to_status "Confirmed"
+            -to_status "Pending Payment"
 
         set sql "
             select project_id,person_id,payment_type,payment_term,company_id,quote_id
@@ -72,18 +75,23 @@ db_transaction {
         # on the materials used for the registration. This basically is the transformation 
         # of the registration into a financial document.
 
-        set quote_id [::flyhh::create_quote \
+        set invoice_id [::flyhh::create_invoice \
                         -company_id ${company_id} \
                         -company_contact_id ${person_id} \
                         -participant_id ${id} \
                         -project_id ${project_id} \
                         -payment_method_id ${payment_type} \
-                        -payment_term_id ${payment_term}]
+                        -payment_term_id ${payment_term} \
+                        -invoice_type_id [im_cost_type_invoice]]
 
-        set sql "update flyhh_event_participants set quote_id=:quote_id where participant_id=:id"
+        set sql "update flyhh_event_participants set invoice_id=:invoice_id where participant_id=:id"
         db_dml update_participant_info $sql
 
-        ::flyhh::send_confirmation_mail $id
+        # An E-Mail is send to the participant with the PDF attached and the payment 
+        # information similar to what is displayed on the Web site.
+        ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
+
+#        ::flyhh::send_confirmation_mail $id
 
     }
 

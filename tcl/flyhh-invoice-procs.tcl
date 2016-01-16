@@ -247,7 +247,7 @@ ad_proc ::flyhh::create_invoice_items {
 
 ad_proc ::flyhh::send_invoice_mail {
     -invoice_id
-    -from_addr
+    {-from_addr ""}
     {-recipient_id ""}
     {-cc_addr ""}
     -project_id
@@ -266,15 +266,123 @@ ad_proc ::flyhh::send_invoice_mail {
         set recipient_id [db_string company_contact_id "select company_contact_id from im_invoices where invoice_id = :invoice_id" -default $user_id]
     } 
 
-    db_1row get_recipient_info "select first_names, last_name, email as to_addr from cc_users where user_id = :recipient_id"
+    db_1row get_recipient_info "select first_names, last_name, email as to_addr, person_id from cc_users where user_id = :recipient_id"
     db_1row event_info "select project_cost_center_id, p.project_id, event_name, event_url, event_email, facebook_event_url,facebook_orga_url from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
 
+    if {"" == $from_addr} {
+        set from_addr $event_email
+    }
+    
     # Get the type information so we can get the strings
     set invoice_type_id [db_string type "select cost_type_id from im_costs where cost_id = :invoice_id"]
 
+
+    # The webpage should display the?information what has been provided with the registration,
+    # a link to the PDF invoice for review, the total amount, the due date (based on the time 
+    # the link was clicked and the payment terms).
+      
+      
+    set invoice_nr [db_string invoice_nr "select invoice_nr from im_invoices where invoice_id = :invoice_id"]
+    set full_name "$first_names $last_name"
+    set locale [lang::user::locale -user_id $person_id]
+
+    set ctr 1
+    set subtotal 0
+    set cur_format [im_l10n_sql_currency_format]
+    set rounding_precision 2
+    set rounding_factor [expr exp(log(10) * $rounding_precision)]
+    set rf $rounding_factor
+    set bgcolor(0) "class=invoiceroweven"
+    set bgcolor(1) "class=invoicerowodd"
+      
+    # CREATE a table with all the invoice items in it
+    set sql "select
+          i.*,
+          now() as delivery_date_pretty,
+          im_category_from_id(i.item_type_id) as item_type,
+          im_category_from_id(i.item_uom_id) as item_uom,
+          coalesce(round(i.price_per_unit * i.item_units),0) as amount,
+          to_char(coalesce(round(i.price_per_unit * i.item_units),0), :cur_format) as amount_formatted,
+          i.currency as item_currency
+        from
+          im_invoice_items i
+        where
+          i.invoice_id=:invoice_id
+        order by
+          i.sort_order,
+          i.item_type_id"
+      
+    # start formatting the list of sums with the header...
+    set invoice_item_html "<tr align=center>
+          <td class=rowtitle align=right>[lang::message::lookup $locale intranet-invoices.Line_no '#']</td>
+          <td class=rowtitle align=left>[lang::message::lookup $locale intranet-invoices.Description]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+          <td class=rowtitle align=right>[lang::message::lookup $locale intranet-invoices.Amount]</td>
+          </tr>"
+          
+      
+    db_foreach invoice_items $sql {
+        
+        set amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $amount+0] $rounding_precision] "" $locale]
+        append invoice_item_html "
+              <tr $bgcolor([expr $ctr % 2])>
+                  <td $bgcolor([expr $ctr % 2]) align=right>$sort_order</td>
+                  <td $bgcolor([expr $ctr % 2]) align=left>$item_name</td>
+                  <td $bgcolor([expr $ctr % 2]) align=right>$amount_pretty&nbsp;$currency</td>
+              </tr>
+          "
+        set subtotal [expr $subtotal + $amount]
+    }
+      
+    # Calculate the total sum plus the minimum payment (Anzahlung)
+     
+    set total_due_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal+0] $rounding_precision] "" $locale]
+    set due_now_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal*0.3 +0] $rounding_precision] "" $locale]
+    append invoice_item_html "
+          <tr>
+            <td class=roweven colspan=2 align=right><b>[lang::message::lookup $locale intranet-invoices.Total_Due]</b></td>
+            <td class=roweven align=right><b><nobr>$total_due_pretty $currency</nobr></b></td>
+          </tr>
+      "
+
+    
+    set body "<table align=center width='80%' cellpadding=1 cellspacing=2 border=0>
+    <tr><td colspan=3>
+    Dear $first_names,
+    <p>
+    Attached you will find your invoice. Please check that everything is okay and let us know if changes are needed.<br /><br />
+    </p>
+    </td></tr>
+    <tr><td colspan=3>&nbsp;</td></tr>    
+     $invoice_item_html
+     <tr><td colspan=3>
+     <br />
+     <b>[_ intranet-cust-flyhh.lt_Please_make_your_init]</b>
+     </td><tr>
+     <tr><td colspan=2>&nbsp;</td></tr>
+     <tr><td colspan=2>
+     <b>[_ intranet-cust-flyhh.Bank_Info]</b>
+     <td></td>
+     </tr>
+     <tr valign=top><td colspan=2>
+         RECIPIENT: Flying Hamburger Events UG <br/>
+         IBAN: DE64100100100822944102<br/>
+         BIC (8-digits): PBNKDEFF<br/>
+         BIC (11-digits): PBNKDEFF200<br/>
+         Postbank Hamburg<br/>
+         [_ intranet-cust-flyhh.lt_Transfer_note_invoice]<br/>
+         </td><td>
+         [_ intranet-cust-flyhh.lt_In_case_you_need_the_]<br/>
+         Ueberseering 26<br/>
+         22297 Hamburg, Germany<br/>
+     </td>
+     </td></tr>
+     <tr><td colspan=3>&nbsp;</td></tr>
+     <tr><td colspan=3>We can't wait to meet you at the castle!</td></tr></table>
+     "
+
     set recipient_locale [lang::user::locale -user_id $recipient_id]
     set subject "[lang::util::localize "#intranet-cust-flyhh.invoice_email_subject#" $recipient_locale]"
-    set body "[lang::util::localize "#intranet-cust-flyhh.invoice_email_body#" $recipient_locale]"
+#    set body "[lang::util::localize "#intranet-cust-flyhh.invoice_email_body#" $recipient_locale]"
 
     acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender -object_id $project_id -mime_type "text/html"
 
