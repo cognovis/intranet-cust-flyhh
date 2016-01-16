@@ -13,7 +13,7 @@ set past_event_options [list]
 db_foreach events "select p.project_id, event_name from flyhh_events e, im_projects p where e.project_id = p.project_id and p.project_status_id != [im_project_status_open]" {
     lappend past_event_options [list $event_name $project_id]
 }
-
+set past_event_options [list]
 set content "Dear @first_names@,<p>
 we had such a blast with all of you last year that we want to make sure you get a spot in this year’s edition.<br />
 You can therefore register already now before the official registration starts next Sunday the 17th of January at noon (12:00PM GMT+1).
