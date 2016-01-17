@@ -319,9 +319,6 @@ if {$error_text ne ""} {
 
     } -validate {
 
-        {partner_text
-            {[util_email_valid_p $partner_text] eq 1 || $partner_text eq ""}
-            {[::flyhh::mc partner_text_validation_error "partner text must be an email address"]}}
         {roommates_text
             {[::flyhh::valid_roommates_p -roommates_text $roommates_text]}
             {[::flyhh::mc invalid_roommate "Your list does not contain E-Mail addresses or names we can use. Please correct"]}
