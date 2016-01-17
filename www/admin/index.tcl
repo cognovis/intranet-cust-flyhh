@@ -26,6 +26,9 @@ template::list::create \
         cost_center {
             label "Cost Center"
         }
+        registrations {
+            label "Registrations"
+        }
         enabled_p {
             label "Enabled?"
             display_template {
@@ -49,6 +52,8 @@ template::list::create \
 
 
 set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id) where prj.project_status_id = 76"
-db_multirow events $multirow $sql
+db_multirow -extend {registrations} events $multirow $sql {
+    set registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id not in (82505,82506)"]
+}
 
 
