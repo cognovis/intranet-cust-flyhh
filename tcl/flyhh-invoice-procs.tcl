@@ -154,7 +154,8 @@ ad_proc ::flyhh::create_invoice {
 
     }
 
-
+    im_audit -object_type "im_invoice" -object_id $invoice_id -action after_update -status_id $invoice_status_id -type_id $invoice_type_id
+    
     return $invoice_id
 
 }
@@ -240,9 +241,6 @@ ad_proc ::flyhh::create_invoice_items {
 
     set sql "update im_costs set amount = :total_net_amount where cost_id = :invoice_id"
     db_dml update_invoice $sql
-
-    # intranet_collmex::update_customer_invoice -invoice_id $invoice_id  
-
 }
 
 ad_proc ::flyhh::send_invoice_mail {

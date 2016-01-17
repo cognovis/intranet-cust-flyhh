@@ -27,7 +27,6 @@ ad_page_contract {
     }
 }
 
-
 # Get the list of partners for the participants who are not confirmed yet and append them. 
 # Also filter out anyone who is not on the Waiting list
 set participant_ids [db_list participant_ids "
@@ -50,8 +49,6 @@ set participant_ids [db_list participant_ids "
 
 db_1row event_info "select project_cost_center_id, p.project_id, f.* from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
 
-db_transaction {
-
     foreach id $participant_ids {
 
         ::flyhh::set_participant_status \
@@ -60,14 +57,14 @@ db_transaction {
             -to_status "Pending Payment"
 
         set sql "
-            select project_id,person_id,payment_type,payment_term,company_id,quote_id
+            select project_id,person_id,payment_type,payment_term,company_id,invoice_id
             from flyhh_event_participants
             where participant_id=:id
         "
         db_1row participant_info $sql
 
         # skip the parts below if we have already created an order for this participant
-        if { $quote_id ne {} } {
+        if { $invoice_id ne {} } {
             continue
         }
 
@@ -85,18 +82,14 @@ db_transaction {
                         -invoice_type_id [im_cost_type_invoice]]
 
         set sql "update flyhh_event_participants set invoice_id=:invoice_id where participant_id=:id"
+                
         db_dml update_participant_info $sql
 
         # An E-Mail is send to the participant with the PDF attached and the payment 
         # information similar to what is displayed on the Web site.
         ::flyhh::send_invoice_mail -invoice_id $invoice_id -from_addr $event_email -project_id $project_id
-
-#        ::flyhh::send_confirmation_mail $id
-
+        
     }
-
-}
-
 
 ad_returnredirect $return_url
 
