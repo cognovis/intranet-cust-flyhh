@@ -1,5 +1,7 @@
 ad_page_contract {
     Update Invite Participants to Events
+
+    This was only needed once as we send out previous mailings without the invite log functionality.
 } {
     
 }
