@@ -31,10 +31,11 @@ foreach occupant_id $occ_participant_ids {
     }
 }
 
+ds_comment "$room_types"
 set room_options [list [list "" ""]]
 db_foreach rooms "
     select room_name,e.room_id, office_name, sleeping_spots, material_name,
-    (select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id) as taken_spots
+    coalesce((select count(*) from flyhh_event_room_occupants ro where ro.room_id = e.room_id and p.project_id = ro.project_id),0) as taken_spots
     from flyhh_event_rooms e
     inner join im_offices o on (e.room_office_id = o.office_id)
     inner join im_projects p on (o.company_id = p.company_id)
@@ -42,6 +43,7 @@ db_foreach rooms "
     where p.project_id = :project_id
     and e.room_material_id in ([template::util::tcl_to_sql_list $room_types])
 " {
+    ds_comment "$taken_spots :: $sleeping_spots"
     if {$taken_spots < $sleeping_spots} {
         set free_spots [expr $sleeping_spots - $taken_spots]
         lappend room_options [list "$room_name ($office_name) - $material_name - $free_spots" $room_id]

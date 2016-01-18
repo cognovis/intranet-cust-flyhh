@@ -61,15 +61,13 @@ ad_proc ::flyhh::create_invoice {
     set sql "select category_id from im_categories where category = :invoice_template and category_type = 'Intranet Cost Template'"
     set invoice_template_id [db_string invoice_template_id $sql] ;# Intranet Cost Template
 
-    set sql "select project_cost_center_id from im_projects where project_id=:project_id"
-    set cost_center_id [db_string cost_center_id $sql]
+    db_1row project_info "select project_cost_center_id as cost_center_id, project_type_id, start_date as delivery_date from im_projects where project_id = :project_id"
+    
     set sql "select cost_center_code from im_cost_centers where cost_center_id = :cost_center_id"
     set cost_center_code [db_string cost_center_code $sql]
     set note "$cost_center_code $participant_id"
     set user_id [ad_conn user_id]
     set peeraddr [ad_conn peeraddr]
-
-    set delivery_date [db_string start_date "select start_date from im_projects where project_id = :project_id" -default ""]
 
     db_transaction {
         set invoice_nr [im_next_invoice_nr -cost_type_id $invoice_type_id]
@@ -139,6 +137,7 @@ ad_proc ::flyhh::create_invoice {
         ::flyhh::create_invoice_items \
             -invoice_id $invoice_id \
             -project_id $project_id \
+            -project_type_id $project_type_id \
             -delta_items $delta_items
 
         set rel_id [db_exec_plsql create_rel "
@@ -164,6 +163,7 @@ ad_proc ::flyhh::create_invoice {
 ad_proc ::flyhh::create_invoice_items {
     -invoice_id
     -project_id
+    -project_type_id
     {-delta_items ""}
 } {
     @author Neophytos Demetriou (neophytos@azet.sk)
@@ -172,7 +172,6 @@ ad_proc ::flyhh::create_invoice_items {
 } {
 
     set provider_company_id [parameter::get -parameter provider_company_id -default "8720"]
-
 
     set sort_order 1
     foreach item $delta_items {
@@ -187,10 +186,21 @@ ad_proc ::flyhh::create_invoice_items {
             from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
             where im.material_id=:item_material_id
             and company_id = :provider_company_id
+            and itp.task_type_id = :project_type_id
             limit 1
         "
 
-        db_1row class_material $sql
+        if {![db_0or1row class_material $sql]} {
+            # Try to the find the generic price without the event
+            set sql "
+                select material_name, material_uom_id, :percent_price * price  as price_per_unit
+                from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
+                where im.material_id=:item_material_id
+                and company_id = :provider_company_id
+                limit 1
+            "
+            db_1row class_material $sql
+        }
 
         set item_id [db_nextval "im_invoice_items_seq"]
         set sql "
