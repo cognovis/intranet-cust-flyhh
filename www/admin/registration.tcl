@@ -176,7 +176,7 @@ ad_form \
         {course:text(select)
             {label {[::flyhh::mc Course "Course"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale]}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Course Income" -locale $locale -include_empty]}}
         }
         
         {lead_p:text(select)
@@ -197,12 +197,12 @@ ad_form \
         {accommodation:text(select)
             {label {[::flyhh::mc Accommodation "Accommodation"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale -include_empty]}}
         }
         {alternative_accommodation:text(multiselect),multiple,optional
             {label {[::flyhh::mc Alternative_Accommodation "Alternative Accommodation"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale]}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Accommodation" -locale $locale -include_empty]}}
             {help_text {[::flyhh::mc alt_accomm_help "Please provide us with other accommodation choices you are fine with in case your first choice isn't available. This will increase your chances of coming to our camp."]}}
         }
         	{room_id:text(select),optional
@@ -212,7 +212,7 @@ ad_form \
         {food_choice:text(select)
             {label {[::flyhh::mc Food_Choice "Food Choice"]}}
             {html {}}
-            {options {[flyhh_material_options -project_id $project_id -material_type "Food Choice" -locale $locale]}}
+            {options {[flyhh_material_options -project_id $project_id -material_type "Food Choice" -locale $locale -include_empty]}}
         }
         {roommates_text:text(textarea),optional
             {label {[::flyhh::mc Roommates "Roommates"]}}

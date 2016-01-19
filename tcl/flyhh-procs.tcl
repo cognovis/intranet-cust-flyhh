@@ -1289,6 +1289,7 @@ ad_proc -public flyhh_material_options {
     -material_type:required
     { -company_id "" }
     { -locale ""}
+    -include_empty:boolean
     -mandatory:boolean
 } {
     Returns a list of viable options for display in the registration form
@@ -1305,10 +1306,12 @@ ad_proc -public flyhh_material_options {
         set locale [lang::user::locale]
     }
     
-    db_foreach materials "SELECT m.material_id,material_name,itp.price,itp.currency FROM im_timesheet_prices itp,im_materials m, flyhh_event_materials f,flyhh_events e, im_projects p WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >0 and itp.material_id = m.material_id and itp.company_id = :company_id and p.project_id = e.project_id and (itp.task_type_id is null or itp.task_type_id = p.project_type_id) order by material_nr" {
-        set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
-        set material_display "$material_name ($currency $price)"
-        lappend material_options [list $material_display $material_id]
+    db_foreach materials "SELECT m.material_id,material_name,itp.price,itp.currency,capacity FROM im_timesheet_prices itp,im_materials m, flyhh_event_materials f,flyhh_events e, im_projects p WHERE m.material_type_id=(SELECT material_type_id FROM im_material_types WHERE material_type=:material_type) and f.material_id = m.material_id and f.event_id = e.event_id and e.project_id = :project_id and f.capacity >=0 and itp.material_id = m.material_id and itp.company_id = :company_id and p.project_id = e.project_id and (itp.task_type_id is null or itp.task_type_id = p.project_type_id) order by material_nr" {
+        if {$capacity >0 || $include_empty_p} {
+            set price [lc_numeric [im_numeric_add_trailing_zeros [expr $price+0] 2] "" $locale]
+            set material_display "$material_name ($currency $price)"
+            lappend material_options [list $material_display $material_id]
+        }
     }
     
     return $material_options
