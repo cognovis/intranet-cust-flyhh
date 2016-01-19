@@ -21,17 +21,19 @@ set occ_participant_ids [lsort -unique $occ_participant_ids]
 
 set occupants [list]
 set room_types [list]
+
+# Find the room types and prepare the list of occupants we are talking about
 foreach occupant_id $occ_participant_ids {
 
     if {[db_0or1row occupant_info "select person_id,accommodation, material_name as acc_name from flyhh_event_participants ep, im_materials m where participant_id = :occupant_id and ep.accommodation = m.material_id"]} {
-	if {[lsearch $room_types $accommodation]<0} {
-	    lappend room_types $accommodation
-	}
-	lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $person_id]
+    	if {[lsearch $room_types $accommodation]<0} {
+    	    lappend room_types $accommodation
+    	}
+    	lappend occupants [list "[person::name -person_id $person_id] ($acc_name)" $person_id]
     }
 }
 
-ds_comment "$room_types"
+# Find the available rooms
 set room_options [list [list "" ""]]
 db_foreach rooms "
     select room_name,e.room_id, office_name, sleeping_spots, material_name,
@@ -43,7 +45,6 @@ db_foreach rooms "
     where p.project_id = :project_id
     and e.room_material_id in ([template::util::tcl_to_sql_list $room_types])
 " {
-    ds_comment "$taken_spots :: $sleeping_spots"
     if {$taken_spots < $sleeping_spots} {
         set free_spots [expr $sleeping_spots - $taken_spots]
         lappend room_options [list "$room_name ($office_name) - $material_name - $free_spots" $room_id]

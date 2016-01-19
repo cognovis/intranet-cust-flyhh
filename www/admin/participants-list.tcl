@@ -336,6 +336,7 @@ set sql "
     (select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::pending_payment] and c.cost_id = f.invoice_id and f.participant_id = ep.participant_id) as days_since_invoice,
     ep.*,er.*,uc.ha_country_code,uc.ha_city,
         person__name(partner_person_id) as partner_person_name, 
+        partner_person_id,
         party__email(ep.person_id) as email,
         (select effective_date::date from im_costs where cost_id = quote_id) as confirmation_date,
         (select effective_date::date from im_costs where cost_id = invoice_id) as accepted_date
@@ -442,7 +443,9 @@ db_foreach event_participants_query $sql {
             set mutual_html "<br />(not mutual)"
         }
         set partner_html "<a $style_html href='$partner_url'>$partner_person_name</a>$mutual_html"
-        if {$partner_email eq ""} {append partner_html "<br />(match by name)"}
+        if {$partner_email eq ""} {
+            append partner_html "<br />(match by name)"
+        }
     } else {
         if {$partner_text ne ""} {
             set partner_html  "<font color=red>$partner_text</font><br />(not registered)"

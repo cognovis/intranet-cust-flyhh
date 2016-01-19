@@ -353,8 +353,9 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
 } -validate {
 
     {partner_text
-        {[util_email_valid_p $partner_text] eq 1 || $partner_text eq ""}
-        {[::flyhh::mc partner_text_validation_error "partner text must be an email address"]}}
+        {[::flyhh::match_name_email $partner_text partner_name partner_email] || $partner_text eq ""}
+        {[::flyhh::mc partner_text_validation_error "partner text must be an email address"]}
+    }
 
 } -new_data {
         
