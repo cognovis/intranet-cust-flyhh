@@ -457,12 +457,11 @@ set content "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http:/
 <div><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\"><strong>@salutation;noquote@</strong></span></span><br>
 &nbsp;</div>
 
-<div style=\"text-align: justify;\"><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">Registration for @event_name;noquote@</span></span><span style=\"font-family:tahoma verdana segoe sans-serif; font-size:11px\">&nbsp;just&nbsp;</span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">started&nbsp;today - and here's your personal link to register:</span>
+<div style=\"text-align: justify;\"><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">Registration for @event_name;noquote@</span></span><span style=\"font-family:tahoma verdana segoe sans-serif; font-size:11px\">&nbsp;just&nbsp;</span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">started - and here's your personal link to register:</span>
 <p>
 <a href='@registration_url;noquote@'>Sign me up!</a>
 </p>
-<span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">The new version will happen from&nbsp;</span></span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">S</span></span><span style=\"font-family:tahoma verdana segoe sans-serif; font-size:11px\">eptember&nbsp;23rd till 29th.&nbsp;</span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">If you need some more&nbsp;information:<br>
-Please check the&nbsp;</span></span><a href=\"http://www.swingcastlecamp.de/\" style=\"font-family: tahoma  verdana  segoe  sans-serif;font-size: 11px;text-align: justify;word-wrap: break-word;color: #6DC6DD;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;font-weight: normal;text-decoration: underline;\" target=\"_blank\">website</a>.<br>
+@date_website;noquote@
 <br>
 <span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">And if you want to know how it feels like - here's a beautiful&nbsp;<a href=\"https://vimeo.com/151409171\" target=\"_blank\" style=\"word-wrap: break-word;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;color: #6DC6DD;font-weight: normal;text-decoration: underline;\">video</a>&nbsp;of last year's edition.<br>
 <br>
@@ -570,9 +569,14 @@ ad_form \
 		if {$event_name eq "Swing Castle Camp 2016"} {
 			set event_image_url "http://www.swingcastlecamp.de/wp-content/uploads/2015/11/banner16-624x130.png"
 			set default_salutation "Dear Swing Addicts!"
+		    set date_website "<span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">The new version will happen from&nbsp;</span></span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">S</span></span><span style=\"font-family:tahoma verdana segoe sans-serif; font-size:11px\">eptember&nbsp;23rd till 29th.&nbsp;</span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">If you need some more&nbsp;information:<br>
+Please check the&nbsp;</span></span><a href=\"http://www.swingcastlecamp.de/\" style=\"font-family: tahoma  verdana  segoe  sans-serif;font-size: 11px;text-align: justify;word-wrap: break-word;color: #6DC6DD;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;font-weight: normal;text-decoration: underline;\" target=\"_blank\">website</a>.<br>"
+
 		} else {
 			set event_image_url "http://www.balboacastlecamp.de/wp-content/uploads/2015/11/fb_banner_bcc-624x131.png"
 			set default_salutation "Dear Balboa Addicts!"
+		    set date_website "<span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">The new version will happen from&nbsp;</span></span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">S</span></span><span style=\"font-family:tahoma verdana segoe sans-serif; font-size:11px\">eptember&nbsp;16th till 23rd.&nbsp;</span><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\">If you need some more&nbsp;information:<br>
+Please check the&nbsp;</span></span><a href=\"http://www.balboacastlecamp.de/\" style=\"font-family: tahoma  verdana  segoe  sans-serif;font-size: 11px;text-align: justify;word-wrap: break-word;color: #6DC6DD;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;font-weight: normal;text-decoration: underline;\" target=\"_blank\">website</a>.<br><span style=\"font-family:tahoma verdana segoe sans-serif\"><span style=\"font-size:11px\"><br />This time you can also stay longer and join us for the weekend of the <a href='http://www.swingcastlecamp.de/'>Swing Castle Camp</a> with a dedicated Balboa dancefloor.</span><br />"
 		}
 		
 		# Search for E-Mails in the CSV
