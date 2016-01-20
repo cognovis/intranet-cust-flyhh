@@ -344,7 +344,11 @@ ad_proc ::flyhh::send_invoice_mail {
     # Calculate the total sum plus the minimum payment (Anzahlung)
      
     set total_due_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal+0] $rounding_precision] "" $locale]
-    set due_now_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal*0.3 +0] $rounding_precision] "" $locale]
+
+    # Round the due now
+    set due_now [expr round($subtotal*0.03)]
+    set due_now [expr $due_now * 10]
+    set due_now_pretty [lc_numeric [im_numeric_add_trailing_zeros $due_now $rounding_precision] "" $locale]
     append invoice_item_html "
           <tr>
             <td class=roweven colspan=2 align=right><b>[lang::message::lookup $locale intranet-invoices.Total_Due]</b></td>
@@ -357,7 +361,7 @@ ad_proc ::flyhh::send_invoice_mail {
     <tr><td colspan=3>
     Dear $first_names,
     <p>
-    Attached you will find your invoice. Please check that everything is okay and let us know if changes are needed.<br /><br />
+    We gladly inform you that we allocated a spot for you at $event_name. Please find attached your invoice. Please check that everything is okay and let us know if changes are needed. We are looking forward to dancing and partying with you in September!<br /><br />
     </p>
     </td></tr>
     <tr><td colspan=3>&nbsp;</td></tr>    
@@ -385,11 +389,13 @@ ad_proc ::flyhh::send_invoice_mail {
      </td>
      </td></tr>
      <tr><td colspan=3>&nbsp;</td></tr>
-     <tr><td colspan=3>We can't wait to meet you at the castle!</td></tr></table>
+     <tr><td colspan=3>Now let your Facebook friends also know that you are coming: <a href='$facebook_event_url'>$event_name</a>. There we will also share updates and news about the event. </td></tr>
+     <tr><td colspan=3>&nbsp;</td></tr>
+     <tr><td colspan=3>We can't wait to meet you at the castle! Anna & Malte & Ulrike</td></tr></table>
      "
 
     set recipient_locale [lang::user::locale -user_id $recipient_id]
-    set subject "[lang::util::localize "#intranet-cust-flyhh.invoice_email_subject#" $recipient_locale]"
+    set subject "Confirmation and invoice for $event_name"
 #    set body "[lang::util::localize "#intranet-cust-flyhh.invoice_email_body#" $recipient_locale]"
 
     acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $from_addr -cc_addr $cc_addr -subject $subject -body $body -file_ids $invoice_revision_id -use_sender -object_id $project_id -mime_type "text/html"
