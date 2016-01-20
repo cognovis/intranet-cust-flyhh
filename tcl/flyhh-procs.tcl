@@ -1103,10 +1103,12 @@ ad_proc ::flyhh::record_after_confirmation_edit {
             ep.quote_id,
             ep.invoice_id,
             c.amount,
-            c.paid_amount
-        from flyhh_event_participants ep, im_costs c
+            c.paid_amount,
+            p.project_type_id
+        from flyhh_event_participants ep, im_costs c, im_projects p
         where participant_id=:participant_id
         and invoice_id = cost_id
+        and p.project_id = ep.project_id
     "
 
     db_1row participant_info $sql
@@ -1128,8 +1130,8 @@ ad_proc ::flyhh::record_after_confirmation_edit {
             set new_material_id $new($element)
             set sql "
                 select 
-                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:old_material_id) as old_price,
-                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:new_material_id) as new_price
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:old_material_id and task_type_id = :project_type_id) as old_price,
+                    (select price from im_timesheet_prices where company_id=:provider_company_id and material_id=:new_material_id and task_type_id = :project_type_id) as new_price
             "
             db_1row old_and_new_price $sql
 
