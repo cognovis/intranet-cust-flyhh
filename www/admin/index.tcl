@@ -32,6 +32,12 @@ template::list::create \
 		@events.registrations;noquote@
 	    }
         }
+        participants {
+            label "Participants"
+	    display_template {
+		@events.participants;noquote@
+	    }
+        }
         enabled_p {
             label "Enabled?"
             display_template {
@@ -56,19 +62,30 @@ template::list::create \
 
 set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id) where prj.project_status_id = 76"
 #set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
-db_multirow -extend {registrations} events $multirow $sql {
+db_multirow -extend {registrations participants} events $multirow $sql {
     set registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id not in (82505,82506)"]
     set previous_projects [db_list previous_events "select e.project_id from flyhh_events e, im_projects p where project_cost_center_id = :project_cost_center_id and e.project_id = p.project_id and p.start_date < now() order by e.start_date"]
     set previous_registrations [list]
+    set previous_participants [list]
     foreach previous_project_id $previous_projects {
 	lappend previous_registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :previous_project_id and event_participant_status_id not in (82505,82506)"]
+	lappend previous_participants [db_string registrations "select count(*) from flyhh_event_participants where project_id = :previous_project_id and event_participant_status_id in (82503,82504,82507)"]
     }
+
+    set participants [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id in (82503,82504,82507)"]
 
     if {$registrations < [lindex $previous_registrations 0]} {
 	set registrations "<font color='red'>$registrations</font> ([join $previous_registrations " - "])"
     } else {
 	set registrations "<font color='green'>$registrations</font> ([join $previous_registrations " - "])"
     }
+
+    if {$participants < [lindex $previous_participants 0]} {
+	set participants "<font color='red'>$participants</font> ([join $previous_participants " - "])"
+    } else {
+	set participants "<font color='green'>$participants</font> ([join $previous_participants " - "])"
+    }
+
 }
 
 
