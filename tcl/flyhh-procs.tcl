@@ -1378,11 +1378,11 @@ ad_proc -public ::flyhh::cleanup_text {} {
 ad_proc -public ::flyhh::clean_partner_text {} {
     Clean up the partner_text
 } {
-    db_foreach partner {select partner_text, participant_id from flyhh_event_participants where partner_text is not null and partner_participant_id is null} {
+    db_foreach partner {select partner_text, participant_id, project_id from flyhh_event_participants where partner_text is not null and partner_participant_id is null} {
 	set flag [::flyhh::match_name_email $partner_text name email]
-	set partner_participant_id [db_string parti "select participant_id from flyhh_event_participants, parties where party_id = person_id and email = :email" -default ""]
+	set partner_participant_id [db_string parti "select participant_id from flyhh_event_participants, parties where party_id = person_id and email = :email and project_id = :project_id" -default ""]
 	set partner_person_id [party::get_by_email -email $email]
-	db_dml update_partner_text "update flyhh_event_participants set partner_name = :name, partner_email = :email, partner_participant_id = :partner_participant_id, partner_person_id = :partner_person_id where participant_id = :participant_id"
+	db_dml update_partner_text "update flyhh_event_participants set partner_name = :name, partner_email = :email, partner_participant_id = :partner_participant_id, partner_person_id = :partner_person_id where participant_id = :participant_id and project_id = :project_id"
 	db_1row automaton "select flyhh_event_participant__status_automaton(:participant_id) from dual"
     }
 }
