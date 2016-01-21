@@ -37,13 +37,13 @@ set participant_ids [db_list participant_ids "
            and p.partner_mutual_p = true
            and e.partner_mutual_p = true
            and p.event_participant_status_id = [im_category_from_category -category "Waiting List"]
-           and (ro.room_id is not null or p.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
+           and (ro.room_id is not null or p.accommodation in (select material_id from im_materials where material_nr in ('external_accommodation','5 - Barn')))
         UNION
         select ep.participant_id
           from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) 
          where ep.participant_id in ([template::util::tcl_to_sql_list $participant_id])
            and ep.event_participant_status_id = [im_category_from_category -category "Waiting List"]
-           and (ro.room_id is not null or ep.accommodation = (select material_id from im_materials where material_nr = 'external_accommodation'))
+           and (ro.room_id is not null or ep.accommodation in (select material_id from im_materials where material_nr in ('external_accommodation','5 - Barn')))
     "
     ]
 
