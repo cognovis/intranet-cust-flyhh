@@ -87,7 +87,6 @@ db_multirow stats $multirow $sql {
 	set material_ids [db_list materials "select material_id from im_materials where parent_material_id = :material_id"]
 	set child_occupants [db_string childs "select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants p where p.accommodation in ([template::util::tcl_to_sql_list $material_ids]) and p.person_id = ro.person_id and ro.room_id = er.room_id and ro.project_id =:project_id" -default 0]
 	set other_occupants [expr $other_occupants + $child_occupants]
-ds_comment "$material_id :: $child_occupants :: $material_ids"
     }
 	
     if {$free_capacity eq ""} {set free_capacity $capacity}
@@ -129,7 +128,6 @@ db_foreach materials "select em.material_id,m.material_name,material_nr,capacity
         db_foreach lead_$material_nr {
             select count(*) as num_role, event_participant_status_id, lead_p from flyhh_event_participants where course = :material_id and project_id = :project_id group by lead_p, event_participant_status_id
         } {
-	    ds_comment "Count:: $num_role ... $event_participant_status_id ... $lead_p :: $material_nr"
             if {$lead_p} {set role "lead"} else {set role "follow"}
             switch $event_participant_status_id {
                 82500 {
