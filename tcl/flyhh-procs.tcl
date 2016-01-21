@@ -930,7 +930,7 @@ ad_proc ::flyhh::check_confirmed_free_capacity {
 
         set exceeds_capacity_num [db_string exceeds_capacity_num $sql -default 0]
 
-        if { $exceeds_capacity_num } {
+        if { $exceeds_capacity_num && $material_id != [db_string material "select material_id from im_materials where material_nr like '%no_course%'"]} {
             set sql "
                 select 
                     material_name,
