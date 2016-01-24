@@ -42,17 +42,7 @@ switch -exact $bulk_action {
        ad_returnredirect $return_url
     }
    "Set to Cancelled" { 
-
-        db_transaction {
-            foreach id $participant_id {
-                ::flyhh::set_participant_status \
-                    -participant_id $id \
-                    -to_status "Cancelled"
-        
-                # ::flyhh::send_cancellation_mail $id        
-            }
-        }       
-	ad_returnredirect $return_url
+		rp_internal_redirect participant-cancel.tcl
     }
     "Set to Checked-In" {
 	db_transaction {

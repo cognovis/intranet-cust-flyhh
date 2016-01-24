@@ -368,7 +368,7 @@ ad_proc ::flyhh::send_invoice_mail {
      $invoice_item_html
      <tr><td colspan=3>
      <br />
-     <b>[_ intranet-cust-flyhh.lt_Please_make_your_init]</b>
+     <b>[_ intranet-cust-flyhh.lt_Please_make_your_init]. Full payment is due by 1st of August.</b>
      </td><tr>
      <tr><td colspan=2>&nbsp;</td></tr>
      <tr><td colspan=2>
@@ -474,8 +474,8 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
         set paid_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $paid_amount+0] 2] "" $locale]
         set open_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $open_amount+0] 2] "" $locale]
 
-	set token [ns_sha1 "${participant_id}${project_id}"]
-	set invoice_url [export_vars -base "[ad_url]/flyhh/invoice" -url {participant_id token}]
+    	set token [ns_sha1 "${participant_id}${project_id}"]
+    	set invoice_url [export_vars -base "[ad_url]/flyhh/invoice" -url {participant_id token}]
         if { $cost_status_id eq $cost_status_paid } {
 
             ::flyhh::set_participant_status \
