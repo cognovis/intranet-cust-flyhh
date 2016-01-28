@@ -80,7 +80,10 @@ if {$error_text eq ""} {
     
     # Calculate the total sum plus the minimum payment (Anzahlung)
     set paid_amount_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $paid_amount+0] $rounding_precision] "" $locale] 
-    set due_now [expr $subtotal*0.3]
+    # Round the due now
+    set due_now [expr round($subtotal*0.03)]
+    set due_now [expr $due_now * 10]
+
     if {$paid_amount ne ""} {
 	set due_now [expr $due_now - $paid_amount]
     }
