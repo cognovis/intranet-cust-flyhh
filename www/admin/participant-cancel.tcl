@@ -56,7 +56,7 @@ ad_page_contract {
             
             if {$cancellation_fee > 0} {
                 set item_id [db_nextval "im_invoice_items_seq"]
-                
+                set cancellation_material_id [db_string test "select material_id from im_materials where material_nr = 'cancellation'" -default $course]
                 db_dml insert_cancellation_fee "
                     INSERT INTO im_invoice_items (
                             item_id, item_name,
@@ -68,7 +68,7 @@ ad_page_contract {
                             :project_id, :cancellation_invoice_id,
                             1, [im_uom_unit],
                             :cancellation_fee, :currency,
-                            99,:course)
+                            99,:cancellation_material_id)
                 "
             } 
             
