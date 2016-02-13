@@ -17,6 +17,7 @@ ad_page_contract {
     { order_by "" }
     { room_p 0 }
     { international_p 0 }
+    { overdue_p 0 }
     { notes_p 0 }
     { view_type "HTML" }
 } -properties {
@@ -203,6 +204,10 @@ ad_form \
             {label {[::flyhh::mc notes_p "Notes?"]}}
             {options {{No 0} {Yes 1}}}
         }
+        {overdue_p:text(select),optional
+            {label {[::flyhh::mc overdue_p "Overdue?"]}}
+            {options {{No 0} {Yes 1}}}
+        }
         {order_by:text(select),optional
             {label {[::flyhh::mc Order_by "Order by"]}}
             {options $order_by_options}
@@ -299,6 +304,12 @@ if {$notes_p} {
     lappend criteria "(select count(*) from im_notes where object_id = ep.participant_id) >0"
     lappend extra_selects "(select array_agg(note) from im_notes where object_id = ep.participant_id) as notes"
 }
+
+# Find out if the participant is overdue
+if {$overdue_p} {
+    lappend criteria "(select coalesce(now()::date - effective_date::date,null) from flyhh_event_participants f, im_costs c where event_participant_status_id = [flyhh::status::pending_payment] and c.cost_id = f.invoice_id and f.participant_id = ep.participant_id) > 14 and event_participant_status_id = [flyhh::status::pending_payment]"
+}
+
 
 if {$view_order_by_clause != ""} {
     set order_by_clause "order by $view_order_by_clause"
