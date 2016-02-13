@@ -74,7 +74,7 @@ set sql "
     on (mt.material_type_id = m.material_type_id)
     inner join flyhh_events e
     on (e.event_id = em.event_id)
-    and em.capacity >0
+    and em.capacity is not null
     and e.project_id = :project_id
     and mt.material_type_id = 9002
     order by material_type,material_name
