@@ -169,7 +169,7 @@ from flyhh_event_materials em where event_id = :event_id and em.material_id = :m
     }
 
 set bus_body_html ""
-# First the materials where lead/follow matters
+
 db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9008 and em.capacity != 0 order by material_type_id, material_name" {
     incr ctr
 	db_1row stats "select
@@ -183,4 +183,17 @@ from flyhh_event_materials em where event_id = :event_id and em.material_id = :m
         set capacity "[expr $num_pending_payment + $num_partially_paid + $num_registered] / $capacity"
         append bus_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'>$capacity</td><td class='list-table'>$num_waitlist</td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
     }
+
+set ctr 0
+	db_foreach discount_stats "select material_name,
+(select count(*) from flyhh_event_participants ep, im_invoice_items ii where ep.invoice_id = ii.invoice_id and ep.project_id = :project_id and ep.event_participant_status_id = 82502 and ii.item_material_id = em.material_id) as num_pending_payment,
+(select count(*) from flyhh_event_participants ep, im_invoice_items ii where ep.invoice_id = ii.invoice_id and ep.project_id = :project_id and ep.event_participant_status_id = 82503 and ii.item_material_id = em.material_id) as num_partially_paid,
+(select count(*) from flyhh_event_participants ep, im_invoice_items ii where ep.invoice_id = ii.invoice_id and ep.project_id = :project_id and ep.event_participant_status_id = 82504 and ii.item_material_id = em.material_id) as num_registered,
+(select count(*) from flyhh_event_participants ep, im_invoice_items ii where ep.invoice_id = ii.invoice_id and ep.project_id = :project_id and ep.event_participant_status_id = 82507 and ii.item_material_id = em.material_id) as num_checked_in
+from im_materials em where material_type_id = 9006" {
+incr ctr
+        set capacity "[expr $num_pending_payment + $num_partially_paid + $num_registered]"
+        append bus_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'></td><td class='list-table'></td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
+    }
+
 }
