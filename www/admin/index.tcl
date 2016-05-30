@@ -64,6 +64,7 @@ set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_c
 #set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
 db_multirow -extend {registrations participants} events $multirow $sql {
     set registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id not in (82505,82506)"]
+
     set previous_projects [db_list previous_events "select e.project_id from flyhh_events e, im_projects p where project_cost_center_id = :project_cost_center_id and e.project_id = p.project_id and p.start_date < now() order by e.start_date"]
     set previous_registrations [list]
     set previous_participants [list]

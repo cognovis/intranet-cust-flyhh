@@ -24,12 +24,8 @@ template::list::create \
                 <else>@stats.capacity@</else>
             }
         }
-        occupants {
-            label "Assigned"
-            html {style "text-align:center;"}
-        }
-        other_occupants {
-            label "Others"
+        num_waitlist {
+            label "Waitlist"
             html {style "text-align:center;"}
         }
 
@@ -52,21 +48,38 @@ template::list::create \
             label "Checked In"
             html {style "text-align:center;"}
         }
+        occupants {
+            label "Assigned"
+            html {style "text-align:center;"}
+            display_template {
+		@stats.occupants;noquote@
+            }
+
+        }
+        num_registered_occupants {
+            label "Registered"
+            html {style "text-align:center;"}
+        }
+        other_occupants {
+            label "Others"
+            html {style "text-align:center;"}
+        }
 
     }
 
 
 set sql "
     select capacity as planned_capacity, free_capacity,free_confirmed_capacity,material_name, em.material_id,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500) as num_waitlist,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82502) as num_pending_payment,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82503) as num_partially_paid,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82504) as num_registered,
 (select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82507) as num_checked_in,
+(select count(*) from flyhh_event_participants ep where accommodation = em.material_id and ep.project_id = :project_id and event_participant_status_id not in (82500,82505,82506)) as num_registered_occupants,
     (select sum(er.sleeping_spots) from flyhh_event_rooms er where er.room_material_id = em.material_id) as capacity,
     (select coalesce(1,0) from im_materials where parent_material_id = em.material_id) as has_children_p,
-    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id) as occupants,
-    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id and ro.person_id not in (select person_id from flyhh_event_participants where project_id = :project_id)) as other_occupants,
-    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er, flyhh_event_participants ep where er.room_material_id = em.material_id and ro.room_id = er.room_id and ep.person_id = ro.person_id and ep.project_id = ro.project_id and ro.project_id =:project_id and ep.event_participant_status_id in (82501,82502,82503,82504)) as confirmed_occupants 
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id and ro.person_id not in (select person_id from flyhh_event_participants where project_id = :project_id and event_participant_status_id in (82505,82506))) as occupants,
+    (select count(*) from flyhh_event_room_occupants ro, flyhh_event_rooms er where er.room_material_id = em.material_id and ro.room_id = er.room_id and ro.project_id =:project_id and ro.person_id not in (select person_id from flyhh_event_participants where project_id = :project_id)) as other_occupants
     from flyhh_event_materials em 
     inner join im_materials m 
     on (em.material_id = m.material_id)
@@ -91,6 +104,7 @@ db_multirow stats $multirow $sql {
 	
     if {$free_capacity eq ""} {set free_capacity $capacity}
     if {$free_confirmed_capacity eq ""} {set free_confirmed_capacity $capacity}
+    if {$num_registered_occupants ne $occupants} {set occupants "<font color=red>$occupants</font>"}
 #    set other_occupants [expr $capacity - $confirmed_occupants]
 #    if {$confirmed_occupants ne ""} {set num_confirmed $confirmed_occupants}
 }
@@ -108,7 +122,8 @@ set bgcolor(1) " class=rowodd "
 
 set table_body_html ""
 # First the materials where lead/follow matters
-db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9004 and em.capacity != 0 order by material_type_id, material_name" {
+db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9004 and em.capacity != 0 
+order by material_type_id, material_name" {
     incr ctr
     if {![string match "*solo*" $material_nr]} {
         # This is a material with Lead & Follow
@@ -124,6 +139,9 @@ db_foreach materials "select em.material_id,m.material_name,material_nr,capacity
         set num_follow_registered 0
 	set num_follow_checked_in 0
 
+	set num_lead_cancelled 0
+        set num_follow_cancelled 0
+
         # Calculate the lead numbers
         db_foreach lead_$material_nr {
             select count(*) as num_role, event_participant_status_id, lead_p from flyhh_event_participants where course = :material_id and project_id = :project_id group by lead_p, event_participant_status_id
@@ -132,9 +150,6 @@ db_foreach materials "select em.material_id,m.material_name,material_nr,capacity
             switch $event_participant_status_id {
                 82500 {
                     incr num_${role}_waitlist $num_role
-                }
-                82501 {
-                    incr num_${role}_confirmed $num_role
                 }
                 82502 {
                     incr num_${role}_pending_payment $num_role
@@ -148,27 +163,49 @@ db_foreach materials "select em.material_id,m.material_name,material_nr,capacity
                 82507 {
                     incr num_${role}_checked_in $num_role
                 }
+		85505 - 82506 {
+		    incr num_${role}_cancelled $num_role
+		}
             }
         }
-        set capacity_lead "[expr $num_lead_pending_payment + $num_lead_partially_paid + $num_lead_registered + $num_lead_checked_in] / $capacity"
-        set capacity_follow "[expr $num_follow_pending_payment + $num_follow_partially_paid + $num_follow_registered + $num_follow_checked_in] / $capacity"
+        set capacity_lead "[expr $num_lead_pending_payment + $num_lead_partially_paid + $num_lead_registered + $num_lead_checked_in] / $capacity / $num_lead_cancelled"
+        set capacity_follow "[expr $num_follow_pending_payment + $num_follow_partially_paid + $num_follow_registered + $num_follow_checked_in] / $capacity / $num_follow_cancelled"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>Lead</td><td class='list-table'>$capacity_lead</td><td class='list-table'>$num_lead_waitlist</td><td class='list-table'>$num_lead_pending_payment</td><td class='list-table'>$num_lead_partially_paid</td><td class='list-table'>$num_lead_registered</td><td class='list-table'>$num_lead_checked_in</td></tr>"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>Follow</td><td class='list-table'>$capacity_follow</td><td class='list-table'>$num_follow_waitlist</td><td class='list-table'>$num_follow_pending_payment</td><td class='list-table'>$num_follow_partially_paid</td><td class='list-table'>$num_follow_registered</td><td class='list-table'>$num_follow_checked_in</td></tr>"
-        
+
     } else {
 	db_1row stats "select
 (select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500) as num_waitlist,
 (select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82502) as num_pending_payment,
 (select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82503) as num_partially_paid,
 (select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82504) as num_registered,
-(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82507) as num_checked_in 
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82507) as num_checked_in,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id in (82505,82506)) as num_cancelled
 from flyhh_event_materials em where event_id = :event_id and em.material_id = :material_id"
 
-        set capacity "[expr $num_pending_payment + $num_partially_paid + $num_registered] / $capacity"
+        set capacity "[expr $num_pending_payment + $num_partially_paid + $num_registered] / $capacity / $num_cancelled"
         append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'>$capacity</td><td class='list-table'>$num_waitlist</td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
-    }
 
-set bus_body_html ""
+    }
+}
+
+
+# Append no material
+
+db_foreach no_course "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_id = 55536" {
+	db_1row stats "select
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82500) as num_waitlist,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82502) as num_pending_payment,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82503) as num_partially_paid,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82504) as num_registered,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id = 82507) as num_checked_in,
+(select count(*) from flyhh_event_participants ep where course = em.material_id and ep.project_id = :project_id and event_participant_status_id in (82505,82506)) as num_cancelled
+from flyhh_event_materials em where event_id = :event_id and em.material_id = :material_id"
+
+        set capacity "na"
+        append table_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'>$capacity</td><td class='list-table'>$num_waitlist</td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
+    
+}
 
 db_foreach materials "select em.material_id,m.material_name,material_nr,capacity,material_type_id from flyhh_event_materials em, im_materials m where event_id = :event_id and em.material_id = m.material_id and m.material_type_id=9008 and em.capacity != 0 order by material_type_id, material_name" {
     incr ctr
@@ -196,4 +233,4 @@ incr ctr
         append bus_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'></td><td class='list-table'></td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
     }
 
-}
+

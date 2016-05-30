@@ -25,7 +25,7 @@ ad_page_contract {
                 ep.event_participant_status_id,
                 ep.course
             from flyhh_event_participants ep
-            where participant_id=:participant_id
+            where participant_id=:id
         "
         
         db_1row participant_info $sql
