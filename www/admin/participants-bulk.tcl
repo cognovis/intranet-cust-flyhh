@@ -42,7 +42,7 @@ switch -exact $bulk_action {
        ad_returnredirect $return_url
     }
    "Set to Cancelled" { 
-		rp_internal_redirect participant-cancel.tcl
+	rp_internal_redirect participant-cancel.tcl
     }
     "Set to Checked-In" {
 	db_transaction {

@@ -32,6 +32,12 @@ template::list::create \
 		@events.registrations;noquote@
 	    }
         }
+        pending_payment {
+            label "Pending Payment"
+	    display_template {
+		<div align=center>@events.pending_payment;noquote@</div>
+	    }
+        }
         participants {
             label "Participants"
 	    display_template {
@@ -62,7 +68,7 @@ template::list::create \
 
 set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id) where prj.project_status_id = 76"
 #set sql "select *, im_cost_center_code_from_id(project_cost_center_id) as cost_center from flyhh_events evt inner join im_projects prj on (prj.project_id = evt.project_id)"
-db_multirow -extend {registrations participants} events $multirow $sql {
+db_multirow -extend {pending_payment registrations participants} events $multirow $sql {
     set registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id not in (82505,82506)"]
 
     set previous_projects [db_list previous_events "select e.project_id from flyhh_events e, im_projects p where project_cost_center_id = :project_cost_center_id and e.project_id = p.project_id and p.start_date < now() order by e.start_date"]
@@ -72,6 +78,8 @@ db_multirow -extend {registrations participants} events $multirow $sql {
 	lappend previous_registrations [db_string registrations "select count(*) from flyhh_event_participants where project_id = :previous_project_id and event_participant_status_id not in (82505,82506)"]
 	lappend previous_participants [db_string registrations "select count(*) from flyhh_event_participants where project_id = :previous_project_id and event_participant_status_id in (82503,82504,82507)"]
     }
+ 
+   set pending_payment [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id = [flyhh::status::pending_payment]"]
 
     set participants [db_string registrations "select count(*) from flyhh_event_participants where project_id = :project_id and event_participant_status_id in (82503,82504,82507)"]
 
