@@ -120,8 +120,10 @@ ad_page_contract {
              "
         
         set subject "Cancellation for $event_name"
+
+# Removed as this is too confusing as we need to change the cancellation invoice too often.
         
-        acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $event_email -subject $subject -body $body -use_sender -object_id $project_id -mime_type "text/html"
+#        acs_mail_lite::send -send_immediately -to_addr $to_addr -from_addr $event_email -subject $subject -body $body -use_sender -object_id $project_id -mime_type "text/html"
 
     }
 

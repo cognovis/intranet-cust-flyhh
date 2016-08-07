@@ -346,9 +346,21 @@ ad_proc ::flyhh::send_invoice_mail {
     set total_due_pretty [lc_numeric [im_numeric_add_trailing_zeros [expr $subtotal+0] $rounding_precision] "" $locale]
 
     # Round the due now
+set before_august_p 0
+if {$before_august_p} {
     set due_now [expr round($subtotal*0.03)]
     set due_now [expr $due_now * 10]
     set due_now_pretty [lc_numeric [im_numeric_add_trailing_zeros $due_now $rounding_precision] "" $locale]
+    set due_now_html "<tr><td colspan=3>
+     <br />
+     <b>[_ intranet-cust-flyhh.lt_Please_make_your_init]. Full payment is due by 1st of August.</b>
+     </td><tr>"
+} else {
+    set due_now_pretty $total_due_pretty
+    set due_now $subtotal
+    set due_now_html ""
+}
+
     append invoice_item_html "
           <tr>
             <td class=roweven colspan=2 align=right><b>[lang::message::lookup $locale intranet-invoices.Total_Due]</b></td>
@@ -366,10 +378,7 @@ ad_proc ::flyhh::send_invoice_mail {
     </td></tr>
     <tr><td colspan=3>&nbsp;</td></tr>    
      $invoice_item_html
-     <tr><td colspan=3>
-     <br />
-     <b>[_ intranet-cust-flyhh.lt_Please_make_your_init]. Full payment is due by 1st of August.</b>
-     </td><tr>
+     $due_now_html
      <tr><td colspan=2>&nbsp;</td></tr>
      <tr><td colspan=2>
      <b>[_ intranet-cust-flyhh.Bank_Info]</b>
