@@ -19,8 +19,21 @@ if {$token ne $check_token} {
 
 if {$error_text eq ""} {
     
-    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
+    db_1row event_info "select project_cost_center_id, p.project_id, event_url, event_email,event_id from flyhh_events f, im_projects p where p.project_id = :project_id and p.project_id = f.project_id"
     
+    switch $project_cost_center_id {
+        34915 {
+	    if {$event_id eq 48362} {
+		set adp_master "master-wscc"
+	    } else {
+		set adp_master "master-scc"
+	    }
+        }
+        default {
+            set adp_master "master-bcc"
+        }
+    }
+
     # The webpage should display the?information what has been provided with the registration,
     # a link to the PDF invoice for review, the total amount, the due date (based on the time 
     # the link was clicked and the payment terms).
