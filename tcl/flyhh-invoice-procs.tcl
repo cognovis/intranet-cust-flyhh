@@ -128,8 +128,12 @@ ad_proc ::flyhh::create_invoice {
                 lappend delta_items [list 1.0 1.0 $material_id]
             }
             
-            if {$partner_mutual_p eq "t"} {
-                # Qualify for the partner rebate.
+            # Check that the partner is mutual and that they both booked a course
+            # for a whole week. Then qualify for the rebate.
+            
+            set qualified_course_material_ids [list 33311 35117 33312 52298]
+
+            if {$partner_mutual_p eq "t" && [lsearch $qualified_course_material_ids $course] >=0} {
                 lappend delta_items [list 1.0 1.0 [db_string partner_material_id "select material_id from im_materials where lower(material_nr) = 'partner'"]]
             }
         }
