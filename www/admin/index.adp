@@ -11,7 +11,9 @@
 </div>
 <br>
 <br>
-<listtemplate name="@list_id@"></listtemplate>
+<listtemplate name="events_list"></listtemplate>
+<p/>
+<listtemplate name="finance_list"></listtemplate>
 <multiple name="events">
     <include src="/packages/intranet-cust-flyhh/lib/event-stats" event_id=@events.event_id@>
 </multiple>

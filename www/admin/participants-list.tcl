@@ -62,7 +62,8 @@ set admin_p [im_is_user_site_wide_or_intranet_admin $user_id]
 set subsite_id [ad_conn subsite_id]
 set current_user_id $user_id
 set today [lindex [split [ns_localsqltimestamp] " "] 0]
-db_1row project_name "select project_name,event_id from im_projects p, flyhh_events e where p.project_id = :project_id and e.project_id = p.project_id"
+db_1row project_name "select project_type_id, project_name,event_id from im_projects p, flyhh_events e where p.project_id = :project_id and e.project_id = p.project_id"
+set provider_id [im_company_internal]          ;# Company that provides this service - Us
 set page_title "[_ intranet-cust-flyhh.List_of_participants]"
 set context_bar [ad_context_bar [list [util_get_current_url] $project_name] $page_title]
 set return_url [im_url_with_query]
@@ -350,7 +351,11 @@ set sql "
         partner_person_id,
         party__email(ep.person_id) as email,
         (select effective_date::date from im_costs where cost_id = quote_id) as confirmation_date,
-        (select effective_date::date from im_costs where cost_id = invoice_id) as accepted_date
+        (select effective_date::date from im_costs where cost_id = invoice_id) as accepted_date,
+        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9004)) as course_amount,
+        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9006)) as discount_amount,
+        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9002)) as accommodation_amount,
+        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9007)) as food_amount
         $extra_select 
     from flyhh_event_participants ep
     left outer join (select ro.person_id, room_name, ro.room_id, r.room_material_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
@@ -414,6 +419,18 @@ foreach col $column_headers {
 }
 append table_header_html "</tr>\n"
 
+# ---------------------------------------------------------------
+# Create Material Price Array
+# ---------------------------------------------------------------
+
+db_foreach price_array {
+    select round(price) as price_per_unit, im.material_id
+    from im_materials im inner join im_timesheet_prices itp on (itp.material_id=im.material_id)
+    where company_id = :provider_id
+    and itp.task_type_id = :project_type_id
+} {
+    set material_price($material_id) $price_per_unit
+}
 
 # ---------------------------------------------------------------
 # 8. Format the Result Data
@@ -463,6 +480,38 @@ db_foreach event_participants_query $sql {
         } else {
             set partner_html ""
         }
+    }
+
+    # ---------------------------------------------------------------
+    # Check the finances
+    # ---------------------------------------------------------------
+    if {$course_amount ne $material_price($course)} {
+	if {$course_amount < $material_price($course)} {
+	    set font "red"
+	} else {
+	    set font "green"
+	}
+	set course_amount "<font color='$font'>$course_amount -- $material_price($course)</font>"
+    }
+    if {$accommodation_amount ne $material_price($accommodation)} {
+	if {$accommodation_amount < $material_price($accommodation)} {
+	    set font "red"
+	} else {
+	    set font "green"
+	}
+	set accommodation_amount "<font color='$font'>$accommodation_amount -- $material_price($accommodation)</font>"
+    }
+    if {$food_amount ne $material_price($food_choice)} {
+	if {$food_amount < $material_price($food_choice)} {
+	    set font "red"
+	} else {
+	    set font "green"
+	}
+	set food_amount "<font color='$font'>$food_amount -- $material_price($food_choice)</font>"
+    }
+
+    if {$discount_amount ne "" && $partner_html eq ""} {
+	set discount_amount "<font color='red'>$discount_amount</font>"
     }
 
     # Resolve the alternative accommodation into a string
