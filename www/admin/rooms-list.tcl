@@ -244,11 +244,14 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
 
                 set company_id [db_string company_id "select company_id from im_companies where primary_contact_id =:person_id order by company_id desc limit 1" -default ""]
                 if {$company_id eq ""} {
-                    set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]            
+                    set occupant_url [export_vars -base "/intranet/users/view" -url {{user_id $person_id}}]
+		    set company_url [export_vars -base "/intranet/companies/new" -url {{company_type_id 56} {company_name $occupant_name} {company_status_id 46}}]
+		    set occupant "<a href='$occupant_url'>$occupant_name</a> - <a href='$company_url'>COMPANY MISSING</a>"
                 } {
-                    set occupant_url [export_vars -base "/intranet/companies/view" -url {company_id}]            
+                    set occupant_url [export_vars -base "/intranet/companies/view" -url {company_id}]
+		    set occupant "<a href='$occupant_url'>$occupant_name</a>"
                 }
-            set occupant "<a href='$occupant_url'>$occupant_name</a>"
+
             if {$participant_id ne ""} {
                 set registration_url [export_vars -base "/flyhh/admin/registration" -url {participant_id project_id}]
 		append occupant " (<a href='$registration_url'>$participant_id</a>)"
