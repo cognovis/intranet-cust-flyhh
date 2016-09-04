@@ -23,7 +23,7 @@ set list_id "rooms_list"
 set multirow "rooms"
 
 template::list::create \
-    -name $list_id \
+    -name rooms_list \
     -multirow $multirow \
     -elements {
         room_name {

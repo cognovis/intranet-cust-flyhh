@@ -10,7 +10,10 @@
 </td>
 <td>
     <listtemplate name="@list_id@"></listtemplate>
-</td>
+<p />
+<table class="list-table" cellpadding="3" cellspacing="1">
+@table_checks_html;noquote@
+</table></td>
 </tr>
 <tr>
 <td colspan=2>

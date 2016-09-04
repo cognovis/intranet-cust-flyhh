@@ -233,4 +233,17 @@ incr ctr
         append bus_body_html "<tr$bgcolor([expr $ctr % 2])>\n<td class='list-table'>$material_name</td><td class='list-table'>n/a</td><td class='list-table'></td><td class='list-table'></td><td class='list-table'>$num_pending_payment</td><td class='list-table'>$num_partially_paid</td><td class='list-table'>$num_registered</td><td class='list-table'>$num_checked_in</td></tr>"
     }
 
+# ---------------------------------------------------------------
+# Sanity checks for classes and food
+# ---------------------------------------------------------------
+
+set we_accommodation_nr [db_string count "select count(*) from flyhh_event_participants ep, im_materials m where accommodation = m.material_id and ep.project_id = :project_id and event_participant_status_id in (82503,82504,82507) and m.material_uom_id = 323"]
+set we_course_nr [db_string count "select count(*) from flyhh_event_participants ep, im_materials m where course = m.material_id and ep.project_id = :project_id and event_participant_status_id in (82503,82504,82507) and m.material_uom_id = 323"]
+set accommodation_nr [db_string count "select count(*) from flyhh_event_participants ep, im_materials m where accommodation = m.material_id and ep.project_id = :project_id and event_participant_status_id in (82503,82504,82507) and m.material_uom_id = 328"]
+set course_nr [db_string count "select count(*) from flyhh_event_participants ep, im_materials m where course = m.material_id and ep.project_id = :project_id and event_participant_status_id in (82503,82504,82507) and m.material_uom_id = 328"]
+
+ds_comment "course_nr: $course_nr"
+set table_checks_html "<tr class='list-header'><th class='list-table'>Type</th><th class='list-table'>Week</th><th class='list-table'>Weekend</th></tr>"
+append table_checks_html "<tr$bgcolor(0)>\n<td class='list-table'>Accommodation</td><td class='list-table'>$accommodation_nr</td><td class='list-table'>$we_accommodation_nr</td></tr>"
+append table_checks_html "<tr$bgcolor(1)>\n<td class='list-table'>Classes</td><td class='list-table'>$course_nr</td><td class='list-table'>$we_course_nr</td></tr>"
 
