@@ -13,7 +13,7 @@ ad_page_contract {
 } -validate {
 
     allowed_bulk_actions -requires {bulk_action} {
-        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Set to Waitlist" "Send Mail" "Assign Room" "Set to Checked-In"] $bulk_action] } {
+        if { -1 == [lsearch -exact [list "Set to Confirmed" "Set to Cancelled" "Set to Waitlist" "Send Mail" "Assign Room" "Set to Checked-In" "Assign Level"] $bulk_action] } {
             ad_complain "page requires an allowed bulk action"
         }
     }    
@@ -67,5 +67,8 @@ switch -exact $bulk_action {
     }
     "Assign Room" {
         ad_returnredirect [export_vars -base "participant-room-assign" -url {{participant_ids $participant_id} project_id return_url}]
+    }
+    "Assign Level" {
+        ad_returnredirect [export_vars -base "participant-level-assign" -url {{participant_ids $participant_id} project_id return_url}]
     }
 }

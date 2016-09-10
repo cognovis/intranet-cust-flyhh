@@ -480,7 +480,7 @@ where r.object_id_two=:person_id and r.rel_type = 'im_company_employee_rel'" -de
                 -alternative_accommodation $alternative_accommodation \
                 -food_choice $food_choice \
                 -bus_option $bus_option \
-                -level "" \
+                -level $level \
                 -lead_p $lead_p \
                 -payment_type 804 \
                 -payment_term "80107" \

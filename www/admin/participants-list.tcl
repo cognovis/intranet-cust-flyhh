@@ -37,6 +37,7 @@ set view_name "flyhh_event_participants_list"
 set key "participant_id"
 set bulk_actions {
     "Assign Room" "participant-room-assign" "Assign room for checked participants"
+    "Assign Level" "participant-level-assign" "Assign level for checked participants"
     "Set to Confirmed" "participant-confirm" "Confirm checked participants"
     "Set to Cancelled" "participant-cancel" "Cancel checked participants"
     "Set to Waitlist" "participant-waitlist" "Put checked participants onto Waiting List"
