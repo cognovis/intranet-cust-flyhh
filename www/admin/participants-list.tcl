@@ -225,7 +225,7 @@ ad_form \
 #            if { $num == 16 } { lappend criteria "mismatch_level_p" }
 #        }
 
-        foreach varname {lead_p course bus_option event_participant_status_id validation_status_id} {
+        foreach varname {lead_p course bus_option event_participant_status_id validation_status_id level} {
 
             if { [exists_and_not_null $varname] } {
 
