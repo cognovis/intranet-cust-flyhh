@@ -14,6 +14,9 @@
 <listtemplate name="events_list"></listtemplate>
 <p/>
 <listtemplate name="finance_list"></listtemplate>
+<p />
+<include src="/packages/intranet-cust-flyhh/lib/room-stats">
+<p />
 <multiple name="events">
     <include src="/packages/intranet-cust-flyhh/lib/event-stats" event_id=@events.event_id@>
 </multiple>

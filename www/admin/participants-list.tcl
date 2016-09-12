@@ -356,7 +356,8 @@ set sql "
         (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9004)) as course_amount,
         (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9006)) as discount_amount,
         (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9002)) as accommodation_amount,
-        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9007)) as food_amount
+        (select round(sum(item_units*price_per_unit)) from im_costs c, im_invoice_items ii, im_materials m where ii.item_material_id = m.material_id and ii.project_id = :project_id and ii.invoice_id = c.cost_id and c.customer_id = ep.company_id and m.material_type_id in (9007)) as food_amount,
+        (select sum(p.amount) from im_payments p where p.cost_id = ep.invoice_id) as paid_amount
         $extra_select 
     from flyhh_event_participants ep
     left outer join (select ro.person_id, room_name, ro.room_id, r.room_material_id, office_name from flyhh_event_rooms r, im_offices o, flyhh_event_room_occupants ro where ro.room_id = r.room_id and ro.project_id = :project_id and r.room_office_id = o.office_id) er on (er.person_id = ep.person_id),
@@ -454,6 +455,23 @@ if {[lsearch [list xls pdf ods] $view_type] > -1} {
 
 db_foreach event_participants_query $sql {
 
+    # ---------------------------------------------------------------
+    # Amounts for the calculations
+    # ---------------------------------------------------------------
+    foreach amount_type [list course_amount food_amount accommodation_amount discount_amount paid_amount] {
+	if {[set $amount_type] eq ""} {
+	    set $amount_type 0
+	}
+    }
+    set open_amount [expr $course_amount + $food_amount + $accommodation_amount + $discount_amount - $paid_amount]
+    if {$open_amount eq "0"} {
+	set $open_amount ""
+    } else {
+	set open_amount "€ $open_amount"
+    }
+
+    set invoice_url [export_vars -base "/intranet-invoices/view" -url {invoice_id}]
+    set latest_invoice_html "<a href='$invoice_url'>Latest Invoice</a>"
     set participant_status_pretty [im_category_from_id  $event_participant_status_id]
 
     if {$room_id ne ""} {
