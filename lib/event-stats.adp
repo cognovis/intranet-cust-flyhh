@@ -13,7 +13,9 @@
 <p />
 <table class="list-table" cellpadding="3" cellspacing="1">
 @table_checks_html;noquote@
-</table></td>
+</table>
+<p />
+<include src="/packages/intranet-cust-flyhh/lib/level-stats" event_id=@event_id@></td>
 </tr>
 <tr>
 <td colspan=2>
