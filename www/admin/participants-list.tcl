@@ -470,6 +470,11 @@ db_foreach event_participants_query $sql {
 	set open_amount "€ $open_amount"
     }
 
+
+    # ---------------------------------------------------------------
+    # Format notes nicely
+    # ---------------------------------------------------------------
+
     set invoice_url [export_vars -base "/intranet-invoices/view" -url {invoice_id}]
     set latest_invoice_html "<a href='$invoice_url'>Latest Invoice</a>"
     set participant_status_pretty [im_category_from_id  $event_participant_status_id]

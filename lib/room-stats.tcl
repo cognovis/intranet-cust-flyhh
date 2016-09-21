@@ -12,7 +12,7 @@ set acc_type_ids [db_list acc_types "select material_id from im_materials where 
 set acc_we_type_ids [db_list acc_types "select material_id from im_materials where material_type_id = 9002 and material_uom_id = 323 and material_id not in (49731,53387)"]
 
 # Change this for the final tally to only checked in...
-set participant_status_ids [list 82503 82504 82507]
+set participant_status_ids [list 82504 82507]
 
 set project_ids [db_list project_ids "select fe.project_id from flyhh_events fe, im_projects p where fe.project_id = p.project_id and p.project_status_id = 76 order by p.start_date asc"]
 
