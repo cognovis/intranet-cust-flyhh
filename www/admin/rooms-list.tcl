@@ -88,6 +88,9 @@ template::list::create \
                 @rooms.occupants;noquote@
             }
         }
+        num_occupants {
+            label {[::flyhh::mc Occupants "# Occupants"]}
+        }
         description {
             label {[::flyhh::mc room_description "Description"]}
             display_template {
@@ -217,7 +220,9 @@ if {$filter_project_id ne ""} {
     set sql "select *,material_name as room_type, im_name_from_id(room_office_id) as room_location, 0 as taken_spots from flyhh_event_rooms ro,im_materials m where m.material_id = ro.room_material_id $extra_where_clause [template::list::orderby_clause -orderby -name "rooms_list"]"
 }
 
-db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
+template::multirow create room_occupation room_location room_name num_occupants
+
+db_multirow -extend {room_url delete_url occupants num_occupants} rooms $multirow $sql {
     # Change the sleeping spots if we have a project
     set room_url [export_vars -base "/flyhh/admin/room-one" -url {room_id filter_project_id}]
     set delete_url ""
@@ -260,7 +265,11 @@ db_multirow -extend {room_url delete_url occupants} rooms $multirow $sql {
         }
     }
     if {$occupants ne ""} {
+	set num_occupants [llength $occupants]
         set occupants "<ul><li>[join $occupants "</li><li>"]</li></ul>"
+	template::multirow append room_occupation $room_location $room_name $num_occupants
+    } else {
+	set num_occupants 0
     }
 }
 
@@ -280,3 +289,21 @@ set left_navbar_html "
           </div>
       <hr/>
 "
+
+template::list::create \
+    -name room_occupation \
+    -multirow room_occupation \
+    -elements {
+        room_name {
+            label {[::flyhh::mc room_Name "Name"]}
+        }
+        room_location {
+            label {[::flyhh::mc room_location "Room Location"]}
+            display_template {
+                @room_occupation.room_location;noquote@
+            }
+        }
+        num_occupants {
+            label {[::flyhh::mc Occupants "# Occupants"]}
+        }
+    }

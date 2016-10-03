@@ -514,7 +514,8 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
             ns_log error "expected cost_status_id to be $cost_status_paid or $cost_status_partially_paid but got $cost_status_id"
 
         }
-        
+
+        if {0}
         if {$to_addr ne ""} {
             acs_mail_lite::send \
             -send_immediately \
@@ -525,6 +526,7 @@ ad_proc -public -callback im_payment_after_create -impl intranet-cust-flyhh {
             -mime_type "text/html" \
             -object_id $project_id        
         }
+    }
     }
 
 }

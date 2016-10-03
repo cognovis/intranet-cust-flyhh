@@ -7,6 +7,7 @@
 <include src="/packages/intranet-cust-flyhh/lib/room-stats">
 <p />
 <listtemplate name="rooms_list"></listtemplate>
+<listtemplate name="room_occupation"></listtemplate>
 <form action='/flyhh/admin/room-one' method="get">
 <input type="hidden" name="return_url" value="/flyhh/admin/rooms-list">
 <input type="submit" value="New Room">
