@@ -19,11 +19,11 @@ ad_page_contract {
 
 } {
     project_id:integer,notnull
-    participant_id:integer,multiple,notnull
+    participant_ids:notnull
     return_url:trim,notnull
 } -validate {
-    check_confirmed_free_capacity -requires {project_id:integer participant_id:integer} {
-        ::flyhh::check_confirmed_free_capacity -project_id $project_id -participant_id_list $participant_id
+    check_confirmed_free_capacity -requires {project_id:integer} {
+        ::flyhh::check_confirmed_free_capacity -project_id $project_id -participant_id_list $participant_ids
     }
 }
 
@@ -35,7 +35,7 @@ set unlimited_accommodation_ids [db_list accommodation "select material_id from 
 set participant_ids [db_list participant_ids "
         select e.partner_participant_id 
           from flyhh_event_participants e, flyhh_event_participants p left outer join flyhh_event_room_occupants ro on (p.person_id = ro.person_id and p.project_id = ro.project_id) 
-         where e.participant_id in ([template::util::tcl_to_sql_list $participant_id])
+         where e.participant_id in ([template::util::tcl_to_sql_list $participant_ids])
            and p.participant_id = e.partner_participant_id
            and p.partner_mutual_p = true
            and e.partner_mutual_p = true
@@ -44,7 +44,7 @@ set participant_ids [db_list participant_ids "
         UNION
         select ep.participant_id
           from flyhh_event_participants ep left outer join flyhh_event_room_occupants ro on (ep.person_id = ro.person_id and ep.project_id = ro.project_id) 
-         where ep.participant_id in ([template::util::tcl_to_sql_list $participant_id])
+         where ep.participant_id in ([template::util::tcl_to_sql_list $participant_ids])
            and ep.event_participant_status_id = [im_category_from_category -category "Waiting List"]
            and (ro.room_id is not null or ep.accommodation in ([template::util::tcl_to_sql_list $unlimited_accommodation_ids]))
     "

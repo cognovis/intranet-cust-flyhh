@@ -100,8 +100,8 @@ set extra_wheres [list]
 set view_order_by_clause ""
 
 if { $bulk_actions ne {} } {
-    lappend column_headers "<input type=\"checkbox\">"
-    lappend column_vars {[set _out_ "<input type=\"checkbox\" name=\"$key\" value=\"[set $key]\">"]}
+    lappend column_headers "<input type=checkbox name=_dummy onclick=acs_ListCheckAll('participants',this.checked)>"
+    lappend column_vars {[set _out_ "<input type=\"checkbox\" name=$key.[set $key] id=participants,[set $key]>"]}
     lappend column_headers_admin ""
 }
 
@@ -509,6 +509,9 @@ db_foreach event_participants_query $sql {
     # ---------------------------------------------------------------
     # Check the finances
     # ---------------------------------------------------------------
+    if {![info exists material_price($course)]} {
+	set material_price($course) $course_amount
+    }
     if {$course_amount ne $material_price($course)} {
 	if {$course_amount < $material_price($course)} {
 	    set font "red"
@@ -517,6 +520,9 @@ db_foreach event_participants_query $sql {
 	}
 	set course_amount "<font color='$font'>$course_amount -- $material_price($course)</font>"
     }
+    if {![info exists material_price($accommodation)]} {
+	set material_price($accommodation) $accommodation_amount
+    }
     if {$accommodation_amount ne $material_price($accommodation)} {
 	if {$accommodation_amount < $material_price($accommodation)} {
 	    set font "red"
@@ -524,6 +530,9 @@ db_foreach event_participants_query $sql {
 	    set font "green"
 	}
 	set accommodation_amount "<font color='$font'>$accommodation_amount -- $material_price($accommodation)</font>"
+    }
+    if {![info exists material_price($food_choice)]} {
+	set material_price($food_choice) $food_amount
     }
     if {$food_amount ne $material_price($food_choice)} {
 	if {$food_amount < $material_price($food_choice)} {

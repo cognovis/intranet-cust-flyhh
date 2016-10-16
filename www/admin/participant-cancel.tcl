@@ -9,12 +9,11 @@ ad_page_contract {
     correction invoice which contains refunds as in ::flyhh::record_after_confirmation_edit.†
 
 } {
-    participant_id:integer,multiple,notnull
+    participant_ids:notnull
     return_url:trim,notnull
 }
 
-
-    foreach id $participant_id {
+    foreach id $participant_ids {
         
         # Create the correction invoice
         set sql "
