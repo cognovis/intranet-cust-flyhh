@@ -14,6 +14,10 @@ ad_page_contract {
 } -errors {
 }
 
+if {![info exists project_type_id]} {
+    set project_type_id [im_id_from_category "Event" "Intranet Project Type"]
+}
+
 set page_title "Event Form"
 set context ""
 set context_bar [ad_context_bar $page_title]
