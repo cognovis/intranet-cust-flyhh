@@ -54,7 +54,9 @@ foreach project_id $project_ids {
     set food_vegi [db_string wp "select count(participant_id) from flyhh_event_participants ep where ep.project_id = :project_id and ep.food_choice=33313 and ep.event_participant_status_id in ([template::util::tcl_to_sql_list $participant_status_ids])"]
     set food_we_meat [db_string wp "select count(participant_id) from flyhh_event_participants ep where ep.project_id = :project_id and ep.food_choice=52340 and ep.event_participant_status_id in ([template::util::tcl_to_sql_list $participant_status_ids])"]
     set food_we_vegi [db_string wp "select count(participant_id) from flyhh_event_participants ep where ep.project_id = :project_id and ep.food_choice=52341 and ep.event_participant_status_id in ([template::util::tcl_to_sql_list $participant_status_ids])"]
-    set food_others_meat [expr $other_occupants * $food_meat / ($food_meat + $food_vegi)]
+    if {$food_meat ne 0 || $food_vegi ne 0} {
+	set food_others_meat [expr $other_occupants * $food_meat / ($food_meat + $food_vegi)]
+    }
     set food_others_vegi [expr $other_occupants - $food_others_meat]
     set food_meat [expr $food_meat + $food_others_meat]
     set food_vegi [expr $food_vegi + $food_others_vegi]

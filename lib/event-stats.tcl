@@ -48,23 +48,6 @@ template::list::create \
             label "Checked In"
             html {style "text-align:center;"}
         }
-        occupants {
-            label "Assigned"
-            html {style "text-align:center;"}
-            display_template {
-		@stats.occupants;noquote@
-            }
-
-        }
-        num_registered_occupants {
-            label "Registered"
-            html {style "text-align:center;"}
-        }
-        other_occupants {
-            label "Others"
-            html {style "text-align:center;"}
-        }
-
     }
 
 
